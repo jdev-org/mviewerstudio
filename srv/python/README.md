@@ -6,7 +6,42 @@ données, les données sont stockées dans des fichiers json.
 
 ## Installation
 
-### Docker
+Vous pouvez installer mviewerstudio selon 3 méthodes :
+- Via un script sh
+- Via Docker
+- Manuellement Pas à pas en suivant la séction `Développement`
+
+### Via le Script SH
+
+- Récupérer le fichier /srv/python/install.sh
+
+curl -O https://github.com/jdev-org/mviewerstudio/blob/develop/install_backend_python.sh
+
+- Exécuter la commande en remplacant `/<full>/<path>` par l'emplacement de mviewerstudio :
+```bash
+sh install_backend_python.sh /<full>/<path>
+```
+
+Le script va alors :
+- cloner le dépôt dans le répertoire indiquer (`/<full>/<path>`)
+- installer les paquets (Debian)
+- Créer les répertoires du backend dans `/srv/python/mviewerstudio_backend`
+- créer l'environnement virtuel (venv) Python
+- installer les dépendances (fichiers `requirements`)
+
+Il vous restera à 
+
+- créer le lien symbolique entre mviewer et mviewerstudio :
+
+```bash
+ln -s /<full_path>/mviewerstudio/srv/python/mviewerstudio_backend/store /<full_path>/mviewer/apps/store
+```
+
+- modifier le paramètre `mviewer_instance` dans `/srv/python/mviewerstudio_backend/apps/config.json`
+
+- Modifier la liste [PROXY_WHITE_LIST](https://github.com/jdev-org/mviewerstudio/tree/develop/srv/python#proxy) pour les développements
+
+### Via Docker
 
 Vous pouvez utiliser la composition docker présente à la racine du dépot. Le
 `Dockerfile` permet de construire l'image pour un usage de production.
