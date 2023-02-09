@@ -36,24 +36,30 @@ cp -r ../../css ../../img ../../index.html ../../js ../../lib mviewerstudio_back
 cp ../../mviewerstudio.i18n.json mviewerstudio_backend/static/mviewerstudio.i18n.json
 ```
 
-Et également fournir une configuration JSON. Une configuration d'exemple est disponible
-à la racine du dépot:
+Et également fournir une configuration JSON. Une configuration d'exemple est disponible à la racine du dépot:
 
 ```bash
 cp ../../config-python-sample.json mviewerstudio_backend/static/apps/config.json
 
 ```
 
-Attention, il semble que le paramètre `export_conf_folder` ne soit pas pris en compte. Les xml des applications sont donc stockés dans le répertoire (mviewerstudio/srv/python/store/).
+Les xml des applications sont donc stockés dans le répertoire (mviewerstudio/srv/python/store/).
 
-Dans mon cas, j'ai dû exécuter la commande suivante pour faire le lien entre le store xml et mviewer
+Il faut donc créer un lien symbolique entre le store xml mviewer studio et mviewer, poru que mviewer sache où retrouver les cartes réalisées avec mviewer studio.
 
-Création du lien dans le dépôt mviewer (répertoire /apps) :
+Pour créer le lien dans le dépôt mviewer (répertoire /apps) :
+
 ```bash
-ln -s /<full_path>/mviewerstudio/srv/python/store/ /<full_path>/mviewer/apps/store
-
+ln -s /<full_path>/mviewerstudio/srv/python/mviewerstudio_backend/store /<full_path>/mviewer/apps/store
 ```
 
+Modifier ensuite la configuration /srv/python/mviewerstudio_backend/apps/config.json pour indiquer l'URL du mviewer.
+
+Pour un mviewer en local qui fonctionne ssur un serveur web disponible sur le port `5051` on aura cette configuration :
+
+```bash
+"mviewer_instance": "http://localhost:5051/",`
+```
 
 ```bash
 # mettez vous dans un .venv, ex: python -m venv .venv && source .venv/bin/activate, ou via pew ou pyenv, par exemple:
@@ -65,6 +71,26 @@ pip install -e .
 cd  mviewerstudio_backend
 flask run
 ```
+### Gestion des Paramètres
+
+Les paramètres à utiliser par le front sont disponibles dans le fichier :
+
+`/srv/python/mviewerstudio_backend/static/apps/config.json`
+
+Les paramètres du backend sont dans le fichier :
+
+`/srv/python/mviewerstudio_backend/settings.py`
+
+Le chargement de la configuration backend est géré par le fichier `/srv/python/mviewerstudio_backend/app_factry.py` :
+
+https://github.com/jdev-org/mviewerstudio/blob/af30b1ca9706266bdfe9cde4b255fd4b3faa7bb5/srv/python/mviewerstudio_backend/app_factory.py#L21-L23
+
+
+### Proxy
+
+Pour déveloper avec mviewerstudio et pouvoir utiliser les plateformes extérieures sans problèmes CORS, il est nécessaire de passer par un proxy disponible dans le backend python.
+
+Ouvrez donc le fichier `/srv/python/mviewerstudio_backend/settings.py` et compléter la liste du paramètre PROXY_WHITE_LIST avec les domaines que vous avez besoin d'utiliser.
 
 ### tests
 
