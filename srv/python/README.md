@@ -15,7 +15,9 @@ Vous pouvez installer mviewerstudio selon 3 méthodes :
 
 - Récupérer le fichier /srv/python/install.sh
 
-curl -O https://github.com/jdev-org/mviewerstudio/blob/develop/install_backend_python.sh
+```bash
+curl -O https://raw.githubusercontent.com/mviewer/mviewerstudio/master/srv/python/install_backend_python.sh
+```
 
 - Exécuter la commande en remplacant `/<full>/<path>` par le chemin absolu (**complet**) dans lequel sera installé mviewerstudio et `<branch>` par la branche à utiliser (`master` par défaut - paramètre non obligatoire):
 

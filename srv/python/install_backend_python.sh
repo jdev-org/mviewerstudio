@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# Install required packages
+
 apt install libxslt1-dev libxml2-dev
 pip install virtualenv
 
@@ -12,15 +14,17 @@ BRANCH="$2"
 
 MVIEWERSTUDIO_DIR="mviewerstudio"
 
-
+# custom install path
 if [ "${WORKING_PATH}" ]; then
     cd "${WORKING_PATH}"
-    MVIEWERSTUDIO_DIR="$1/mviewerstudio"
+    MVIEWERSTUDIO_DIR="${WORKING_PATH}/mviewerstudio"
+else
+    MVIEWERSTUDIO_DIR="$(pwd)/mviewerstudio"
 fi
-
 
 STATIC_DIR="${MVIEWERSTUDIO_DIR}/srv/python/mviewerstudio_backend/static"
 
+# Clone repo and change branch if needed
 
 if [ ! -d "${MVIEWERSTUDIO_DIR}" ]; then
     git clone https://github.com/jdev-org/mviewerstudio.git
@@ -29,6 +33,8 @@ if [ ! -d "${MVIEWERSTUDIO_DIR}" ]; then
         git checkout "${BRANCH}"
     fi
 fi
+
+# Copy front resources
 
 mkdir -p "${MVIEWERSTUDIO_DIR}/srv/python/mviewerstudio_backend/static/apps"
 cp -r "${MVIEWERSTUDIO_DIR}/css" "${STATIC_DIR}"
@@ -42,10 +48,11 @@ cp "${MVIEWERSTUDIO_DIR}/config-python-sample.json" "${STATIC_DIR}/apps/config.j
 
 cd "${MVIEWERSTUDIO_DIR}/srv/python"
 
+# install python venv and requirements
+
 python3 -m venv .venv
-source .venv/bin/activate
+. "${MVIEWERSTUDIO_DIR}/srv/python/.venv/bin/activate"
 pip install -r requirements.txt -r dev-requirements.txt
 pip install -e .
 
-echo "mviewerstudio | Install success !"
 exit 0

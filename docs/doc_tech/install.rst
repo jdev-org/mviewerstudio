@@ -50,14 +50,52 @@ Backend Python
 Prérequis
 *********
 
+Vous aurez besoin :
+
+-  d'installer les dépendances (Linux/Debian):
+
 .. code-block:: sh
 
-    sudo apt install libxslt1-dev libxml2-dev
+    sudo apt install libxslt1-dev libxml2-dev python3 python3-pip
+    pip install virtualenv
 
-Ainsi qu'une instance mviewer fonctionnelle (/mviewer)
+- d'une instance mviewer fonctionnelle (/mviewer)
 
-Install
-*********
+Installation via le script
+**************************
+
+1. Récupérer le script d'installation :
+
+.. code-block:: sh
+
+    sudo apt install curl
+    curl -O https://raw.githubusercontent.com/mviewer/mviewerstudio/master/srv/python/install_backend_python.sh
+
+Le script utilise 2 paramètres optionnels :
+
+- ``<branch>`` : Le chemin dans lequel installer mviewerstudio (par défaut le répertoire d'exécution du script)
+- ``<path>`` : La branche à installer (par défaut master)
+
+Exemple avec ces paramètres :
+
+.. code-block:: sh
+
+    sh install_backend_python.sh /home/user/git develop
+
+2. Ajouter un lien symbolique pour dans le répertoire /apps de votre mviewer :
+
+.. code-block:: sh
+
+    ln -s /<full_path>/mviewerstudio/srv/python/mviewerstudio_backend/store /<full_path>/mviewer/apps/store
+
+3. Modifier le paramètre ``mviewer_instance`` dans `/srv/python/mviewerstudio_backend/apps/config.json`
+
+
+Installation manuelle
+*********************
+
+Cette installation vous permet d'exécuter les commandes du script d'installation les unes après les autres.
+
 .. code-block:: sh
 
     mkdir -p mviewerstudio_backend/static/apps
@@ -85,8 +123,6 @@ Création du lien dans le dépôt mviewer (répertoire /apps) :
     ln -s /<full_path>/mviewerstudio/srv/python/store/ /<full_path>/mviewer/apps/store
 
 
-
-
 .. code-block:: sh
 
     cd srv/python
@@ -101,4 +137,32 @@ Création du lien dans le dépôt mviewer (répertoire /apps) :
 Docker
 ~~~~~~~
 
-à compléter...
+Vous pouvez utiliser la composition docker présente à la racine du dépot. Le Dockerfile permet de construire l'image pour un usage de production.
+
+
+Développer avec le backend mviewerstudio
+****************************************
+
+Configuration
+~~~~~~~~~~~~~~
+
+La configuration front est localisée dans les fichiers :
+
+- ``/srv/python/mviewerstudio_backend/static/apps/config.json``
+
+La configuration back est localisée dans les fichiers :
+
+- ``/srv/python/mviewerstudio_backend/settings.py``
+
+
+Proxy
+~~~~~
+
+Pour utiliser les services types OGC (catalogue ou serveurs cartographiques), vous aurez besoin d'utiliser le proxy.
+
+Le Proxy utilise un paramètre ``PROXY_WHITE_LIST`` qui doit être complété par tous les domaines (FQDN) des services que vous utiliserez.
+
+Ce paramètre est accessible dans : 
+
+- /srv/python/mviewerstudio_backend/settings.py
+
