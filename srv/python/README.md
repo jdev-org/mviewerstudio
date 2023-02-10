@@ -17,13 +17,27 @@ Vous pouvez installer mviewerstudio selon 3 méthodes :
 
 curl -O https://github.com/jdev-org/mviewerstudio/blob/develop/install_backend_python.sh
 
-- Exécuter la commande en remplacant `/<full>/<path>` par l'emplacement de mviewerstudio :
+- Exécuter la commande en remplacant `/<full>/<path>` par le chemin absolu (**complet**) dans lequel sera installé mviewerstudio et `<branch>` par la branche à utiliser (`master` par défaut - paramètre non obligatoire):
+
 ```bash
-sh install_backend_python.sh /<full>/<path>
+sh install_backend_python.sh /<full>/<path> <branch>
 ```
 
+Exemple :
+```bash
+sh install_backend_python.sh /home/user/git develop
+```
+
+Exemple sans préciser le chemin mais en utilisant la branche `develop`: 
+```bash
+sh install_backend_python.sh "" develop
+```
+
+ 
+
 Le script va alors :
-- cloner le dépôt dans le répertoire indiquer (`/<full>/<path>`)
+- cloner le dépôt dans le répertoire indiqué (`/<full>/<path>`)
+- Changer de branche (si indiqué dans la commande)
 - installer les paquets (Debian)
 - Créer les répertoires du backend dans `/srv/python/mviewerstudio_backend`
 - créer l'environnement virtuel (venv) Python
