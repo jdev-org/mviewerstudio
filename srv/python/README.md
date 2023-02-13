@@ -134,7 +134,7 @@ pip install -e .
 Démarrez ensuite le serveur Flask pour tester mviewerstudio (voir section plus bas **Démarrer le serveur Flask**)
 
 
-### Démarrer le serveur Flask
+### Démarrer le serveur de développement Flask
 
 Démarrez le serveur Flask pour accéder en local (mode développement) à mviewerstudio via l'URL `http://localhost:5000` :
 
