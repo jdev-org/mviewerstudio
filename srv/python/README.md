@@ -9,7 +9,7 @@ données, les données sont stockées dans des fichiers json.
 Vous pouvez installer mviewerstudio selon 3 méthodes :
 - Via un script sh
 - Via Docker
-- Manuellement Pas à pas en suivant la séction `Développement` (pour l'installation) et `Production` pour utiliser `gunicorn` en production
+- Manuellement Pas à pas en suivant la section `Développement` (pour l'installation) et `Production` pour utiliser `gunicorn` en production
 
 ### Via le Script SH
 
@@ -66,11 +66,12 @@ ln -s /<full_path>/mviewerstudio/srv/python/mviewerstudio_backend/store /<full_p
 
 ### Via Docker
 
-Vous pouvez utiliser la composition docker présente à la racine du dépot. Le
-`Dockerfile` permet de construire l'image pour un usage de production.
+Vous pouvez utiliser la composition docker présente à la racine du dépot. Le `Dockerfile` permet de construire l'image pour un usage de production.
 
 
 ## Développement
+
+> Si vous avez installer mviewerstudio avec le script SH, vous pouvez directement aller à la section **Démarrer le serveur Flask** plus bas.
 
 Vous devrez d'abord copier les ressources statiques de la partie cliente de `mviewerstudio`:
 
@@ -119,7 +120,7 @@ Pour un mviewer en local qui fonctionne sur un serveur web disponible sur le por
 "mviewer_instance": "http://localhost:5051/",`
 ```
 
-Installez ensuite les dépendaces Pyhton :
+Installez ensuite les dépendances Python :
 
 ```bash
 # mettez vous dans un .venv, ex: python -m venv .venv && source .venv/bin/activate, ou via pew ou pyenv, par exemple:
