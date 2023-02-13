@@ -9,7 +9,7 @@ données, les données sont stockées dans des fichiers json.
 Vous pouvez installer mviewerstudio selon 3 méthodes :
 - Via un script sh
 - Via Docker
-- Manuellement Pas à pas en suivant la séction `Développement`
+- Manuellement Pas à pas en suivant la séction `Développement` (pour l'installation) et `Production` pour utiliser `gunicorn` en production
 
 ### Via le Script SH
 
@@ -53,13 +53,16 @@ ln -s /<full_path>/mviewerstudio/srv/python/mviewerstudio_backend/store /<full_p
 
 - modifier le paramètre `mviewer_instance` dans `/srv/python/mviewerstudio_backend/static/apps/config.json` pour y ajouter l'URL de votre mviewer (avec un `/` à la fin).
 
-Exemple avec un mviewer local sur le port `5051` :
+> Exemple avec un mviewer disponible sur l'URL `/mviewer` :
 
 ```bash
-"mviewer_instance": "http://localhost:5051/"
+"mviewer_instance": "/mviewer"
 ```
 
 - Modifier la liste [PROXY_WHITE_LIST](https://github.com/jdev-org/mviewerstudio/tree/develop/srv/python#proxy) (pour les développements uniquement) afin d'y ajouter les FQDN des services OGC à utiliser.
+
+
+> Pour développer, vous n'aurez qu'à adapter la liste PROXY_WHITE_LIST, adapter le paramètre `mviewer_instance` et démarrez ensuite le serveur Flask de mviewerstudio (voir section plus bas **Démarrer le serveur Flask**).
 
 ### Via Docker
 
@@ -116,6 +119,8 @@ Pour un mviewer en local qui fonctionne sur un serveur web disponible sur le por
 "mviewer_instance": "http://localhost:5051/",`
 ```
 
+Installez ensuite les dépendaces Pyhton :
+
 ```bash
 # mettez vous dans un .venv, ex: python -m venv .venv && source .venv/bin/activate, ou via pew ou pyenv, par exemple:
 cd srv/python
@@ -123,9 +128,22 @@ python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt -r dev-requirements.txt
 pip install -e .
+```
+
+Démarrez ensuite le serveur Flask pour tester mviewerstudio (voir section plus bas **Démarrer le serveur Flask**)
+
+
+### Démarrer le serveur Flask
+
+Démarrez le serveur Flask pour accéder en local (mode développement) à mviewerstudio via l'URL `http://localhost:5000` :
+
+```bash
+
+cd srv/python
 cd  mviewerstudio_backend
 flask run
 ```
+
 ### Gestion des Paramètres
 
 Les paramètres à utiliser par le front sont disponibles dans le fichier :
