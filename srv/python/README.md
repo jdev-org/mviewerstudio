@@ -108,9 +108,9 @@ Pour créer le lien dans le dépôt mviewer (répertoire /apps) :
 ln -s /<full_path>/mviewerstudio/srv/python/mviewerstudio_backend/store /<full_path>/mviewer/apps/store
 ```
 
-Modifier ensuite la configuration /srv/python/mviewerstudio_backend/apps/config.json pour indiquer l'URL du mviewer.
+Modifier ensuite la configuration `/srv/python/mviewerstudio_backend/static/apps/config.json` pour indiquer l'URL du mviewer.
 
-Pour un mviewer en local qui fonctionne ssur un serveur web disponible sur le port `5051` on aura cette configuration :
+Pour un mviewer en local qui fonctionne sur un serveur web disponible sur le port `5051` on aura cette configuration :
 
 ```bash
 "mviewer_instance": "http://localhost:5051/",`
