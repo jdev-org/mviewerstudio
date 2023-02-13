@@ -13,7 +13,7 @@ Vous pouvez installer mviewerstudio selon 3 méthodes :
 
 ### Via le Script SH
 
-- Récupérer le fichier /srv/python/install.sh
+- Récupérer le fichier `/srv/python/install.sh`:
 
 ```bash
 curl -O https://raw.githubusercontent.com/mviewer/mviewerstudio/master/srv/python/install_backend_python.sh
@@ -35,8 +35,6 @@ Exemple sans préciser le chemin mais en utilisant la branche `develop`:
 sh install_backend_python.sh "" develop
 ```
 
- 
-
 Le script va alors :
 - cloner le dépôt dans le répertoire indiqué (`/<full>/<path>`)
 - Changer de branche (si indiqué dans la commande)
@@ -53,9 +51,15 @@ Il vous restera à
 ln -s /<full_path>/mviewerstudio/srv/python/mviewerstudio_backend/store /<full_path>/mviewer/apps/store
 ```
 
-- modifier le paramètre `mviewer_instance` dans `/srv/python/mviewerstudio_backend/apps/config.json`
+- modifier le paramètre `mviewer_instance` dans `/srv/python/mviewerstudio_backend/static/apps/config.json` pour y ajouter l'URL de votre mviewer (avec un `/` à la fin).
 
-- Modifier la liste [PROXY_WHITE_LIST](https://github.com/jdev-org/mviewerstudio/tree/develop/srv/python#proxy) pour les développements
+Exemple avec un mviewer local sur le port `5051` :
+
+```bash
+"mviewer_instance": "http://localhost:5051/"
+```
+
+- Modifier la liste [PROXY_WHITE_LIST](https://github.com/jdev-org/mviewerstudio/tree/develop/srv/python#proxy) (pour les développements uniquement) afin d'y ajouter les FQDN des services OGC à utiliser.
 
 ### Via Docker
 
