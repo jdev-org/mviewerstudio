@@ -140,7 +140,8 @@ Démarrez le serveur Flask pour accéder en local (mode développement) à mview
 
 ```bash
 
-cd srv/python
+cd mviewerstudio/srv/python
+source .venv/bin/activate
 cd  mviewerstudio_backend
 flask run
 ```
