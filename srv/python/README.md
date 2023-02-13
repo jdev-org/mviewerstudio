@@ -71,7 +71,7 @@ Vous pouvez utiliser la composition docker présente à la racine du dépot. Le 
 
 ## Développement
 
-> Si vous avez installer mviewerstudio avec le script SH, vous pouvez directement aller à la section **Démarrer le serveur Flask** plus bas.
+> Si vous avez installé mviewerstudio avec le script SH, vous pouvez directement aller à la section **Démarrer le serveur Flask** plus bas.
 
 Vous devrez d'abord copier les ressources statiques de la partie cliente de `mviewerstudio`:
 
