@@ -207,7 +207,7 @@
                         </ul>
                         <div class="custom-control custom-switch mt-2" id="btnSwitchAdvanced">
                             <input type="checkbox" class="custom-control-input" id="SwitchAdvanced">
-                            <label class="custom-control-label" for="SwitchAdvanced"><span i18n="studio.toolsbar.advanced">Mode avancé</span></label>
+                            <label class="custom-control-label" for="SwitchAdvanced"><span i18n="studio.toolsbar.advanced" checked="true">Mode avancé</span></label>
                         </div>
                     </div>                    
                     <!--/.TOOLSBAR -->
@@ -216,41 +216,72 @@
                         <!-- Application -->
                         <div class="tab-pane container active" id="app">
                             <form>
-                            <h1><i class="ri-equalizer-line"></i> <span i18n="tabs.app.title">Application</span></h1>                            
-                            <!--Fonctionnalités et options de la carte-->                          
+                            <h1><i class="ri-equalizer-line"></i> <span i18n="tabs.app.title">Application</span></h1>         
                             <div class="row mt-4">
-                                <div class="col-md-6">
+                                <div class="col-md-12">
                                     <div class="form-group">
                                         <label for="opt-title" i18n="head.title" class="form-label">Titre de l'application</label>
                                         <input class="form-control" id="opt-title" type="text" name="textinput" placeholder="Mon application">
                                     </div>
+                                </div>                                
+                            </div>  
+                            <div class="row">
+                                <div class="col-md-6 advanced" style="display: none;">
                                     <div class="form-group">
-                                            <label for="opt-logo" class="form-label"><span i18n="tabs.app.url">Lien vers le logo </span><span class="tooltip-info" data-bs-toggle="tooltip" data-bs-placement="right" data-bs-title="Logo affiché en haut à gauche du mviewer"><i class="ri-information-line"></i></span></label>
-                                            <input class="form-control checkedurl" id="opt-logo" placeholder="https://monlogo.png">
+                                        <label for="opt-favicon" class="form-label"><span i18n="tabs.app.favicon">Lien vers le favicon </span><span class="tooltip-info" data-bs-toggle="tooltip" data-bs-placement="right" data-bs-title="Logo affiché dans l'onglet du navigateur"><i class="ri-information-line"></i></span></label>
+                                        <input class="form-control checkedurl" id="opt-favicon" placeholder="https://monfavicon.png">
                                     </div>
+                                </div>         
+                                <div class="col-md-6 advanced" style="display: none;">
                                     <div class="form-group">
-                                            <label class="form-label" for="frm-style" ><span i18n="tabs.app.style">Thème de l'application</span><span class="tooltip-info" data-bs-toggle="tooltip" data-bs-placement="right" data-bs-title="Couleur de l'interface du mviewer"><i class="ri-information-line"></i></span></label>
-                                            <select class="form-control default" id="opt-style" name="style" onchange="updateTheme(this);">
-                                                <option class="alizarin" value="css/themes/alizarin.css">alizarin</option>
-                                                <option class="blue" value="css/themes/blue.css">blue</option>
-                                                <option class="default" selected value="css/themes/default.css">default</option>
-                                                <option class="nephritis" value="css/themes/nephritis.css">nephritis</option>
-                                                <option class="ripe_lemon" value="css/themes/ripe_lemon.css">ripe_lemon</option>
-                                                <option class="amethyst" value="css/themes/amethyst.css">amethyst</option>
-                                                <option class="carrot" value="css/themes/carrot.css">carrot</option>
-                                                <option class="green" value="css/themes/green.css">green</option>
-                                                <option class="peter_river" value="css/themes/peter_river.css">peter_river</option>
-                                                <option class="black" value="css/themes/black.css">black</option>
-                                                <option class="chambray" value="css/themes/chambray.css">chambray</option>
-                                                <option class="green_sea" value="css/themes/green_sea.css">green_sea</option>
-                                                <option class="pink" value="css/themes/pink.css">pink</option>
-                                                <option class="wet_asphalt" value="css/themes/wet_asphalt.css">wet_asphalt</option>
-                                            </select>
+                                        <label for="opt-home" class="form-label"><span i18n="tabs.app.home">Lien vers site parent </span><span class="tooltip-info" data-bs-toggle="tooltip" data-bs-placement="right" data-bs-title="Redirection vers la page indiquée lors du clique sur le logo"><i class="ri-information-line"></i></span></label>
+                                        <input class="form-control checkedurl" id="opt-home" placeholder="https://mapage.fr">
                                     </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="opt-logo" class="form-label"><span i18n="tabs.app.url">Lien vers le logo </span><span class="tooltip-info" data-bs-toggle="tooltip" data-bs-placement="right" data-bs-title="Logo affiché en haut à gauche du mviewer"><i class="ri-information-line"></i></span></label>
+                                        <input class="form-control checkedurl" id="opt-logo" placeholder="https://monlogo.png">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label class="form-label" for="frm-style" ><span i18n="tabs.app.style">Thème de l'application</span><span class="tooltip-info" data-bs-toggle="tooltip" data-bs-placement="right" data-bs-title="Couleur de l'interface du mviewer"><i class="ri-information-line"></i></span></label>
+                                        <select class="form-control default" id="opt-style" name="style" onchange="updateTheme(this);">
+                                            <option class="alizarin" value="css/themes/alizarin.css">alizarin</option>
+                                            <option class="blue" value="css/themes/blue.css">blue</option>
+                                            <option class="default" selected value="css/themes/default.css">default</option>
+                                            <option class="nephritis" value="css/themes/nephritis.css">nephritis</option>
+                                            <option class="ripe_lemon" value="css/themes/ripe_lemon.css">ripe_lemon</option>
+                                            <option class="amethyst" value="css/themes/amethyst.css">amethyst</option>
+                                            <option class="carrot" value="css/themes/carrot.css">carrot</option>
+                                            <option class="green" value="css/themes/green.css">green</option>
+                                            <option class="peter_river" value="css/themes/peter_river.css">peter_river</option>
+                                            <option class="black" value="css/themes/black.css">black</option>
+                                            <option class="chambray" value="css/themes/chambray.css">chambray</option>
+                                            <option class="green_sea" value="css/themes/green_sea.css">green_sea</option>
+                                            <option class="pink" value="css/themes/pink.css">pink</option>
+                                            <option class="wet_asphalt" value="css/themes/wet_asphalt.css">wet_asphalt</option>
+                                        </select>
+                                    </div>
+                                </div>                                
+                            </div>                  
+                            <!--Fonctionnalités et options de la carte-->                          
+                            <div class="row mt-4">
+                                <div class="col-md-6">    
                                     <ul class="list-group">
                                         <li class="list-group-item">
                                             <span class="title-accordion" i18n="tabs.app.options_title">Fonctionnalités</span><br>
                                             <span class="subtitle-accordion" i18n="tabs.app.options_text">Activer les outils que vous souhaitez afficher au sein de votre application</span>
+                                        </li>
+                                        <li class="list-group-item">
+                                            <div class="list-flex">
+                                                <span i18n="tabs.app.opt_zoom">Outils de zoom</span>
+                                                <div class="custom-control custom-switch">
+                                                    <input type="checkbox" class="custom-control-input" checked="true" name="checkboxes" id="opt-zoom">
+                                                    <label class="custom-control-label" for="opt-zoom"></label>
+                                                </div>
+                                            </div>                                            
                                         </li>
                                         <li class="list-group-item">
                                             <div class="list-flex">
@@ -270,6 +301,15 @@
                                                 </div>
                                             </div>                                            
                                         </li>
+                                        <li class="list-group-item">
+                                            <div class="list-flex">
+                                                <span i18n="tabs.app.opt_geoloc">Se géolocaliser</span>                                          
+                                                <div class="custom-control custom-switch">
+                                                    <input type="checkbox" class="custom-control-input" name="checkboxes" id="opt-geoloc">
+                                                    <label class="custom-control-label" for="opt-geoloc"></label>
+                                                </div>
+                                            </div>
+                                        </li>
                                         <li class="list-group-item advanced" style="display: none;">
                                             <div class="list-flex">
                                                 <span i18n="tabs.app.opt_coords">Affichage des coordonnées au clic</span>
@@ -281,10 +321,29 @@
                                         </li>
                                         <li class="list-group-item advanced" style="display: none;">
                                             <div class="list-flex">
+                                                <span i18n="tabs.app.opt_mouseposition">Afficher les coordonnées correspondant à la position de la souris</span>
+                                                <div class="custom-control custom-switch">
+                                                    <input type="checkbox" class="custom-control-input" name="checkboxes" id="opt-mouseposition">
+                                                    <label class="custom-control-label" for="opt-mouseposition"></label>
+                                                </div>
+                                            </div>                                            
+                                        </li>
+                                        <li class="list-group-item advanced" style="display: none;">
+                                            <div class="list-flex">
                                                 <span i18n="tabs.app.opt_data">Afficher/masquer toutes les données d'une thématique en un clic</span>                                          
                                                 <div class="custom-control custom-switch">
                                                     <input type="checkbox" class="custom-control-input" name="checkboxes" id="opt-togglealllayersfromtheme">
                                                     <label class="custom-control-label" for="opt-togglealllayersfromtheme"></label>
+                                                </div>
+                                            </div>                                            
+                                        </li>
+
+                                        <li class="list-group-item advanced" style="display: none;">
+                                            <div class="list-flex">
+                                                <span i18n="tabs.app.opt_studio">Ouvrir la carte dans le studio</span>                                          
+                                                <div class="custom-control custom-switch">
+                                                    <input type="checkbox" class="custom-control-input" name="checkboxes" id="opt-studio">
+                                                    <label class="custom-control-label" for="opt-studio"></label>
                                                 </div>
                                             </div>                                            
                                         </li>
@@ -299,6 +358,15 @@
                                         <li class="list-group-item p-0">
                                              <!-- Map -->
                                             <div id="map" class="map"></div>
+                                        </li>
+                                        <li class="list-group-item">
+                                            <div class="list-flex">
+                                                <span><span i18n="tabs.app.opt_initialextent">Revenir à l'étendue initiale</span><span class="tooltip-info" data-bs-toggle="tooltip" data-bs-placement="right" data-bs-title="Option permettant d'activer le bouton pour revenir à l'étendue intiale de l'application (initialextenttool)"><i class="ri-information-line"></i></span></span>                                           
+                                                <div class="custom-control custom-switch">
+                                                    <input type="checkbox" class="custom-control-input" name="checkboxes" id="opt-initialextent">
+                                                    <label class="custom-control-label" for="opt-initialextent"></label>
+                                                </div>
+                                            </div>                                            
                                         </li>
                                         <li class="list-group-item advanced" style="display: none;">
                                             <div class="list-flex">
@@ -344,11 +412,106 @@
                                                     </div>
                                                 </div>
                                             </li>
-                                          </ul>                                        
+                                            <li class="list-group-item advanced" style="display: none;">
+                                                <div class="list-flex">
+                                                    <p class="strong" i18n="tabs.app.bgcustom.title">Ajouter un fond de plan personnalisé</p>
+                                                    <div class="custom-control custom-switch">
+                                                        <input onchange="mv.changeBaseMapType(this)"type="checkbox" class="custom-control-input" id="SwitchCustomBackground">
+                                                        <label class="custom-control-label" for="SwitchCustomBackground"></label>
+                                                    </div>
+                                                </div>
+                                                <div id="appCustomBackgroundBlock" class="d-none">                                                 
+                                                    <div class="row mb-2" >                                                    
+                                                        <div class="col-md-12">
+                                                            <label for="frm-custombg-type" i18n="tabs.app.bgcustom.type" class="form-label">Type</label>
+                                                            <select class="form-control b" id="frmBlCustomType" name="Type of layer" onchange="mv.selectBaseMapTypeValue(this)">
+                                                                <option value="" selected i18n="tabs.app.bgcustom.type_empty">Choisir un type...</option>
+                                                                <!-- <option value="osm" i18n="tabs.app.bgcustom.type_OSM">OSM</option> -->
+                                                                <option value="wmts" i18n="tabs.app.bgcustom.type_WMTS">WMTS</option>
+                                                                <option value="wms" i18n="tabs.app.bgcustom.type_WMS">WMS</option>
+                                                                <option value="vector-tms" i18n="tabs.app.bgcustom.type_TMS">Vector-TMS</option>
+                                                            </select>
+                                                        </div>
+                                                    </div>
+                                                    <div id="customBgCommons" class="row mt-2 custom-bg-commons" >
+                                                        <div class="col-md-6">
+                                                            <div class="form-group">
+                                                                <label for="formCustomBaseId" class="form-label"><span i18n="tabs.app.bgcustom.base.id">Identifiant</span><span class="tooltip-info" data-bs-toggle="tooltip" data-bs-placement="right" data-bs-title="Identifiant unique et interne au fond de plan"><i class="ri-information-line"></i></span></label>
+                                                                <input class="form-control" id="formCustomBaseId" placeholder="positron" i18n="tabs.app.bgcustom.base.id.ph" required>
+                                                            </div>
+                                                        </div>
+                                                        <div class="col-md-6">
+                                                            <div class="form-group">
+                                                                <label for="formCustomBaseLabel" class="form-label"><span i18n="tabs.app.bgcustom.base.label">Libellé</span><span class="tooltip-info" data-bs-toggle="tooltip" data-bs-placement="right" data-bs-title="Nom du fond de plan"><i class="ri-information-line"></i></span></label>
+                                                                <input class="form-control" id="formCustomBaseLabel" placeholder="Positron" i18n="tabs.app.bgcustom.base.label.ph" required>
+                                                            </div>
+                                                        </div>
+                                                        <div class="col-md-6">
+                                                            <div class="form-group">
+                                                                <label for="formCustomBaseTitle" class="form-label"><span i18n="tabs.app.bgcustom.base.title">Sous-titre</span><span class="tooltip-info" data-bs-toggle="tooltip" data-bs-placement="right" data-bs-title="Information complémentaire comme le producteur"><i class="ri-information-line"></i></span></label>
+                                                                <input class="form-control" id="formCustomBaseTitle" placeholder="positron" i18n="tabs.app.bgcustom.base.title.ph">
+                                                            </div>
+                                                        </div>
+                                                        <div class="col-md-6">
+                                                            <div class="form-group">
+                                                                <label for="formCustomBaseThumb" class="form-label"><span i18n="tabs.app.bgcustom.base.thumb">Lien vers la vignette</span><span class="tooltip-info" data-bs-toggle="tooltip" data-bs-placement="right" data-bs-title="Image permettant de visualiser l'aperçu du fond de plan"><i class="ri-information-line"></i></span></label>
+                                                                <input class="form-control checkedurl" id="formCustomBaseThumb" i18n="tabs.app.bgcustom.base.thumb.ph" placeholder="https://kartenn.region-bretagne.fr/kartoviz/img/basemap/positron.png" required>
+                                                            </div>
+                                                        </div>
+                                                        <div class="col-md-6">
+                                                            <div class="form-group">
+                                                                <label for="formCustomBaseAttribution" class="form-label"><span i18n="tabs.app.bgcustom.base.attribution">Attribution</span><span class="tooltip-info" data-bs-toggle="tooltip" data-bs-placement="right" data-bs-title="Sources - Ce paramètre est affiché dans les crédits de la carte"><i class="ri-information-line"></i></span></label>
+                                                                <input class="form-control" id="formCustomBaseAttribution" i18n="tabs.app.bgcustom.base.attribution.ph" placeholder="Map tiles by carto.com - Licence cc 3.0">
+                                                            </div>
+                                                        </div>   
+                                                        <div class="col-md-6">
+                                                            <div class="form-group">
+                                                                <label for="formCustomBaseUrl" class="form-label"><span i18n="tabs.app.bgcustom.base.url">URL</span><span class="tooltip-info" data-bs-toggle="tooltip" data-bs-placement="right" data-bs-title="Lien vers le service web"><i class="ri-information-line"></i></span></label>
+                                                                <input class="form-control checkedurl" id="formCustomBaseUrl" i18n="tabs.app.bgcustom.base.url.ph" placeholder="http://{a-c}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png" required>
+                                                            </div>
+                                                        </div>   
+                                                    </div>
+                                                    <div class="row mt-2" >
+                                                        <div class="col-md-6 vector-tms custom-bg-type">
+                                                            <div class="form-group">
+                                                                <label for="formCustomBaseStyleUrl" class="form-label"><span i18n="tabs.app.bgcustom.base.styleUrl">Lien vers le fichier de style</span><span class="tooltip-info" data-bs-toggle="tooltip" data-bs-placement="right" data-bs-title="Fichier JSON permettant de définir le style du fond de plan"><i class="ri-information-line"></i></span></label>
+                                                                <input class="form-control checkedurl" id="formCustomBaseStyleUrl" i18n="tabs.app.bgcustom.base.styleUrl.ph" placeholder="https://wxs.ign.fr/static/vectorTiles/styles/ADMIN_EXPRESS/adminexpress.json" required>
+                                                            </div>
+                                                        </div>
+                                                        <div class="col-md-6 wmts wms custom-bg-type">
+                                                            <div class="form-group">
+                                                                <label for="formCustomBaseNameLayers" class="form-label"><span i18n="tabs.app.bgcustom.base.nameLayers">Couches</span><span class="tooltip-info" data-bs-toggle="tooltip" data-bs-placement="right" data-bs-title="Identifiant technique de la couche à utiliser"><i class="ri-information-line"></i></span></label>
+                                                                <input class="form-control" id="formCustomBaseNameLayers" i18n="tabs.app.bgcustom.base.nameLayers.ph" placeholder="satellite" required>
+                                                            </div>
+                                                        </div>
+                                                        <div class="col-md-6 wmts wms custom-bg-type">
+                                                            <!-- <div class="form-group">
+                                                                <label for="formCustomBaseFormat" class="form-label"><span i18n="tabs.app.bgcustom.base.format">Format</span></label>
+                                                                <input class="form-control" id="formCustomBaseFormat" i18n="tabs.app.bgcustom.base.format.ph" placeholder="image/png" required>
+
+                                                            </div> -->
+                                                            <label for="formCustomBaseFormat"  class="form-label"><span i18n="tabs.app.bgcustom.base.format">Format</span><span class="tooltip-info" data-bs-toggle="tooltip" data-bs-placement="right" data-bs-title="Format de l'image retournée par le serveur"><i class="ri-information-line"></i></span></label>
+                                                            <select class="form-control" id="formCustomBaseFormat" name="formCustomBaseFormat">
+                                                                <option value="image/png">image/png</option>
+                                                                <option value="image/jpeg">image/jpeg</option>
+                                                            </select>
+                                                        </div>
+                                                        <div class="col-md-6 wmts vector-tms custom-bg-type">
+                                                            <div class="form-group">
+                                                                <label for="formCustomBaseStyle" class="form-label"><span i18n="tabs.app.bgcustom.base.style">Style</span><span class="tooltip-info" data-bs-toggle="tooltip" data-bs-placement="right" data-bs-title="Nom du style à associer à la couche | TMS : voir la documentation mviewer"><i class="ri-information-line"></i></span></label>
+                                                                <input class="form-control" id="formCustomBaseStyle" placeholder="bdtopo" required>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div id="BasemapAlertPlaceholder"></div>
+                                                    <button type="button" id="addCustomBl" onclick="mv.validateFormBaseLayer(this)" class="btn btn-info d-none" ><i class="bi bi-plus-lg"></i><span i18n="add"> Ajouter</span></button>
+                                                </div>
+                                            </li>
+                                          </ul>
                                     </div>
                                   </div>
-                                </div>                                
-                            </div>  
+                                </div>
+                            </div>
                             <!--./Fond de plan-->
 
                             <!--Page d'accueil-->
@@ -364,8 +527,28 @@
                                     </h2>
                                     <div id="collapseHomePage" class="accordion-collapse collapse" aria-labelledby="accordionHomePage">
                                         <div class="accordion-body"> 
+                                            <div class="row">
+                                                <div class="col-md-6">
+                                                    <div class="form-group">
+                                                        <label for="opt-titlehelp" class="form-label"><span i18n="tabs.app.help_title">Titre de la fenêtre d'aide / accueil</span></label>
+                                                        <input class="form-control" id="opt-titlehelp" placeholder="Accueil">
+                                                    </div>
+                                                </div>   
+                                                <div class="col-md-6">
+                                                    <div class="form-group">
+                                                        <label for="opt-iconhelp" class="form-label"><span i18n="tabs.app.help_icon">Icône du bouton</span></label>                                                        
+                                                        <div class="d-flex">
+                                                            <input type="text" class="icon-class-input form-control" placeholder="fas fa-home" id="opt-iconhelp">
+                                                            <span class="selected-icon"></span>
+                                                            <button class="btn btn-outline-info picker-button" type="button" data-bs-target="#iconPicker" data-bs-toggle="modal">
+                                                                <span i18n="select">Sélectionner</span>
+                                                            </button>                                                           
+                                                        </div>
+                                                    </div>
+                                                </div>      
+                                            </div>    
                                             <div class="form-group">
-                                                <label for="opt-help" i18n="tabs.app.help_link" class="form-label">Lien vers la page d'accueil</label>
+                                                <label for="opt-help" i18n="tabs.app.help_link" class="form-label">Lien vers la page d'accueil</label><span class="tooltip-info" data-bs-toggle="tooltip" data-bs-placement="right" data-bs-title="Lien vers une page .HTML définissant la page d'accueil"><i class="ri-information-line"></i></span>
                                                 <input class="form-control checkedurl" id="opt-help" name="textinput" type="text" placeholder="https://mapage.html">
                                             </div>
                                             <div class="custom-control custom-switch">
@@ -632,7 +815,8 @@
                 <!-- /CONTAINER STUDIO -->
             </div>
         </div>
-        <!-- /.MODULES STUDIO-->   
+        <!-- /.MODULES STUDIO--> 
+        <div id="liveAlertPlaceholder"></div>  
     </main>
     
     <!-- MODALS -->
@@ -659,7 +843,7 @@
                                 <label class="settinglabel" i18n="modal.theme.paramspanel.icon">Icône</label>
                                 <span class="selected-icon"></span>
                                 <input type="text" class="icon-class-input form-control advanced"  style="display: none;" id="theme-pick-icon" />
-                                <button type="button" class="btn btn-outline-info picker-button mt-2" data-bs-target="#iconPicker" data-bs-toggle="modal">
+                                <button type="button" class="btn btn-outline-info picker-button mt-2">
                                     <span i18n="modal.theme.paramspanel.icon_pick">Choisir une icône</span>
                                 </button>                               
                             </div>
@@ -867,7 +1051,7 @@
                                                placeholder="nom de la couche" i18n="modal.layer.name.ph">
                                     </div>
                                     <div class="form-group">
-                                        <label for="frm-attribution" i18n="modal.layer.attr">Attributions</label>
+                                        <label for="frm-attribution"><span i18n="modal.layer.attr">Attribution</span><span class="tooltip-info" data-bs-toggle="tooltip" data-bs-placement="right" data-bs-title="Texte permettant de définir la/les source(s) de la donnée"><i class="ri-information-line"></i></label>
                                         <input type="text" class="form-control" id="frm-attribution"
                                                placeholder="Attribution">
                                     </div>
@@ -881,12 +1065,20 @@
                                             <input type="checkbox" class="custom-control-input" id="frm-visible">
                                             <label class="custom-control-label" for="frm-visible" i18n="modal.layer.visibleonstart">Afficher la donnée au démarrage de l'application</label>
                                         </div>
+                                        <div class="custom-control custom-switch">
+                                            <input type="checkbox" class="custom-control-input" id="frm-layer-toplayer">
+                                            <label class="custom-control-label" for="frm-layer-toplayer" i18n="modal.layer.toplayer">Afficher la donnée en première position de la carte</label><span class="tooltip-info" data-bs-toggle="tooltip" data-bs-placement="right" data-bs-title="En activant cette option, la donnée sera toujours en premier plan sur la carte (toplayer)"><i class="ri-information-line"></i>
+                                        </div>
                                     </div>
                                     <div class="mt-4">
+                                        <p><small><span i18n="modal.layer.styles.note">Si plusieurs styles sont sélectionnés, indiquer les libéllés des styles qui apparaîtront dans la liste déroulante.</span></small></p>
                                         <h6 i18n="modal.layer.styles">Style(s) de la donnée disponible(s)</h6>
                                         <div class="row mt-3" id="frm-lis-styles"></div>
-                                        <p><small><span i18n="modal.layer.styles.note">Si plusieurs styles sont sélectionnés, indiquer les libéllés des styles qui apparaîtront dans la liste déroulante.</span></small></p>
                                     </div>                                    
+                                    <div class="form-group d-none" id="formLayerStyleTitle">
+                                        <label for="frm-layer-styletitle" ><span i18n="modal.layer.style.title">Libellé de la liste déroulante des styles</span><span class="tooltip-info" data-bs-toggle="tooltip" data-bs-placement="right" data-bs-title="À renseigner quand plusieurs styles sont sélectionnés | Valeur par défaut : Analyse"><i class="ri-information-line"></i></label>
+                                        <input type="text" class="form-control" id="frm-layer-styletitle" placeholder="Libellé de la liste des styles" i18n="modal.layer.style.placeholder">
+                                    </div>                               
                                 </div>
                             </form>                            
                         </div>
@@ -908,12 +1100,14 @@
                                             </select>
                                         </div>
                                     </div>
-                                    <div class="form-group advanced" style="display: none;">
-                                        <label for="frm-featurecount" i18n="modal.layer.featurecount">Limitation du nombre de réponses</label>
-                                        <input type="number" class="form-control" id="frm-featurecount"
-                                               placeholder="Nombre max d'entités retournées" step="1" min="1"
-                                                i18n="modal.layer.featurecount.ph" max="50" value="5">
-                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-group advanced" style="display: none;">
+                                            <label for="frm-featurecount" i18n="modal.layer.featurecount">Limitation du nombre de réponses</label><span class="tooltip-info" data-bs-toggle="tooltip" data-bs-placement="right" data-bs-title="Lors d'un clique sur la carte, cette option permet d'indiquer le nombre maximum d'entités interrogées"><i class="ri-information-line"></i>
+                                            <input type="number" class="form-control" id="frm-featurecount"
+                                                   placeholder="Nombre max d'entités retournées" step="1" min="1"
+                                                    i18n="modal.layer.featurecount.ph" max="50" value="5">
+                                        </div>
+                                    </div>                                    
                                 </div>
                                 <div class="row">
                                     <div class="col-md-12">
@@ -987,39 +1181,46 @@
                                 <div class="accordion mt-2" id="accordionDisplayLayer">
                                     <div class="accordion-item">
                                     <h2 class="accordion-header" >
-                                        <a class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseDisplayLayer" aria-expanded="true" aria-controls="collapseDisplayLayer">
+                                        <a class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseDisplayLayer" aria-expanded="true" aria-controls="collapseDisplayLayer">
                                         <div>
                                             <span class="title-accordion" i18n="modal.layer.displayoptions.title">Options d'affichage</span>
                                         </div>
                                         </a>
                                     </h2>
-                                    <div id="collapseDisplayLayer" class="accordion-collapse collapse" aria-labelledby="accordionDisplayLayer">
-                                        <div class="accordion-body">                                         
+                                    <div id="collapseDisplayLayer" class="accordion-collapse collapse show" aria-labelledby="accordionDisplayLayer">
+                                        <div class="accordion-body">
                                             <div class="row">
-                                                <div class="col-md-6">
-                                                    <label for="frm-scalemin" i18n="modal.layer.scale.min">Echelle mini</label>
+                                                <div class="col-md-4">
+                                                    <label for="frm-layer-index"><span i18n="modal.layer.index">Index de couche</span><span class="tooltip-info" data-bs-toggle="tooltip" data-bs-placement="right" data-bs-title="Cette option permet de modifier l'ordre d'apparition d'une donnée par rapport au menu des thématiques. Une couche avec le paramètre index=2 s'affichera en 2e position sur la carte et dans la légende. Pour en savoir plus, consulter la documentation."><i class="ri-information-line"></i></label>
+                                                    <input type="number" min="0" class="form-control" id="frm-layer-index" i18n="modal.layer.index"/>
+                                                </div> 
+                                                <div class="col-md-4">
+                                                    <label for="frm-scalemin"><span i18n="modal.layer.scale.min">Echelle mini</span><span class="tooltip-info" data-bs-toggle="tooltip" data-bs-placement="right" data-bs-title="Cette option permet d'activer une échelle minimale de visibilité pour cette donnée."><i class="ri-information-line"></i></label>
                                                     <input type="number" class="form-control" id="frm-scalemin"
                                                         placeholder="Echelle mini" i18n="modal.layer.display.ph.minscale"/>
                                                 </div>
-                                                <div class="col-md-6">
-                                                    <label for="frm-scalemax" i18n="modal.layer.scale.max">Echelle maxi</label>
+                                                <div class="col-md-4">
+                                                    <label for="frm-scalemax"><span i18n="modal.layer.scale.max">Echelle maxi</span><span class="tooltip-info" data-bs-toggle="tooltip" data-bs-placement="right" data-bs-title="Cette option permet d'activer une échelle maximale de visibilité pour cette donnée."><i class="ri-information-line"></i></label>
                                                     <input type="number" class="form-control" id="frm-scalemax"
                                                         placeholder="Echelle maxi" i18n="modal.layer.display.ph.maxscale"/>
                                                 </div>
                                             </div>
                                             <div class="form-group mt-2">
-                                                <label for="frm-legendurl" i18n="modal.layer.legendurl">Légende statique</label>
-                                                <input type="text" class="form-control checkedurl" id="frm-legendurl"
-                                                placeholder="URL vers Image légende" i18n="modal.layer.display.ph.legend_image_url"/>
-                                            </div>
-                                            <div class="form-group">
                                                 <div class="custom-control custom-switch">
                                                     <input type="checkbox" class="custom-control-input" id="frm-tiled">
                                                     <label class="custom-control-label" for="frm-tiled" i18n="modal.layer.tiled">Affichage tuilé</label>
                                                 </div>
+                                                <div class="custom-control custom-switch">
+                                                    <input type="checkbox" class="custom-control-input" id="frm-layer-exclusive">
+                                                    <label class="custom-control-label" for="frm-layer-exclusive" i18n="modal.layer.exclusive">Affichage excluf de la donnée</label><span class="tooltip-info" data-bs-toggle="tooltip" data-bs-placement="right" data-bs-title="En activant cette option, l'affichage de cette donnée masquera automatiquement toutes les autres données de la carte."><i class="ri-information-line"></i>
+                                                </div>
+                                                <div class="custom-control custom-switch">
+                                                    <input type="checkbox" class="custom-control-input" id="frm-layer-showintoc">
+                                                    <label class="custom-control-label" for="frm-layer-showintoc" i18n="modal.layer.showintoc">Affichage de la donnée seulement sur la carte</label><span class="tooltip-info" data-bs-toggle="tooltip" data-bs-placement="right" data-bs-title="Cette option permet d'activer l'affichage de la donnée seulement sur la carte et non dans le menu thématique et la légende. Il n'est donc pas possible pour l'utilisateur de modifier les réglages de la donnée (showintoc). Exemple : Donnée permettant de créer un masque pour un territoire."><i class="ri-information-line"></i>
+                                                </div>
                                             </div>
                                             <hr>
-                                            <h6 for="frm-upload-sld-file" i18n="modal.layer.sld.external">Utiliser un style externe</h6>                                        
+                                            <h6 for="frm-upload-sld-file"><span i18n="modal.layer.sld.external">Utiliser un style externe</span><span class="tooltip-info" data-bs-toggle="tooltip" data-bs-placement="right" data-bs-title="Lien vers un fichier au format .SLD définissant le style de la couche"><i class="ri-information-line"></i></h6>                                        
                                             <div class="input-group">
                                                 <input type="text" class="form-control checkedurl" id="frm-upload-sld-file" placeholder="URL SLD externe" i18n="modal.layer.display.ph.external_sld">
                                                 <!--<div class="input-group-append">                                                
@@ -1039,6 +1240,43 @@
                                     </div>                                
                                 </div>  
                                 <!--./Affichage-->
+                                <!--Type de légende-->
+                                <div class="accordion mt-2" id="accordionOptionsLegend">
+                                    <div class="accordion-item">
+                                    <h2 class="accordion-header" >
+                                        <a class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOptionsLegend" aria-expanded="true" aria-controls="collapseOptionsLegend">
+                                        <div>
+                                            <span class="title-accordion" i18n="modal.layer.title">Gestion de la légende</span>
+                                        </div>
+                                        </a>
+                                    </h2>
+                                    <div id="collapseOptionsLegend" class="accordion-collapse collapse" aria-labelledby="accordionOptionsLegend">
+                                        <div class="accordion-body"> 
+                                            <div class="row">
+                                                <div class="col-md-12 form-group">
+                                                    <label class="control-label" for="frm-legend" i18n="modal.layer.legend">Type de la légende</label>
+                                                    <select id="frm-legend" name="type-legend" class="form-control" onchange="mv.changeLayerLegend(this.value);">
+                                                        <option value="default" i18n="modal.layer.legend.default" selected>Par défaut</option>
+                                                        <option value="custom" i18n="modal.layer.legend.custom">Personnalisée</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                            <div class="form-group" id="group-legend-default">
+                                                <div class="custom-control custom-switch">
+                                                    <input type="checkbox" class="custom-control-input" id="frm-layer-legend-dynamic">
+                                                    <label class="custom-control-label" for="frm-layer-legend-dynamic" i18n="modal.layer.legend.dynamic">Adapter la légende selon les données visibles dans l'emprise de la carte</label>
+                                                </div>
+                                            </div>
+                                            <div class="form-group mt-2 d-none" id="group-legend-custom">
+                                                <label for="frm-legendurl" i18n="modal.layer.legendurl.text">Lien vers une légende personnalisée (image)</label>
+                                                <input type="text" class="form-control checkedurl" id="frm-layer-legendurl-url"
+                                                placeholder="URL vers Image légende" i18n="modal.layer.legendurl.placeholder"/>
+                                            </div>                          
+                                        </div>
+                                    </div>
+                                    </div>                                
+                                </div>  
+                                <!--./Type de légende-->
                                 <!--Type de couche-->
                                 <div class="accordion mt-2" id="accordionOptionsType">
                                     <div class="accordion-item">
@@ -1434,8 +1672,8 @@
         <div class="modal-dialog modal-xl">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title"><span i18n="modal.icon.list">Icône de la thématique</span></h5>
-                    <button type="button" class="close" data-bs-target="#mod-themeOptions" data-bs-toggle="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                    <h5 class="modal-title"><span i18n="modal.icon.list">Sélectionner une icône</span></h5>
+                    <button type="button" class="close" data-bs-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
                 </div>
                 <div class="modal-body" style="max-height: calc(100vh - 200px);overflow-y: auto;overflow-x: hidden;">
                     <div>
@@ -1450,8 +1688,8 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" id="change-icon" class="btn btn-primary" data-bs-target="#mod-themeOptions" data-bs-toggle="modal"><span i18n="validate"> Valider</span></button>
-                    <button type="button" class="btn btn-outline-primary" data-bs-target="#mod-themeOptions" data-bs-toggle="modal" i18n="cancel">Annuler</button>
+                    <button type="button" id="change-icon" class="btn btn-primary" aria-label="Close"><span i18n="validate"> Valider</span></button>
+                    <button type="button" class="btn btn-outline-primary" data-bs-dismiss="modal" aria-label="Close" i18n="cancel">Annuler</button>
                 </div>
             </div>
         </div>

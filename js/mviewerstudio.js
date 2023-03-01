@@ -186,7 +186,8 @@ $(document).ready(function(){
                             ajaxOptions: ajaxOptions,
                             thrownError: thrownError
                         });
-                        alert(mviewer.tr('msg.user_info_retrieval_error'));
+                        //alert(mviewer.tr('msg.user_info_retrieval_error'));
+                        alertCustom(mviewer.tr('msg.user_info_retrieval_error'), 'danger');
                     }
                 });
             } else {
@@ -232,19 +233,32 @@ var map2 = new ol.Map({
 var config;
 
 var newConfiguration = function () {
-    ["opt-title", "opt-logo", "opt-help", "theme-edit-icon", "theme-edit-title"].forEach(function (param, id) {
+    ["opt-title", "opt-logo", "opt-favicon", "opt-help", "opt-home", "theme-edit-icon", "theme-edit-title"].forEach(function (param, id) {
         $("#"+param).val("");
     });
-    ["opt-exportpng", "opt-measuretools", "theme-edit-collapsed", "opt-mini", "opt-showhelp", "opt-coordinates",
-        "opt-togglealllayersfromtheme", "SwitchAdressSearch","SwitchAdvanced"].forEach(function (param, id) {
-        $("#"+param).prop('checked', false);
+
+    // default checked state
+    ["opt-exportpng", "opt-zoom", "opt-geoloc", "opt-mouseposition", "opt-studio", "opt-measuretools", "opt-initialextent", "theme-edit-collapsed", "opt-mini", "opt-showhelp", "opt-coordinates",
+        "opt-togglealllayersfromtheme", "SwitchAdressSearch", "SwitchCustomBackground", "SwitchAdvanced"
+    ].forEach(id => {
+        document.querySelector(`#${ id }`).checked = false;
     });
+    ["opt-zoom", "opt-measuretools"].forEach(id => {
+        document.querySelector(`#${ id }`).checked = true;
+    });
+    
    
     $("#opt-style").val("css/themes/default.css").trigger("change");
     $("#frm-searchlocalities").val("ban").trigger("change");    
     $("#mod-themeOptions").modal('hide');
     $('#FadvElasticBlock form').trigger("reset");
 
+    // Icon help 
+    var icon = 'fas fa-home';
+    $("#opt-iconhelp").val(icon);
+    $("#opt-iconhelp").siblings('.selected-icon').attr('class', 'selected-icon');
+    $("#opt-iconhelp").siblings('.selected-icon').addClass(icon);
+    
     map.getView().setCenter(_conf.map.center);
     map.getView().setZoom(_conf.map.zoom);
     config = {
@@ -283,7 +297,7 @@ var loadLayers = function (themeid) {
     var theme = config.themes[themeid];
     if (theme) {
         $.each(theme.layers, function (index, layer) {
-            addLayer(layer.title, layer.id);
+            addLayer(layer.title, layer.id, layer.index);
         });
     }
 };
@@ -328,6 +342,12 @@ sortThemes = function () {
     config.themes = orderedThemes;
 };
 
+setConf = (key, value) => {
+    _conf[key] = value
+};
+
+getConf = (key) => _conf[key]
+
 sortLayers = function (fromIndex, toIndex) {
     var themeid = $("#themes-list .active").attr("data-themeid");
     var arr = config.themes[themeid].layers;
@@ -347,20 +367,20 @@ $('input[type=file]').change(function () {
 });
 
 
-var addLayer = function (title, layerid) {
+var addLayer = function (title, layerid, index) {
     // test if theme is saved
     if (!config.themes[$("#theme-edit").attr("data-themeid")]) {
         saveTheme();
     }
-    var item = $("#themeLayers").append([
-        '<div class="list-group-item layers-list-item" data-layerid="'+layerid+'">',
-            '<span class="layer-name moveList">'+title+'</span>',
-            '<div class="layer-options-btn">',
-                '<button class="btn btn-sm btn-secondary"><span class="layer-move moveList" title="Déplacer"><i class="bi bi-arrows-move"></i></span></button>',
-                '<button class="btn btn-sm btn-secondary" onclick="deleteLayerItem(this);"><span class="layer-remove" title="Supprimer"><i class="bi bi-x-circle"></i></span></button>',
-                '<button class="btn btn-sm btn-info" onclick="editLayer(this);"><span class="layer-edit" title="Editer cette couche"><i class="bi bi-gear-fill"></i></span></button>',
-            '</div>',
-        '</div>'].join(""));
+    var item = $("#themeLayers").append(`
+        <div class="list-group-item layers-list-item" data-layerid="${layerid}">
+            <span class="layer-name moveList">${title}</span>
+            <div class="layer-options-btn" style="display:inline-flex; justify-content: end;">
+                <button class="btn btn-sm btn-secondary"><span class="layer-move moveList" title="Déplacer"><i class="bi bi-arrows-move"></i></span></button>
+                <button class="btn btn-sm btn-secondary" onclick="deleteLayerItem(this);"><span class="layer-remove" title="Supprimer"><i class="bi bi-x-circle"></i></span></button>
+                <button class="btn btn-sm btn-info" onclick="editLayer(this);"><span class="layer-edit" title="Editer cette couche"><i class="bi bi-gear-fill"></i></span></button>
+            </div>
+        </div>`);
 
      if (title === 'Nouvelle couche') {
         item.find(".layer-edit").last().click();
@@ -400,7 +420,7 @@ var importThemes = function () {
 
 var addTheme = function (title, collapsed, themeid, icon, url) {
     if ($("#mod-themeOptions").is(":visible")) {
-        alert(mviewer.tr('msg.save_theme_first'));
+        alert(mviewer.tr('msg.save_theme_first'));        
         return;
     }
     if (url) {
@@ -536,19 +556,29 @@ var saveApplicationParameters = function (option) {
     var application = ['<application',
         'title="'+$("#opt-title").val()+'"',
         'logo="'+$("#opt-logo").val()+'"',
+        'favicon="'+$("#opt-favicon").val()+'"',
         'help="'+$("#opt-help").val()+'"',
+        'titlehelp="'+$("#opt-titlehelp").val()+'"',
+        'iconhelp="'+$("#opt-iconhelp").val()+'"',
+        'home="'+$("#opt-home").val()+'"',
         'style="'+$("#opt-style").val()+'"',
-        'exportpng="'+($('#opt-exportpng').prop('checked')=== true)+'"',
+        'zoomtools="'+($('#opt-zoom').prop('checked')=== true)+'"',
+        'initialextenttool="'+($('#opt-initialextent').prop('checked')=== true)+'"',
+        'exportpng="'+($('#opt-exportpng').prop('checked')=== true)+'"',        
         'showhelp="'+($('#opt-showhelp').prop('checked')=== true)+'"',
         'coordinates="'+($('#opt-coordinates').prop('checked')=== true)+'"',
         'measuretools="'+($('#opt-measuretools').prop('checked')=== true)+'"',
+        'mouseposition="'+($('#opt-mouseposition').prop('checked')=== true)+'"',
+        'geoloc="'+($('#opt-geoloc').prop('checked')=== true)+'"',
+        'studio="'+($('#opt-studio').prop('checked')=== true)+'"',        
         'togglealllayersfromtheme="'+($('#opt-togglealllayersfromtheme').prop('checked')=== true)+'"'];
 
     config.title = $("#opt-title").val();
 
     if(config.title == ''){
-        alert(mviewer.tr('msg.give_title_before_save'));
+        //alert(mviewer.tr('msg.give_title_before_save'));
         $('#opt-title').addClass('is-invalid');
+        alertCustom('Veuillez renseigner un nom à votre application !', 'danger')
         return;
     }
 
@@ -603,7 +633,9 @@ var saveApplicationParameters = function (option) {
     var baseLayers =   [padding(0) + '<baselayers style="'+baseLayersMode+'">'];
     $(".bl input:checked").each(function (i, b) {
         // set first bl visible
-        var baseLayer = _conf.baselayers[$(b).parent().parent().attr("data-layerid")] || savedParameters.baselayers[$(b).parent().parent().attr("data-layerid")];
+        const baseLayerId = $(b).parent().parent().attr("data-layerid");
+        
+        var baseLayer = _conf.baselayers[baseLayerId] || savedParameters.baselayers[baseLayerId] || getConf("customBaseLayers")[baseLayerId];
         var definition = [
             '<baselayer visible="false" ',
             createBaseLayerDef(baseLayer),
@@ -663,7 +695,9 @@ var saveApplicationParameters = function (option) {
 
                 if (option == 0) {
                     // Ok it's been saved and that's it
-                    alert(mviewer.tr('msg.file_saved_on_server') + " (" + data.filepath + ").");
+                    //alert(mviewer.tr('msg.file_saved_on_server') + " (" + data.filepath + ").");
+                    alertCustom(mviewer.tr('msg.file_saved_on_server') + " (" + data.filepath + ").", 'info');
+                    
 
                 } else if (option == 1) {
                     // Download map config file
@@ -707,11 +741,13 @@ var saveApplicationParameters = function (option) {
                     status: status,
                     error: error
                 });
-                alert(mviewer.tr('msg.save_failure'));
+                //alert(mviewer.tr('msg.save_failure'));
+                alertCustom(mviewer.tr('msg.save_failure'), 'danger');
             }
         });
     } else {
-        alert(mviewer.tr('msg.xml_doc_invalid'));
+        //alert(mviewer.tr('msg.xml_doc_invalid'));
+        alertCustom(mviewer.tr('msg.xml_doc_invalid'), 'danger');
     }
 };
 
@@ -754,7 +790,8 @@ var loadApplicationParametersFromFile = function () {
             mv.parseApplication(xml);
         }
         reader.onerror = function (evt) {
-            alert(mviewer.tr('msg.file_read_error'));
+            //alert(mviewer.tr('msg.file_read_error'));
+            alertCustom(mviewer.tr('msg.file_read_error'), 'danger');
         }
         showStudio();
     }
@@ -765,7 +802,8 @@ var deleteMyApplications = function () {
         type: "GET",
         url: _conf.delete_service,
         success: function( data ) {
-            alert(data.deleted_files + mviewer.tr('msg.deleted_apps'));
+            //alert(data.deleted_files + mviewer.tr('msg.deleted_apps'));
+            alertCustom(data.deleted_files + mviewer.tr('msg.deleted_apps'), 'info');
             mv.getListeApplications();
         },
         error: function (xhr, ajaxOptions, thrownError) {
@@ -774,7 +812,8 @@ var deleteMyApplications = function () {
                 ajaxOptions: ajaxOptions,
                 thrownError: thrownError
             });
-            alert(mviewer.tr('msg.delete_req_error'));
+            //alert(mviewer.tr('msg.delete_req_error'));
+            alertCustom(mviewer.tr('msg.delete_req_error'), 'danger');
         }
     });
 };
@@ -796,7 +835,9 @@ var  loadApplicationParametersFromRemoteFile = function (url) {
                 ajaxOptions: ajaxOptions,
                 thrownError: thrownError
             });
-            alert(mviewer.tr('msg.retrieval_req_error'));
+            //alert(mviewer.tr('msg.retrieval_req_error'));
+            alertCustom(mviewer.tr('msg.retrieval_req_error'), 'danger');
+            
         }
     });
 
@@ -816,7 +857,8 @@ var loadApplicationParametersFromWMC = function (url) {
                 ajaxOptions: ajaxOptions,
                 thrownError: thrownError
             });
-            alert(mviewer.tr('msg.retrieval_req_error'));
+            //alert(mviewer.tr('msg.retrieval_req_error'));
+            alertCustom(mviewer.tr('msg.retrieval_req_error'), 'danger');
         }
     });
 
@@ -976,7 +1018,8 @@ var uploadSldFileToBackend = function(e) {
                 $("#frm-sld").val(finalUrl)
             },
             error: function() {
-                 alert(mviewer.tr('msg.retrieval_req_error'));
+                 //alert(mviewer.tr('msg.retrieval_req_error'));
+                 alertCustom(mviewer.tr('msg.retrieval_req_error'), 'danger');
             }
         })
     });
@@ -987,7 +1030,7 @@ $('#input-ogc-filter').keypress(function(event){
     var keycode = (event.keyCode ? event.keyCode : event.which);
     if(keycode == '13'){
         mv.search();
-    }        
+    }
     event.stopPropagation();
 });
 
