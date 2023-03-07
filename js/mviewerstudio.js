@@ -232,7 +232,7 @@ var map2 = new ol.Map({
 });
 var config;
 
-var newConfiguration = function () {
+var newConfiguration = function (infos) {
     ["opt-title", "opt-logo", "opt-favicon", "opt-help", "opt-home", "theme-edit-icon", "theme-edit-title"].forEach(function (param, id) {
         $("#"+param).val("");
     });
@@ -264,7 +264,11 @@ var newConfiguration = function () {
     config = {
         application: { title: "", logo: "" },
         themes: {},
-        temp : { layers : {}}
+        temp: { layers: {} },
+        id: mv.uuid(),
+        description: moment().format("DD-MM-YYYY-HH-mm-ss"),
+        isFile: false,
+        ...infos // from reading app
     };
     //Store des parametres non gérés
     savedParameters = {"application":[], "baselayers": {}};
@@ -541,18 +545,38 @@ var createBaseLayerDef = function (bsl) {
     return parameters;
 };
 
-var saveApplicationParameters = function (option) {
-    // option == 0 : save serverside
-    // option == 1 : save serverside + download
-    // option == 2 : save serverside + launch map
+var deleteApplications = (ids = []) => {
+    fetch(`${ _conf.api }`, {
+        method: "DELETE",
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ids: ids})
+    })
+        .then(r => r.json())
+    .then(r => r.success && showHome())
+}
 
+var deleteAppFromList = (id) => {
+    deleteApplications(id);
+    document.getElementById('liste_applications').innerHTML = "";
+    mv.getListeApplications();
+}
+
+var previewAppUrl = (id, title) => {
+    var url = "";
+    var title_app = title.replaceAll(' ', '_');
+    url = _conf.mviewer_instance + '?config=' + _conf.conf_path_from_mviewer + id + '/' + title_app + '.xml';
+    window.open(url,'mvs_vizualize');
+}
+
+var getConfig = () => {
     var padding = function (n) {
         return '\r\n' + " ".repeat(n);
     };
     var savedProxy = "";
     var olscompletion = "";
     var elasticsearch = "";
-    var savedSearchparameters = "";
     var application = ['<application',
         'title="'+$("#opt-title").val()+'"',
         'logo="'+$("#opt-logo").val()+'"',
@@ -680,74 +704,88 @@ var saveApplicationParameters = function (option) {
         themes.join(" "),
         padding(0)+ '</config>'];
 
+    return conf
+}
+
+let previewAppsWithoutSave = (id) => {
+    const confXml = getConfig();
+    if (!mv.validateXML(confXml.join(""))) { 
+        return;
+    }
+    return fetch(`${ _conf.api }/${ id }/preview`, {
+        method: "POST",
+        headers: {
+            'Content-Type': 'text/xml'
+        },
+        body: confXml.join("")
+    })
+        .then(response => response.json())
+        .then(data => {
+            const url = _conf.mviewer_instance + '?config=' + data.file;
+            window.open(url,'mvs_vizualize');
+        })
+        .catch(err => alert(mviewer.tr('msg.xml_doc_invalid')))
+}
+
+var saveApplicationParameters
+    // option == 0 : save serverside
+    // option == 1 : save serverside + download
+    // option == 2 : save serverside + launch map    = function (option) {
+    const conf = getConfig();
     if (mv.validateXML(conf.join(""))) {
 
         // Save the map serverside
-        $.ajax({
-            type: "POST",
-            url: _conf.upload_service,
-            data: conf.join(""),
-            dataType: 'json',
-            contentType: 'text/xml',
-            success: function( data ) {
-
-                console.log("saved map file: %s", data.filepath);
-
-                if (option == 0) {
-                    // Ok it's been saved and that's it
-                    //alert(mviewer.tr('msg.file_saved_on_server') + " (" + data.filepath + ").");
-                    alertCustom(mviewer.tr('msg.file_saved_on_server') + " (" + data.filepath + ").", 'info');
-                    
-
-                } else if (option == 1) {
-                    // Download map config file
-                    var element = document.createElement('a');
-                    var blob = new Blob([conf.join("")], {type : 'text/xml'});
-                    element.setAttribute('href', window.URL.createObjectURL(blob));
-                    element.setAttribute('download', "config.xml");
-                    document.body.appendChild(element);
-                    element.click();
-                    document.body.removeChild(element);
-
-                } else {
-                    // Preview the map
-                    var url = "";
-                    if (data.success && data.filepath) {
-                        // Build a short and readable URL for the map
-                        if (_conf.mviewer_short_url && _conf.mviewer_short_url.used) {
-                            var filePathWithNoXmlExtension = "";
-                            //Get path from mviewer/apps eg store for mviewer/apps/store
-                            if (_conf.mviewer_short_url.apps_folder) {
-                                filePathWithNoXmlExtension = [_conf.mviewer_short_url.apps_folder, data.filepath].join("/");
-                            } else {
-                                filePathWithNoXmlExtension = data.filepath;
-                            }
-                            if (filePathWithNoXmlExtension.endsWith(".xml")) {
-                                filePathWithNoXmlExtension = filePathWithNoXmlExtension.substring(0, filePathWithNoXmlExtension.length-4);
-                            }
-                            url = _conf.mviewer_instance + '#' + filePathWithNoXmlExtension;
-                        } else {
-                            // Build a classic URL for the map
-                            url = _conf.mviewer_instance + '?config=' + _conf.conf_path_from_mviewer + data.filepath;
-                        }
-                        window.open(url,'mvs_vizualize');
-                    }
-                }
-
+        return fetch(_conf.api, {
+            method: config.isFile ? "PUT" : "POST",
+            headers: {
+                'Content-Type': 'text/xml'
             },
-            error: function(xhr, status, error) {
-                console.error("map file save failed", {
-                    xhr: xhr,
-                    status: status,
-                    error: error
-                });
-                //alert(mviewer.tr('msg.save_failure'));
-                alertCustom(mviewer.tr('msg.save_failure'), 'danger');
+            body: conf.join("")
+        }).then(response => response.json()).then(data => {
+            if (option == 0) {
+                // Ok it's been saved and that's it
+                console.log(mviewer.tr('msg.file_saved_on_server') + " (" + data.filepath + ").");
+            } else if (option == 1) {
+                // Download map config file
+                var element = document.createElement('a');
+                var blob = new Blob([conf.join("")], {type : 'text/xml'});
+                element.setAttribute('href', window.URL.createObjectURL(blob));
+                element.setAttribute('download', "config.xml");
+                document.body.appendChild(element);
+                element.click();
+                document.body.removeChild(element);
+
+            } else {
+                // Preview the map
+                var url = "";
+                if (data.success && data.filepath) {
+                    // Build a short and readable URL for the map
+                    if (_conf.mviewer_short_url && _conf.mviewer_short_url.used) {
+                        var filePathWithNoXmlExtension = "";
+                        //Get path from mviewer/apps eg store for mviewer/apps/store
+                        if (_conf.mviewer_short_url.apps_folder) {
+                            filePathWithNoXmlExtension = [_conf.mviewer_short_url.apps_folder, data.filepath].join("/");
+                        } else {
+                            filePathWithNoXmlExtension = data.filepath;
+                        }
+                        if (filePathWithNoXmlExtension.endsWith(".xml")) {
+                            filePathWithNoXmlExtension = filePathWithNoXmlExtension.substring(0, filePathWithNoXmlExtension.length-4);
+                        }
+                        url = _conf.mviewer_instance + '#' + filePathWithNoXmlExtension;
+                    } else {
+                        // Build a classic URL for the map
+                        url = _conf.mviewer_instance + '?config=' + _conf.conf_path_from_mviewer + data.filepath;
+                    }
+                    window.open(url,'mvs_vizualize');
+                }
             }
-        });
+            document.querySelector("#toolsbarStudio-delete").classList.remove("d-none");
+            document.querySelector("#layerOptionBtn").classList.remove("d-none");
+        }).catch(err => alert(mviewer.tr('msg.save_failure')));
     } else {
         //alert(mviewer.tr('msg.xml_doc_invalid'));
         alertCustom(mviewer.tr('msg.xml_doc_invalid'), 'danger');
+        return
     }
 };
 
@@ -817,30 +855,36 @@ var deleteMyApplications = function () {
         }
     });
 };
-
-var  loadApplicationParametersFromRemoteFile = function (url) {
-    $.ajax({
-        type: "GET",
-        url: url,
-        headers: {
-            "Cache-Control": "private, no-store, max-age=0"
-        },
-        success: function( data ) {
-            mv.parseApplication(data);
-            showStudio();
-        },
-        error: function (xhr, ajaxOptions, thrownError) {
-            console.error("map file retrieval failed", {
-                xhr: xhr,
-                ajaxOptions: ajaxOptions,
-                thrownError: thrownError
-            });
-            //alert(mviewer.tr('msg.retrieval_req_error'));
-            alertCustom(mviewer.tr('msg.retrieval_req_error'), 'danger');
-            
+var loadApplicationParametersFromRemoteFile = function (url) {
+    const waitRequests = [
+        fetch(url, {
+            method: "GET",
+            cache: "no-cache"
+        }).then(response => response.text())
+            .then(xmlAsString => new window.DOMParser().parseFromString(xmlAsString, "text/xml"))
+            .catch(r => {
+                console.error("map file retrieval failed", {...r});
+                alert(mviewer.tr('msg.retrieval_req_error'));
+            }),
+        fetch(_conf.api)
+            .then(response => response.json())
+            .then(r => {
+                return r.filter(app => app.id == config.id);
+            })
+            .catch(() => ({}))
+    ];
+    Promise.all(waitRequests).then((values) => {
+        const data = values[0];
+        const appMeta = values[1][0];
+        mv.parseApplication(data);
+        if (appMeta?.versions) {
+            console.log(appMeta.versions);
+            config.versions = appMeta.versions;
         }
+        showStudio();
+        document.querySelector("#toolsbarStudio-delete").classList.remove("d-none");
+        document.querySelector("#layerOptionBtn").classList.remove("d-none");
     });
-
 };
 
 var loadApplicationParametersFromWMC = function (url) {
@@ -995,6 +1039,7 @@ $('a[data-bs-target="#geo_filter"]').on('shown.bs.tab', function (e) {
 $(".checkedurl").change(mv.checkURL);
 
 $("#mod-importfile").on('shown.bs.modal', function () {
+    document.getElementById('liste_applications').innerHTML = "";
     mv.getListeApplications();
 });
 

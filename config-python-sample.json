@@ -1,10 +1,8 @@
 {
     "app_conf": {
         "studio_title": "Mviewer STudio Megalis",
-        "upload_service": "srv/store",
-        "delete_service": "srv/delete",
-        "list_service": "srv/list",
-        "store_style_service": "srv/store/style",
+        "api": "api/app",
+        "store_style_service": "api/style",
         "mviewer_instance": "/mviewer/",
         "conf_path_from_mviewer": "apps/store/",
         "mviewer_short_url": {

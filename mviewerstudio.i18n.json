@@ -28,6 +28,7 @@
         "modal.file.author" : "Auteur",
         "modal.file.deleteallmyapps" : "Supprimer toutes mes applications",
         "studio.toolsbar.save" : "Enregistrer",
+        "studio.toolsbar.delete" : "Supprimer",
         "studio.toolsbar.preview": "Prévisualiser",
         "studio.toolsbar.advanced": "Mode avancé",        
         "studio.wizard.app_title": "Application",
@@ -113,6 +114,7 @@
         "tabs.app.search.address_search.attribution": "Attribution",
         "tabs.app.search.address_search.attribution.ph": "Attribution du service",
         "tabs.adv.title": "Fonctionnalités avancées",
+        "tabs.versions.title": "Gérer les version de la carte",
         "tabs.adv.alert": "Le paramétrage de cette section est optionnel.",  
         "tabs.search.elastic_search.title": "Elasticsearch",
         "tabs.search.elastic_search.subtitle": "Paramétrer une recherche basée sur un index Elasticsearch",
@@ -266,6 +268,7 @@
         "modal.exit.save" : "Enregister mon application et quitter le studio",
         "modal.exit.notsave" : "Ne pas sauvegarder mes modifications et quitter le studio",
         "modal.exit.previous" : "Retour",
+        "modal.appversion.title" : "Historique des modifications",
         "validate" : " Valider",
         "ok": "OK",
         "cancel": "Annuler",
@@ -285,7 +288,9 @@
         "msg.deleted_apps": " application(s) supprimée(s)",
         "msg.delete_req_error": "Echec de la requête de suppression.\nVeuillez consulter votre administrateur.",
         "msg.retrieval_req_error": "Echec de la requête de récupération de l'application.\nVeuillez consulter votre administrateur.",
-        "msg.xml_doc_invalid": "Document xml invalide"
+        "msg.xml_doc_invalid": "Document xml invalide",
+        "version.comment": "Ajouter une étiquette",
+        "version.comment.ph": "ex: Version de test sans données"
     },
     "en": {
         "head.title": "Application title",
@@ -320,6 +325,7 @@
         "tabs.data.paramspanel.icon": "Icon",
         "tabs.data.paramspanel.icon_pick": "Pick an icon",
         "tabs.data.paramspanel.add_data": "Add some data",
+        "tabs.versions.title": "Historique des modifications",
         "tabs.bg.title": "Background layers",
         "tabs.bg.displaymode": "Display mode",
         "tabs.bg.display_normal": "Normal",
@@ -481,6 +487,8 @@
         "msg.deleted_apps": " application(s) removed(s)",
         "msg.delete_req_error": "Deletion request failed.\n Please contact your administrator.",
         "msg.retrieval_req_error": "Application retrieval request failed.\n Please contact your administrator.",
-        "msg.xml_doc_invalid": "XML document invalid"
+        "msg.xml_doc_invalid": "XML document invalid",
+        "version.comment": "Tag this modification",
+        "version.comment.ph": "ex: Test release without data"
     }
 }
