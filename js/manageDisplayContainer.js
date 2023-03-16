@@ -17,26 +17,35 @@ $('#mod-closeStudio').modal('hide');
   document.getElementById("containerHome").hidden = false;
   document.querySelector("#toolsbarStudio-delete").classList.add("d-none");
   document.querySelector("#layerOptionBtn").classList.add("d-none");
+  document.querySelector("#toolsbarStudio-unpublish").classList.add("d-none");
+  document.querySelector(".badge-draft").classList.add("d-none");
+  document.querySelector(".badge-publish").classList.add("d-none");
 }
 
 function saveStudio() {
   const saveModal = document.querySelector("#mod-closeStudio").classList.contains("show");
-
-  if (saveModal) {
-    if ($("#opt-title").val() == '') {
-      alertCustom(mviewer.tr('msg.give_title_before_save'), "danger");
-      $('#mod-closeStudio').modal('hide');
-      $('#opt-title').addClass('is-invalid');
-    } else {
-      saveApplicationParameters(); 
-      showHome();
-      alertCustom('Application enregistrée avec succès !', 'success');
-    } 
+  const titleApp = $("#opt-title").val();
+  if (!titleApp) {
+    alertCustom(mviewer.tr('msg.give_title_before_save'), "danger");
+    $('#mod-closeStudio').modal('hide');
+    $('#opt-title').addClass('is-invalid');
     return;
   }
-  else if(config.id) {
-    return saveApplicationParameters();
+
+  // confirm modal is open
+  if (saveModal) {
+    saveApplicationParameters(); 
+    showHome();
+    return;
   }
+  
+  // confirm modal is hidden and user click onto save button
+  if (config.id) {
+    saveApplicationParameters();
+    return;
+  }
+
+  // error appear
   alertCustom(mviewer.tr("msg.save_failure"), 'danger');
 }
 
@@ -93,7 +102,7 @@ $("#frm-opacity").on("mousemove", function() {
  * @param {string} type 
  * @param {integer} timeout 
  */
-function alertCustom(message, type, timeout = 5000){
+function alertCustom(message = "", type = "info", timeout = 5000){
   const alertPlaceholder = document.getElementById('liveAlertPlaceholder');
   // Définition de l'icône selon le type d'alerte
   let iconalert = '';

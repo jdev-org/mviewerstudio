@@ -212,6 +212,7 @@
                                   <a class="dropdown-item" onclick="mv.getVersionsByApp(this)" data-bs-toggle="modal" data-bs-target="#mod-appversions">Historique des modifications</a>
                                 </div>
                             </div>                                
+                            <a class="nav-link d-none" id="toolsbarStudio-unpublish" onclick="mv.unpublish(config.id);" href="#"><i class="ri-eye-off-fill"></i> <span i18n="studio.toolsbar.unpublish">Dépublier</span></a>
                             <a class="nav-link" id="toolsbarStudio-View" onclick="previewAppsWithoutSave(config.id);" href="#"><i class="ri-eye-2-line"></i> <span i18n="studio.toolsbar.preview">Prévisualiser</span></a>                          
                             <a class="nav-link" id="toolsbarStudio-Save" onclick="saveStudio();" href="#"><i class="ri-save-line"></i> <span i18n="studio.toolsbar.save">Enregistrer</span></a>
                             <a class="nav-link d-none" id="toolsbarStudio-delete" onclick="deleteApplication(config.id);" href="#"><i class="ri-save-line"></i> <span i18n="studio.toolsbar.delete">Supprimer</span></a>
@@ -227,7 +228,12 @@
                         <!-- Application -->
                         <div class="tab-pane container active" id="app">
                             <form>
-                            <h1><i class="ri-equalizer-line"></i> <span i18n="tabs.app.title">Application</span></h1>         
+                            <h1>
+                                <i class="ri-equalizer-line"></i> 
+                                <span i18n="tabs.app.title">Application</span> 
+                                <span class="badge badge-publish badge-title d-none" i18n="publish">En ligne</span>
+                                <span class="badge badge-draft badge-title d-none" i18n="draft">Brouillon</span>
+                            </h1>         
                             <div class="row mt-4">
                                 <div class="col-md-12">
                                     <div class="form-group">
@@ -798,6 +804,21 @@
                             <h1 i18n="tabs.publication.finish">Félicitations !</h1>
                             <h4 class="text-primary" i18n="tabs.publication.subfinish">Vous avez terminé la configuration de votre application mviewer.</h4>  
                             <div id="cardsPublication" class="my-5">
+                                <!--Publish-->
+                                <div style="max-width: 18rem;">
+                                    <a role="button" onclick="mv.publish(config?.id)" href="#">
+                                        <div class="card border-info p-3 zoomCard h-100" style="max-width: 18rem; background-color: #f5ae54; color: white;">
+                                            <div class="card-body mb-5">
+                                            <span class="iconCard-finish">
+                                                <i class="ri-play-line" style="font-size: 20px;vertical-align: middle;"></i>
+                                            </span>                            
+                                            <h5 class="card-title mt-4"><span i18n="tabs.publication.publish_title">Publier votre application</span></h5>
+                                            <p class="card-text" i18n="tabs.publication.publish_text">Mettre en ligne votre application et obtenez un lien de partage</p>                              
+                                            </div>
+                                        </div>
+                                    </a> 
+                                </div>
+                                <!--Publish-->
                                 <!--Download-->
                                 <div style="max-width: 18rem;">
                                     <a role="button" onclick="downloadXML();" href="#">
@@ -828,21 +849,6 @@
                                     </a> 
                                 </div>                                
                                 <!--Preview-->
-                                <!--Publish-->
-                                <!-- <div style="max-width: 18rem;">
-                                    <a role="button" onclick="publish(config?.id)" href="#">
-                                        <div class="card border-info p-3 zoomCard h-100" style="max-width: 18rem;">
-                                            <div class="card-body mb-5">
-                                            <span class="iconCard-finish" style="background-color: #f5ae54;">
-                                                <i class="ri-eye-2-line" style="font-size: 20px;vertical-align: middle;"></i>
-                                            </span>                            
-                                            <h5 class="card-title mt-4"><span i18n="tabs.publication.preview_title">Publier votre application</span></h5>
-                                            <p class="card-text" i18n="tabs.publication.preview_text">Mettre en ligne votre application et obtenez un lien de partage</p>                              
-                                            </div>
-                                        </div>
-                                    </a> 
-                                </div> -->
-                                <!--Publish-->
                             </div>                          
                             <div class="mt-4">
                                 <a class="btn btn-outline-warning btnPrev"><i class="ri-arrow-left-line"></i> <span i18n="studio.wizard.btn.previous">Précédent</span></a>

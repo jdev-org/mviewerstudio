@@ -3,12 +3,13 @@ from .utils.login_utils import current_user
 from .utils.config_utils import Config
 from .utils.commons import clean_preview, init_preview
 import hashlib, uuid
-from os import path, mkdir
+from os import path, mkdir, remove
 from shutil import rmtree, copyfile
 from flask.blueprints import BlueprintSetupState
 from urllib.parse import urlparse
 import requests
 from .utils.git_utils import Git_manager
+from .utils.register_utils import from_xml_path
 
 from werkzeug.exceptions import BadRequest, MethodNotAllowed
 
@@ -53,7 +54,10 @@ def create_mviewer_config() -> Response:
     '''
     Create XML.
     '''
-    config = Config(request.data, current_app)
+    try:
+        config = Config(request.data, current_app)       
+    except:
+        raise BadRequest("XML seems not correct !")
 
     if not config.xml:
         raise BadRequest("No XML found in the request body !")
@@ -119,6 +123,64 @@ def list_stored_mviewer_config() -> Response:
     for config in configs:
         config["url"] = current_app.config["CONF_PATH_FROM_MVIEWER"] + config["url"]
     return jsonify(configs)
+
+@basic_store.route("/api/app/<id>/publish", methods=["GET", "DELETE"])
+def publish_mviewer_config(id) -> Response:
+    """
+    Will put online a config.
+    This route will copy / past XML to publication directory or delete to unpublish.
+    :param id: configuration UUID
+    """
+    logger.debug("PUBLISH : %s " % id)
+
+    publish_dir = current_app.config["MVIEWERSTUDIO_PUBLISH_PATH"]
+    if not publish_dir or not path.exists(publish_dir):
+        return BadRequest("Publish directory does not exists !")
+
+    workspace = path.join(current_app.config["EXPORT_CONF_FOLDER"], id)
+
+    if not path.exists(workspace):
+        return BadRequest("Application does not exists !")
+    
+    config = current_app.register.read_json(id)
+
+    if not config:
+        raise BadRequest("This config doesn't exists !")
+
+    copy_file = current_app.config["EXPORT_CONF_FOLDER"] + config[0]["url"]
+    config = from_xml_path(current_app, copy_file)
+
+    past_file = path.join(current_app.publish_path, "%s.xml" % id)
+
+    # add publish info in XML
+    if request.method == "GET":
+        config.xml.set("publish", "true")
+        message = "publish"
+
+    # add unpublish info in XML
+    if request.method == "DELETE":
+        config.xml.set("publish", "false")
+        message = "Unpublish"
+
+    config.write()
+
+    # commit to track this action
+    config.git.commit_changes(message)
+
+    # update JSON
+    config.register.update_from_id(id)
+
+    if path.exists(past_file):
+        remove(past_file)
+
+    # move to publish directory
+    if request.method == "GET":
+        copyfile(copy_file, past_file)
+
+    if request.method == "DELETE":
+        past_file=None
+    draft_file = current_app.config["CONF_PATH_FROM_MVIEWER"] + config.as_dict()["url"]
+    return jsonify({"online_file": past_file, "draft_file": draft_file})
 
 @basic_store.route("/api/app/<id>", methods=["DELETE"])
 def delete_config_workspace(id = None) -> Response:
