@@ -862,7 +862,8 @@ var saveApplicationParameters = () => {
         return saveAppWithPhp(conf)
     }
     // Save the map serverside
-    fetch(_conf.api, {
+    const url = config.isFile ? `${ _conf.api }/${ config.id }` : _conf.api;
+    fetch(url, {
         method: config.isFile ? "PUT" : "POST",
         headers: {
             'Content-Type': 'text/xml'
