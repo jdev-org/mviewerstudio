@@ -212,10 +212,10 @@
                                   <a class="dropdown-item" onclick="mv.getVersionsByApp(this)" data-bs-toggle="modal" data-bs-target="#mod-appversions">Historique des modifications</a>
                                 </div>
                             </div>                                
-                            <a class="nav-link d-none" id="toolsbarStudio-unpublish" onclick="mv.unpublish(config.id);" href="#"><i class="ri-eye-off-fill"></i> <span i18n="studio.toolsbar.unpublish">Dépublier</span></a>
+                            <a class="nav-link d-none" id="toolsbarStudio-unpublish" onclick="mv.unpublish(config.id);" href="#"><i class="ri-eye-off-fill"></i> <span i18n="studio.toolsbar.unpublish">Dépublier</span></a>               
+                            <a class="nav-link d-none" id="toolsbarStudio-delete" onclick="showAlertDelApp(config.id);" href="#"><i class="ri-delete-bin-2-line"></i> <span i18n="studio.toolsbar.delete">Supprimer</span></a>                
                             <a class="nav-link" id="toolsbarStudio-View" onclick="previewAppsWithoutSave(config.id);" href="#"><i class="ri-eye-2-line"></i> <span i18n="studio.toolsbar.preview">Prévisualiser</span></a>                          
                             <a class="nav-link" id="toolsbarStudio-Save" onclick="saveStudio();" href="#"><i class="ri-save-line"></i> <span i18n="studio.toolsbar.save">Enregistrer</span></a>
-                            <a class="nav-link d-none" id="toolsbarStudio-delete" onclick="deleteApplication(config.id);" href="#"><i class="ri-save-line"></i> <span i18n="studio.toolsbar.delete">Supprimer</span></a>
                         </ul>
                         <div class="custom-control custom-switch mt-2" id="btnSwitchAdvanced">
                             <input type="checkbox" class="custom-control-input" id="SwitchAdvanced">
@@ -495,7 +495,7 @@
                                                         </div>   
                                                     </div>
                                                     <div class="row mt-2" >                                                        
-                                                        <div class="col-md-6 wmts wms custom-bg-type">
+                                                        <div class="col-md-6 wmts wms vector-tms custom-bg-type">
                                                             <div class="form-group">
                                                                 <label for="formCustomBaseThumb" class="form-label"><span i18n="tabs.app.bgcustom.base.thumb">Lien vers la vignette</span><span class="tooltip-info" data-bs-toggle="tooltip" data-bs-placement="right" data-bs-title="Image permettant de visualiser l'aperçu du fond de plan"><i class="ri-information-line"></i></span></label>
                                                                 <input class="form-control checkedurl" type="url" id="formCustomBaseThumb" i18n="tabs.app.bgcustom.base.thumb.ph" placeholder="https://kartenn.region-bretagne.fr/kartoviz/img/basemap/positron.png" required>
@@ -1287,7 +1287,7 @@
                                                 </div>
                                                 <div class="custom-control custom-switch">
                                                     <input type="checkbox" class="custom-control-input" id="frm-layer-showintoc">
-                                                    <label class="custom-control-label" for="frm-layer-showintoc" i18n="modal.layer.showintoc">Affichage de la donnée seulement sur la carte</label><span class="tooltip-info" data-bs-toggle="tooltip" data-bs-placement="right" data-bs-title="Cette option permet d'activer l'affichage de la donnée seulement sur la carte et non dans le menu thématique et la légende. Il n'est donc pas possible pour l'utilisateur de modifier les réglages de la donnée (showintoc). Exemple : Donnée permettant de créer un masque pour un territoire."><i class="ri-information-line"></i>
+                                                    <label class="custom-control-label" for="frm-layer-showintoc" i18n="modal.layer.showintoc">Ne pas afficher la donnée dans la légende</label><span class="tooltip-info" data-bs-toggle="tooltip" data-bs-placement="right" data-bs-title="Cette option permet d'activer l'affichage de la donnée seulement sur la carte et non dans le menu thématique et la légende. Il n'est donc pas possible pour l'utilisateur de modifier les réglages de la donnée (showintoc). Exemple : Donnée permettant de créer un masque pour un territoire."><i class="ri-information-line"></i>
                                                 </div>
                                             </div>                                            
                                             <div class="layerOption-wms d-none">   
