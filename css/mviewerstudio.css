@@ -878,13 +878,114 @@
 	
 	/* Modal - Import des thématiques */
 	
-	#importedThemes .list-group-item:hover {
-	  background-color: var(--light);
+	.titleThema {
+		color: var(--info);
+		font-weight: 600;
+		font-size: 1.1em;
+		margin-top: 12px;
 	}
 	
-	#importedThemes {
-	  height: 550px;
-	  overflow-y: auto;
+	.publisherThema {
+		margin-bottom: 12px;
+		font-style: italic;
+	}
+	
+	.descriptionThema:first-letter {
+		text-transform: capitalize;
+	}
+	
+	.urlThema,
+	.idThema {
+		display: none !important;
+	}
+	
+	#tableThemaExt thead {
+		display: none !important;
+	}
+	
+	#tableThemaExt td {
+		display: block;
+		border: none !important;
+		padding: 2px !important;
+		margin-left: 10px;
+	}
+	
+	#tableThemaExt tr {
+		border: 1px solid #D1D1D1;
+	}
+	
+	#tableThemaExt tr:hover {
+		background-color: var(--light);
+		cursor: pointer;
+	}
+	
+	#tableThemaExt tr.selected td {
+		background: none;
+	}
+	
+	.checkCustom {
+		margin: 0 !important;
+		vertical-align: middle;
+		display: table-cell !important;
+		padding-left: 35px;
+		cursor: pointer;
+		-webkit-user-select: none;
+		-moz-user-select: none;
+		-ms-user-select: none;
+		user-select: none;
+	}
+	
+	.checkCustom input {
+		position: absolute;
+		opacity: 0;
+		cursor: pointer;
+		height: 0;
+		width: 0;
+	}
+	
+	.checkCustom span {
+		position: absolute;
+		border-radius: 0.9rem;
+		top: 40%;
+		left: 1rem;
+		width: 1.2rem;
+		height: 1.2rem;
+		background-color: #fff;
+		border: #BDBDBD solid 1px;
+	}
+	
+	.checkCustom input:checked~span {
+		background-color: var(--info);
+		border-color: var(--info);
+	}
+	
+	.checkCustom span:after {
+		content: "";
+		position: absolute;
+		display: none;
+	}
+	
+	.checkCustom input:checked~span:after {
+		display: block;
+	}
+	
+	.checkCustom span:after {
+		left: 6px;
+		top: 3px;
+		width: 5px;
+		height: 10px;
+		border: solid white;
+		border-width: 0 3px 3px 0;
+		-webkit-transform: rotate(45deg);
+		-ms-transform: rotate(45deg);
+		transform: rotate(45deg);
+	}
+
+	/* Modal Theme externe - Param */
+
+	#nameThemeExt {
+		font-size: 16px;
+		font-weight: 500;
 	}
 	
 	/* Modal - Ajout d'une couche */

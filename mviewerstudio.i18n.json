@@ -1,6 +1,7 @@
 {
     "fr": {
         "head.title": "Titre de l'application",
+        "head.proxyurl": "URL du proxy",
         "head.keywords": "Mots clés",
         "banner.not_connected": "Non connecté",
         "banner.logout": "Déconnexion",
@@ -160,6 +161,11 @@
         "modal.theme.paramspanel.icon_pick": "Choisir une icône",
         "modal.theme.paramspanel.data": "Données de la thématique",
         "modal.theme.paramspanel.add_data": "Ajouter des données", 
+        "modal.themeExt.title": "Paramètres de la thématique externe",
+        "modal.themeEx.paramspanel.layervisibility": "Affichage des données de la thématique au démarrage de l'application :",
+        "modal.themeEx.paramspanel.default": "Par défaut (comme défini dans l'application source)",
+        "modal.themeEx.paramspanel.all": "Toutes les données sont affichées",
+        "modal.themeEx.paramspanel.none": "Aucune donnée n'est affichée",
         "modal.group.select" : "Sélectionner un groupe",
         "modal.group.description" : "Vous appartenez à plusieurs groupes. Vous devez en sélectionner un pour créer ou enregistrer une carte associée à celui-ci.",
         "modal.layer.edit" : "Paramètres de la donnée",
@@ -321,6 +327,7 @@
     },
     "en": {
         "head.title": "Application title",
+        "head.proxyurl": "Proxy URL",
         "head.keywords": "Keywords",
         "banner.not_connected": "Not connected",
         "banner.load": "Load",
