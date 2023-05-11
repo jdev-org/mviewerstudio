@@ -147,6 +147,8 @@
         "tabs.publication.preview_title" : "Prévisualiser votre application",
         "tabs.publication.preview_text" : "Tester et valider votre configuration en live",
         "tabs.publication.publish_title" : "Publier votre application",
+        "tabs.publication.publish_retry" : "Publier avec ce nouveau nom",
+        "tabs.publication.publish_replace": "Remplacer",
         "tabs.publication.publish_text" : "Mettre en ligne votre application et obtenez un lien de partage",
         "tabs.data.title": "Thématiques & données",
         "tabs.data.themespanel.title": "Panneau des thématiques",
@@ -287,8 +289,8 @@
         "modal.icon.list" : "Icône de la thématique",
         "modal.iconhelp.list" : "Icône du bouton vers la fenêtre d'aide",
         "modal.exit.title" : "Attention",
-        "modal.publish.title": "Publiée avec succés !",
-        "modal.unpublish.title": "Dépubliée avec succés !",
+        "modal.publish.title": "Publiée avec succès !",
+        "modal.unpublish.title": "Dépubliée avec succès !",
         "modal.publish.shareLabel": "Lien de partage",
         "modal.publish.iframeLabel": "Intégration en iframe",
         "modal.exit.subtitle" : "Êtes-vous sûr de vouloir quitter votre projet en cours ?",
@@ -323,7 +325,9 @@
         "msg.xml_doc_invalid": "Document xml invalide",
         "msg.xml_save": "Document non sauvegardé. \nVeuillez consulter votre administrateur.",
         "version.comment": "Ajouter une description à cette version",
-        "version.comment.ph": "Exemple : Version de test sans données"
+        "version.comment.ph": "Exemple : Version de test sans données",
+        "publish.message": "Version publiée",
+        "unpublish.message": "Version dépubliée"
     },
     "en": {
         "head.title": "Application title",
@@ -530,6 +534,10 @@
         "version.comment.ph": "ex: Test release without data",
         "studio.toolsbar.unpublish": "Unpublish",
         "tabs.publication.publish_title" : "Publish application",
-        "tabs.publication.publish_text" : "Put your application online."
+        "tabs.publication.publish_text" : "Put your application online.",
+        "tabs.publication.publish_retry": "Retry with this new name",
+        "tabs.publication.publish_replace": "Replace",
+        "publish.message": "Publish version",
+        "unpublish.message": "Unpublish version"
     }
 }

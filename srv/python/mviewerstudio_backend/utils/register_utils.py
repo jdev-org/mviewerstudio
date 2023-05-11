@@ -72,13 +72,19 @@ class ConfigRegister:
         '''
         Will parse all app configs workspace to init class config for each.
         '''
-        publish_path = self.app.config["MVIEWERSTUDIO_PUBLISH_PATH"]
-        dirs = [
-            dir for dir in listdir(self.store_directory) if isdir(path.join(self.store_directory, dir)) and dir != publish_path and glob.glob("%s/*.xml" % path.join(self.store_directory, dir))
+        sub_store_dirs = [
+            path.join(self.store_directory, dir) for dir in listdir(self.store_directory) if isdir(path.join(self.store_directory, dir)) and dir not in ["styles"]
         ]
+        # and glob.glob("%s/*.xml" % path.join(self.store_directory, dir))
+        xml_dirs = []
+        for sub_dir in sub_store_dirs:
+            app_dirs = [
+                path.join(sub_dir, dir) for dir in listdir(sub_dir) if isdir(path.join(sub_dir, dir)) and glob.glob("%s/*.xml" % path.join(sub_dir, dir))
+            ]
+            print(app_dirs)
+            xml_dirs = [*xml_dirs, *app_dirs]
         
-        for dir in dirs:
-            app_path = path.join(self.store_directory, dir)
+        for app_path in xml_dirs:
             for xml in glob.glob("%s/*.xml" % app_path):
                 repo = init_or_get_repo(app_path)
                 # to be sur each app is in master branch
@@ -125,7 +131,7 @@ class ConfigRegister:
         This allow to change XML manually and update register automatically on service startup.
         :param id: string uuid use as unique directory name
         '''
-        xml_path = glob.glob("%s/*.xml" % path.join(self.store_directory, id))
+        xml_path = glob.glob("%s/*.xml" % path.join(self.store_directory, current_user.organisation, id))
         if xml_path:
             config = from_xml_path(self.app, xml_path[0])
             config_dict = config.as_dict()

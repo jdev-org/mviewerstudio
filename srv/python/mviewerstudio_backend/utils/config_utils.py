@@ -1,4 +1,4 @@
-from os import path, mkdir, remove
+from os import path, makedirs, remove, mkdir
 import logging
 import xml.etree.ElementTree as ET
 import re
@@ -11,20 +11,84 @@ from .git_utils import Git_manager
 logger = logging.getLogger(__name__)  
 
 
+def getWorkspace(app, end_path = ""):
+    '''
+    Retrieve workspace from path
+    :param app: current Flask app instance
+    :param path_id: path
+    '''
+    if not end_path : return
+    return path.join(app.config["EXPORT_CONF_FOLDER"], end_path)
+
 def edit_xml_string(root, attribute, value):
+    '''
+    Tool to find and write inside XML node
+    :param root: xml or xml root node object (e.g self.meta in Config class)
+    :param attribute: string xml node name to change in root node (e.g "{*}relation")
+    :param value: string value to insert in XML node
+    '''
     attr = root.find(".//{*}%s" % attribute)
     attr.text = value
 
 def write_file(xml, xml_path):
+    '''
+    Will write an xml into file
+    :param xml: xml to write in xml path file
+    :param xml_path: string xml file path
+    '''
     xml_to_string = ET.tostring(xml).decode("utf-8")
     file = open(xml_path, "w")
     file.write(xml_to_string)
     file.close()
 
+def clean_xml_from_dir(path):
+    '''
+    Remove each XML found in dir
+    :param path: string xml file path
+    '''
+    for file in glob.glob("%s/*.xml" % path):
+        remove(file)
+
+def read_xml_file_content(path, node = ""):
+    '''
+    Read XML from path and could return xml node or xml as parser
+    :param path: string xml file path
+    '''
+    fileToReplace = open(path, "r")
+    xml_str = fileToReplace.read()
+    xml_parser = ET.fromstring(xml_str)
+    if node :
+        return xml_parser.find(node)
+    else:
+        return xml_parser
+
+def control_relation(path, relation, id):
+    '''
+    Ease mapping verification between draft and publish xmls
+    :param path: string xml publish path
+    :param relation: string publish xml file name
+    :param id: xml UUID
+    '''
+    content = read_xml_file_content(path)
+    org = content.find(".//metadata/{*}RDF/{*}Description//{*}publisher").text
+    creator = content.find(".//metadata/{*}RDF/{*}Description//{*}creator").text
+    identifier = content.find(".//metadata/{*}RDF/{*}Description//{*}identifier").text
+    lastRelation = content.find(".//metadata/{*}RDF/{*}Description//{*}relation").text
+
+    if current_user.organisation != org:
+        return False
+    if current_user.username != creator:
+        return False
+    if relation != lastRelation:
+        return False
+    if identifier != id:
+        return False
+    return True
+
 '''
 This class ease git repo manipulations.
 A register from store/register.json is use as global configs metadata store.
-DCAT-RDF Metadata are given by front end (see above ConfigModel).
+DCAT-RDF Metadata are given by front end (see imported ConfigModel).
 '''
 class Config:
     def __init__(self, data = "", app = None, xml = None) -> None:
@@ -36,6 +100,7 @@ class Config:
         '''
         self.uuid = None
         self.full_xml_path = None
+        self.url = None
         self.app = app
         self.directory = None
         if not xml:
@@ -44,9 +109,13 @@ class Config:
             self.xml = self._read_xml(xml)
         if self.xml is not None and app.register:
             self.register = app.register
-
+            # read org
+            if not current_user and xml:
+                org = self.meta.find("{*}publisher").text
+            else :
+                org = current_user.organisation if current_user else app.config["DEFAULT_ORG"]
             # target workspace path
-            self.workspace = path.join(self.app.config["EXPORT_CONF_FOLDER"], self.uuid)
+            self.workspace = getWorkspace(app, path.join(org, self.uuid))
             # create or update workspace
             self.create_workspace()
             # init or get repo
@@ -86,8 +155,8 @@ class Config:
         '''
         if not path.exists(self.workspace):
             # create directory
-            mkdir(self.workspace)
-            mkdir(path.join(self.workspace, "preview"))
+            makedirs(self.workspace)
+            makedirs(path.join(self.workspace, "preview"))
     
     def _get_xml_describe(self, xml):
         '''
@@ -99,13 +168,13 @@ class Config:
         if current_user and current_user.username:
             edit_xml_string(meta_root, "creator", current_user.username)
         if current_user and current_user.organisation:
-            edit_xml_string(meta_root, "organisation", current_user.organisation)
+            edit_xml_string(meta_root, "publisher", current_user.organisation)
         return meta_root
 
     def write(self):
         write_file(self.xml, self.full_xml_path)
     
-    def create_or_update_config(self, file):
+    def create_or_update_config(self, file = None):
         '''
         Create config workspace and save XML as file.
         Will init git file as version manager.
@@ -114,35 +183,42 @@ class Config:
             # file already exists
             # we keep xml file name
             self.uuid = file[0]["id"]
-            self.full_xml_path = self.app.config["EXPORT_CONF_FOLDER"] + file[0]["url"]
+            self.full_xml_path = path.join(self.app.config["EXPORT_CONF_FOLDER"], file[0]["url"])
+            self.url = file[0]["url"]
         else:
             # get meta info from XML
             if self.meta.find(".//{*}identifier"):
                 self.uuid = self.meta.find(".//{*}identifier").text
-            file_name = self.meta.find("{*}title").text
+            
+            # normalize file name
+            app_name = self.meta.find("{*}title").text[:20]
+            normalized_file_name = re.sub('[^A-Za-z0-9 \n\.]+', "_", app_name).replace(" ", "_").lower()
             # save file
-            normalize_file_name = re.sub('[^a-zA-Z0-9  \n\.]', "_", file_name).replace(" ", "_")
-            self.full_xml_path = path.join(self.workspace, "%s.xml" % normalize_file_name)
+            normalized_xml_file_name = "%s.xml" % normalized_file_name
+            self.full_xml_path = path.join(self.workspace, normalized_xml_file_name)
+            if not current_user:
+                self.url = path.join(self.meta.find("{*}publisher").text, self.uuid, normalized_xml_file_name)
+            else:
+                self.url = path.join(current_user.organisation, self.uuid, normalized_xml_file_name)
+            # create resources dir to save mst, customs, etc.
+            app_dir = path.join(self.workspace, normalized_file_name)
+            if not path.exists(app_dir):
+                mkdir(app_dir)
+                mkdir(path.join(app_dir, "img"))
+                mkdir(path.join(app_dir, "css"))
+                mkdir(path.join(app_dir, "customlayers"))
+                mkdir(path.join(app_dir, "customcontrols"))
+                mkdir(path.join(app_dir, "templates"))
+
         # write file
         self.write()
     
-    def clean_all_workspace_configs(self):
-        '''
-        Remove each XML found in app workspace
-        '''
-        for file in glob.glob("%s/*.xml" % self.workspace):
-            remove(file)
-
     def as_data(self):
         '''
         Index config metadata in register.
         Use to search config by DCAT RDF metadata.
         '''
         subject = self.meta.find("{*}subject").text if self.meta.find("{*}subject") is not None else ""
-        url = self.full_xml_path.replace(
-            self.app.config["EXPORT_CONF_FOLDER"],
-            "",
-        )
         return ConfigModel(
             id = self.uuid,
             title = self.meta.find("{*}title").text,
@@ -151,10 +227,10 @@ class Config:
             date = self.meta.find("{*}date").text,
             versions = self.git.get_versions(),
             keywords = self.meta.find("{*}keywords").text,
-            organisation = self.meta.find("{*}organisation").text,
-            url = url,
+            publisher = self.meta.find("{*}publisher").text,
+            url = self.url,
             subject = subject,
-            publish = self.xml.get("publish")
+            relation = self.meta.find("{*}relation").text if self.meta.find("{*}relation").text else ""
         )
     
     def as_dict(self):
@@ -162,3 +238,9 @@ class Config:
         Get config as dict.
         '''
         return self.as_data().as_dict()
+    
+    def get(self, prop):
+        dict_data = self.as_data().as_dict()
+        if prop not in dict_data:
+            return
+        return dict_data[prop]

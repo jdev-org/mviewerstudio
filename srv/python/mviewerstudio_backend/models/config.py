@@ -17,11 +17,11 @@ class ConfigModel:
     versions: str
     keywords: List[str]
     description: str
-    organisation: str
     url: int
+    publisher: str
     subject: str
     date: str
-    publish: bool
+    relation: str
 
     def as_dict(self):
         return {
@@ -30,10 +30,10 @@ class ConfigModel:
             "creator": self.creator,
             "versions": self.versions,
             "description": self.description,
-            "organisation": self.organisation,
+            "publisher": self.publisher,
             "keywords": self.keywords,
             "url": self.url,
             "subject": self.subject,
             "date": self.date,
-            "publish": self.publish
+            "relation": self.relation
         }

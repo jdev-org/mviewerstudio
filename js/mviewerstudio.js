@@ -225,6 +225,8 @@ var newConfiguration = function (infos) {
     ["opt-title", "opt-logo", "optProxyUrl", "opt-favicon", "opt-help", "opt-home", "theme-edit-icon", "theme-edit-title"].forEach(function (param, id) {
         $("#"+param).val("");
     });
+    
+    $("#optProxyUrl").val(_conf.proxy);
 
     // default checked state
     ["opt-exportpng", "opt-zoomtools", "opt-geoloc", "opt-mouseposition", "opt-studio", "opt-measuretools", "opt-initialextenttool", "theme-edit-collapsed", "opt-mini", "opt-showhelp", "opt-coordinates",
@@ -259,7 +261,7 @@ var newConfiguration = function (infos) {
         id: infos?.id || mv.uuid(),
         description: newDate.format("DD-MM-YYYY-HH-mm-ss"),
         isFile: !!infos?.id,
-        publish: infos?.publish == 'true'
+        relation: infos?.relation
     };
     //Store des parametres non gérés
     savedParameters = {"application":[], "baselayers": {}};
@@ -654,11 +656,6 @@ var deleteAppFromList = (id) => {
     });
 }
 
-var previewAppUrl = (xmlFileUrl) => {
-    let url = _conf.mviewer_instance + '?config=' + xmlFileUrl;
-    window.open(url,'mvs_vizualize');
-}
-
 var getConfig = () => {
     var padding = function (n) {
         return '\r\n' + " ".repeat(n);
@@ -667,7 +664,12 @@ var getConfig = () => {
     var olscompletion = "";
     var elasticsearch = "";
     // Url du studio
-    var studioUrl = $('#opt-studio').prop('checked') ? window.location.href || "" : "";
+    var studioUrl = "";
+
+    if ($('#opt-studio').prop('checked')) {
+        let readURL = new URL(window.location.href);
+        studioUrl = readURL.origin + readURL.pathname;
+    }
 
     var application = ['<application',
         'title="'+$("#opt-title").val()+'"',
@@ -701,10 +703,10 @@ var getConfig = () => {
             application.push(prop+'="'+val+'"');
         });
     });
-    application = application.join(padding(4)) + '>'+padding(0)+'</application>';
+    application = application.join(padding(4)) + '>' + padding(0) + '</application>';
+    savedProxy = `${padding(0)}<proxy url=""/>`
     if ( _conf.proxy || $("#optProxyUrl").val()) {
-        // savedProxy = padding(0) + "<proxy url='" + $("#optProxyUrl").val() || _conf.proxy + "'/>";
-        savedProxy = `${padding(0)}<proxy url='${$("#optProxyUrl").val() || _conf.proxy}'/>`
+        savedProxy = `${padding(0)}<proxy url="${$("#optProxyUrl").val() || _conf.proxy}"/>`
     }
     var search_params = {"bbox":false, "localities": false, "features":false, "static":false};
     if ( $("#frm-searchlocalities").val() !="false"  ) {
@@ -815,22 +817,7 @@ let previewWithPhp = (conf) => {
             var url = "";
             if (data.success && data.filepath) {
                 // Build a short and readable URL for the map
-                if (_conf.mviewer_short_url && _conf.mviewer_short_url.used) {
-                    var filePathWithNoXmlExtension = "";
-                    //Get path from mviewer/apps eg store for mviewer/apps/store
-                    if (_conf.mviewer_short_url.apps_folder) {
-                        filePathWithNoXmlExtension = [_conf.mviewer_short_url.apps_folder, data.filepath].join("/");
-                    } else {
-                        filePathWithNoXmlExtension = data.filepath;
-                    }
-                    if (filePathWithNoXmlExtension.endsWith(".xml")) {
-                        filePathWithNoXmlExtension = filePathWithNoXmlExtension.substring(0, filePathWithNoXmlExtension.length-4);
-                    }
-                    url = _conf.mviewer_instance + '#' + filePathWithNoXmlExtension;
-                } else {
-                    // Build a classic URL for the map
-                    url = _conf.mviewer_instance + '?config=' + _conf.conf_path_from_mviewer + data.filepath;
-                }
+                let url = mv.produceUrl(data.filePath);
                 window.open(url, 'mvs_vizualize');
                 alertCustom("Téléchargement terminé !", 'success');
             }
@@ -838,7 +825,12 @@ let previewWithPhp = (conf) => {
     })
 }
 
-let previewAppsWithoutSave = (id) => {
+let previewAppsWithoutSave = (id, showPublish) => {
+    if (config.relation && _conf.publish_url && showPublish) {
+        const filePath = `${ mv.getAuthentUserInfos().groupFullName }/${ config.relation }`;
+        const previewUrl = mv.produceUrl(filePath, true);
+        return window.open(previewUrl, 'mvs_vizualize');
+    }
     const confXml = getConfig();
     if (!confXml || (confXml && !mv.validateXML(confXml.join("")))) {
         return alertCustom("XML invalide !", 'danger');
@@ -858,7 +850,7 @@ let previewAppsWithoutSave = (id) => {
     })
         .then(r => r.ok ? r.json() : Promise.reject(r))
         .then(data => {
-            const url = _conf.mviewer_instance + '?config=' + data.file;
+            const url = mv.produceUrl(data.file, config.relation && config.showPublish);
             window.open(url, 'mvs_vizualize');
         })
         .catch(err => alertCustom(mviewer.tr('msg.xml_doc_invalid'), 'error'))
@@ -890,7 +882,7 @@ var saveAppWithPhp = (conf) => {
     })
 }
 
-var saveApplicationParameters = () => {
+var saveApplicationParameters = (message = "") => {
     const conf = getConfig();
     if (!conf || !mv.validateXML(conf.join(""))) {
         return alertCustom(mviewer.tr('msg.xml_doc_invalid'), 'danger');
@@ -899,8 +891,8 @@ var saveApplicationParameters = () => {
         return saveAppWithPhp(conf)
     }
     // Save the map serverside
-    const url = config.isFile ? `${ _conf.api }/${ config.id }` : _conf.api;
-    fetch(url, {
+    const url = message ? `${ _conf.api }?message=${message}` : _conf.api;
+    return fetch(url, {
         method: config.isFile ? "PUT" : "POST",
         headers: {
             'Content-Type': 'text/xml'
@@ -914,6 +906,7 @@ var saveApplicationParameters = () => {
             config.isFile = true;
             document.querySelector("#toolsbarStudio-delete").classList.remove("d-none");
             document.querySelector("#layerOptionBtn").classList.remove("d-none");
+            mv.manageDraftBadge(config.relation);
         } else {
             config.isFile = false;
         }
