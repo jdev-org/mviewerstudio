@@ -49,18 +49,19 @@ def clean_xml_from_dir(path):
     for file in glob.glob("%s/*.xml" % path):
         remove(file)
 
-def read_xml_file_content(path, node = ""):
+def read_xml_file_content(path, node = "", all = False):
     '''
     Read XML from path and could return xml node or xml as parser
     :param path: string xml file path
     '''
-    fileToReplace = open(path, "r")
-    xml_str = fileToReplace.read()
+    file = open(path, "r")
+    xml_str = file.read()
     xml_parser = ET.fromstring(xml_str)
-    if node :
+    if node and not all:
         return xml_parser.find(node)
-    else:
-        return xml_parser
+    elif node and all:
+        return xml_parser.findall(node)
+    return xml_parser
 
 def control_relation(path, relation, id):
     '''
@@ -84,6 +85,19 @@ def control_relation(path, relation, id):
     if identifier != id:
         return False
     return True
+
+def replace_templates_url(target_xml, new_target_dir):
+    file_to_replace = open(target_xml, "r")
+    xml_str = file_to_replace.read()
+    xml_parser = ET.fromstring(xml_str)
+    layersNode = xml_parser.findall(".//layer")
+    for layer in layersNode:
+        templateNode = layer.findall(".//template")
+        for tpl in templateNode:
+            newUrl = path.join(new_target_dir, "%s.mst" % layer.get("id"))
+            tpl.set("url", newUrl)
+    write_file(xml_parser, target_xml)
+    return
 
 '''
 This class ease git repo manipulations.
@@ -123,6 +137,8 @@ class Config:
             self.repo = self.git.repo
             # save xml and git commit
             file = app.register.read_json(self.uuid)
+            if file :
+                self.directory = file[0]["directory"]
             self.create_or_update_config(file)
   
     def _read_xml(self, xml):
@@ -193,6 +209,7 @@ class Config:
             # normalize file name
             app_name = self.meta.find("{*}title").text[:20]
             normalized_file_name = re.sub('[^A-Za-z0-9 \n\.]+', "_", app_name).replace(" ", "_").lower()
+            self.directory = normalized_file_name
             # save file
             normalized_xml_file_name = "%s.xml" % normalized_file_name
             self.full_xml_path = path.join(self.workspace, normalized_xml_file_name)
@@ -230,7 +247,8 @@ class Config:
             publisher = self.meta.find("{*}publisher").text,
             url = self.url,
             subject = subject,
-            relation = self.meta.find("{*}relation").text if self.meta.find("{*}relation").text else ""
+            relation = self.meta.find("{*}relation").text if self.meta.find("{*}relation").text else "",
+            directory = self.directory
         )
     
     def as_dict(self):

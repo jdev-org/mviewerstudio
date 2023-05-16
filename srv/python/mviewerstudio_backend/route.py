@@ -1,15 +1,15 @@
 from flask import Blueprint, jsonify, Response, request, current_app, redirect
 from .utils.login_utils import current_user
-from .utils.config_utils import Config, edit_xml_string, control_relation
+from .utils.config_utils import Config, write_file, edit_xml_string, control_relation, replace_templates_url, read_xml_file_content
 from .utils.commons import clean_preview, init_preview
 import hashlib, uuid
+from .utils.register_utils import from_xml_path
 from os import path, mkdir, remove
 from shutil import rmtree, copyfile, copytree
 from flask.blueprints import BlueprintSetupState
 from urllib.parse import urlparse
 import requests
 from .utils.git_utils import Git_manager
-from .utils.register_utils import from_xml_path
 from datetime import datetime
 
 from werkzeug.exceptions import BadRequest, MethodNotAllowed, Conflict
@@ -212,6 +212,8 @@ def publish_config(id, name) -> Response:
         if path.exists(past_dir):
             rmtree(past_dir)
         copytree(copy_dir, past_dir)
+        relative_publish_dir = path.join(current_app.config["CONF_PUBLISH_PATH_FROM_MVIEWER"], current_user.organisation, xml_publish_name, "templates")
+        replace_templates_url(past_file, relative_publish_dir)
 
     draft_file = path.join(current_app.config["CONF_PATH_FROM_MVIEWER"], config.as_dict()["url"])
     # online file from public dir
@@ -346,9 +348,19 @@ def preview_app_version(id, version) -> Response:
     # copy past file to preview folder
     app_config = current_app.config
     src_file = path.join(app_config["EXPORT_CONF_FOLDER"], config["url"])
+    src_dir = src_file.replace(".xml", "")
     preview_file = path.join(config["id"], "preview", "%s.xml" % version)
     path_preview_file = path.join(app_config["EXPORT_CONF_FOLDER"], config["publisher"], preview_file)
+    path_preview_dir = path_preview_file.replace(".xml", "")
+    if path.exists(path_preview_dir):
+        rmtree(path_preview_dir)
+    if path.exists(path_preview_dir):
+        remove(path_preview_file)
     copyfile(src_file, path_preview_file)
+    copytree(src_dir, path_preview_dir)
+    # replace template url
+    relative_publish_dir = path.join(current_app.config["CONF_PATH_FROM_MVIEWER"], config["publisher"], config["id"], "preview", version, "templates")
+    replace_templates_url(path_preview_file, relative_publish_dir)
     # restor branch
     git.repo.git.checkout("master")
     
@@ -442,7 +454,6 @@ def create_app_version(id) -> Response:
     config = current_app.register.read_json(id)
     if not config:
         raise BadRequest("This config doesn't exists !")
-
     config = config[0]
     workspace = path.join(current_app.config["EXPORT_CONF_FOLDER"], current_user.organisation, config["id"])
     git = Git_manager(workspace)
@@ -473,6 +484,55 @@ def store_style() -> Response:
         }
     )
 
+
+@basic_store.route("/api/app/<id>/template/<file_name>", methods=["POST"])
+def add_layer_template(id, file_name) -> Response:
+    template = request.data.decode("utf-8")
+    config = current_app.register.read_json(id)
+    if not config:
+        raise BadRequest("This config doesn't exists !")
+    config = config[0]
+    draftspace = path.join(current_app.config["EXPORT_CONF_FOLDER"], current_user.organisation, config["id"])
+    templates_dir = path.join(draftspace, config["directory"], "templates")
+    if not path.exists(templates_dir):
+        mkdir(templates_dir)
+    draft_templates = path.join(templates_dir, "%s.mst" % file_name)
+    f = open(draft_templates, "w")
+    f.write(template)
+    f.close()
+
+    return jsonify(
+        {
+            "success": True,
+            "filepath": path.join(
+                current_user.organisation, config["id"], config["directory"], "templates", "%s.mst" % file_name
+            ),
+        }
+    )
+
+@basic_store.route("/api/app/<id>/template/<id_layer>", methods=["DELETE"])
+def delete_layer_template(id, id_layer) -> Response:
+    config = current_app.register.read_json(id)
+    if not config:
+        raise BadRequest("This config doesn't exists !")
+    config = config[0]
+    xml_path = path.join(current_app.config["EXPORT_CONF_FOLDER"], config["url"])
+    # read XML and remove template
+    parser = read_xml_file_content(xml_path)
+    layer_node = parser.find(".//layer[@id='%s']" % id_layer)
+    layer_template = layer_node.find(".//template")
+    layer_template.set("url", "")
+    # save file
+    write_file(parser, xml_path)
+    # remove template file from server
+    draftspace = path.join(current_app.config["EXPORT_CONF_FOLDER"], current_user.organisation, config["id"])
+    draft_templates = path.join(draftspace, config["directory"], "templates", "%s.mst" % id_layer)
+    remove(draft_templates)
+    return jsonify(
+        {
+            "success": True
+        }
+    ) 
 
 @basic_store.route("/proxy/", methods=["GET", "POST"])
 def proxy() -> Response:

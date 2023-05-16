@@ -19,13 +19,10 @@ $(document).ready(function(){
         .then(r => r.json())
         .then(data => {
             //Mviewer Studio version
-            console.groupCollapsed("init app from config");
+            // console.groupCollapsed("init app from config");
             _conf = data.app_conf;
             const VERSION =  _conf.mviewerstudio_version
             console.log("MviewerStudio version " + VERSION);
-            if (_conf.proxy === undefined) {
-                _conf.proxy = "../proxy/?url=";
-            }
 
             if (_conf.logout_url) {
                 $("#menu_user_logout a").attr("href", _conf.logout_url);
@@ -130,7 +127,7 @@ $(document).ready(function(){
 
             // Get user info
             getUser();
-            console.groupEnd("init app from config");
+            
         })
         .catch(err => {
             console.log(err);
@@ -352,12 +349,6 @@ sortLayers = function (fromIndex, toIndex) {
     arr.splice(fromIndex, 1);
     arr.splice(toIndex, 0, element);
 };
-
-var sortableAttributeList = Sortable.create(document.getElementById('frm-lis-fields'), {
-    handle: '.bi-arrows-move',
-    animation: 150,
-    ghostClass: 'ghost',
-});
 
 $('input[type=file]').change(function () {
     loadApplicationParametersFromFile();
@@ -882,7 +873,39 @@ var saveAppWithPhp = (conf) => {
     })
 }
 
-var saveApplicationParameters = (message = "") => {
+var saveTemplateToGetUrl = () => new Promise((resolve, reject) => {
+    let waitTemplateUrls = []
+    let themes = Object.keys(config.themes);
+    themes.forEach(theme => {
+        let layers = config.themes[theme].layers.filter(layer => layer.templateFromGenerator);
+        waitTemplateUrls = [...waitTemplateUrls, ...layers.map(layer => {
+            return mv.saveTemplate(layer.id, layer.templateFromGenerator).then(r => r.json()).then(r => ({
+                layer: layer,
+                response: r
+            }))
+        })];
+
+    });
+    Promise.all(waitTemplateUrls).then(values => {
+        values.forEach(({ layer, response }) => {
+            let l = mv.getLayerById(layer?.id);
+            let templateFullPath = `${ _conf.mviewer_instance }${ _conf.conf_path_from_mviewer }${ response.filepath }`;
+            l.generatorTemplateUrl = templateFullPath;
+            l.useGeneratorTemplate = true;  
+        })
+        resolve(null);
+    })
+})
+var saveApplicationParameters = () => {
+    if (_conf?.is_php) {
+        saveApplicationsConfig();
+    } else {
+        saveTemplateToGetUrl().then(() => {
+            saveApplicationsConfig();
+        })
+    }
+}
+var saveApplicationsConfig = (message = "") => {
     const conf = getConfig();
     if (!conf || !mv.validateXML(conf.join(""))) {
         return alertCustom(mviewer.tr('msg.xml_doc_invalid'), 'danger');
@@ -937,7 +960,17 @@ var addgeoFilter = function () {
 var extractFeatures = function (fld, option) {
     var layerid = $(".layers-list-item.active").attr("data-layerid");
     var layer = config.temp.layers[layerid];
-    ogc.getFeatures(layer.wfs_url,layerid,fld, option);
+    let requestParams = {
+        TYPENAME: layerid
+    }
+    if (fld) {
+        requestParams.PROPERTYNAME = fld;
+    }
+    let onSuccess = (data) => {
+        ogc.getDictinctValues(data, fld, option);
+    };
+
+    ogc.getFeatures(layer.wfs_url, requestParams, onSuccess);
     if (option === 'control') {
         $("#frm-attributelabel").val(fld);
     }
