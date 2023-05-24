@@ -658,7 +658,7 @@ var getConfig = () => {
 
     if ($('#opt-studio').prop('checked')) {
         let readURL = new URL(window.location.href);
-        studioUrl = readURL.origin + readURL.pathname;
+        studioUrl = `${readURL.origin}${readURL.pathname}?xml=`;
     }
 
     var application = ['<application',
@@ -678,7 +678,7 @@ var getConfig = () => {
         'measuretools="'+($('#opt-measuretools').prop('checked')=== true)+'"',
         'mouseposition="'+($('#opt-mouseposition').prop('checked')=== true)+'"',
         'geoloc="'+($('#opt-geoloc').prop('checked')=== true)+'"',
-        'studio="'+studioUrl+'"',        
+        'studio="'+studioUrl+'"',
         'togglealllayersfromtheme="'+($('#opt-togglealllayersfromtheme').prop('checked')=== true)+'"'];
 
     config.title = $("#opt-title").val();
