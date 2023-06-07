@@ -4,7 +4,7 @@
 .. _install_python:
 
 Installer mviewerstudio avec Python
-==================================
+===================================
 
 Mviewerstudio est une application web développée en HTML / CSS / PHP / Python. Elle nécessite simplement d'être déployée sur un serveur WEB qui peut être APACHE, NGINX, TOMCAT…
 
@@ -119,7 +119,7 @@ Avec gunicorn (e.g pour la mise en production), vous devez utiliser des chemin a
 
 
 Mettre en production mviewerstudio
-~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 **SECTION A COMPLETER AVEC PYTHON SANS DOCKER.**
 
@@ -139,7 +139,7 @@ Lancer le serveur:
     gunicorn mviewerstudio_backend.app:app
 
 Développer avec mviewerstudio
-~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Serveur de développement
 ***********************************

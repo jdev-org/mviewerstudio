@@ -4,7 +4,7 @@
 .. _publication:
 
 3) Publier son application
-=====================
+==========================
 
 La configuration de votre application est terminée. Vous pouvez prévisualiser le résultat, télécharger le fichier .XML ou publier l'application sur un serveur.
 
