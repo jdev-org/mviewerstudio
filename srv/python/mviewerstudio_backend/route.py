@@ -142,7 +142,9 @@ def list_stored_configs() -> Response:
         configs = current_app.register.as_dict()["configs"]
 
     configs = [
-        config for config in configs if config["publisher"] == current_user.normalize_name
+        config
+        for config in configs
+        if config["publisher"] == current_user.normalize_name
     ]
     for config in configs:
         config["link"] = path.join(
@@ -303,7 +305,9 @@ def delete_config_workspace(id=None) -> Response:
     map_relation = False
     if "relation" in config and config["relation"]:
         publish_name = config["relation"]
-        org_publish_dir = path.join(current_app.publish_path, current_user.normalize_name)
+        org_publish_dir = path.join(
+            current_app.publish_path, current_user.normalize_name
+        )
         publish_file = path.join(org_publish_dir, "%s.xml" % publish_name)
         map_relation = control_relation(publish_file, publish_name, id)
         if path.exists(publish_file) and map_relation:
@@ -334,7 +338,9 @@ def get_all_app_versions(id) -> Response:
         raise BadRequest("This config doesn't exists !")
     config = config[0]
     org = (
-        current_user.normalize_name if current_user else current_app.config["DEFAULT_ORG"]
+        current_user.normalize_name
+        if current_user
+        else current_app.config["DEFAULT_ORG"]
     )
     workspace = path.join(current_app.config["EXPORT_CONF_FOLDER"], org, config["id"])
     git = Git_manager(workspace)

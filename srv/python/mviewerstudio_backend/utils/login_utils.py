@@ -14,7 +14,7 @@ def _get_current_user() -> Optional["User"]:
         org = request.headers.get("sec-org")
         if not org:
             org = current_app.config["DEFAULT_ORG"]
-        org = org.encode('latin1').decode('utf-8')
+        org = org.encode("latin1").decode("utf-8")
         user = User(
             request.headers.get("sec-username", "anonymous"),
             request.headers.get("sec-firstname", "anonymous"),
