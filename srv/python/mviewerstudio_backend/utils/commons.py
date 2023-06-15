@@ -36,7 +36,7 @@ def replace_special_chars(string):
     # Remplacer les caractères spéciaux et les espaces par un tiret bas (_)
     string = re.sub(r"[^a-zA-Z0-9_]", "_", string)
 
-    return string
+    return string.lower()
 
 
 """
