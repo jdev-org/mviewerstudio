@@ -18,6 +18,38 @@ services:
     volumes:
       - "./apps:/home/mvuser/apps"
       - "./src/static/config.json:/home/mvuser/src/static/config.json"
+  # MCP server exposing MviewerStudio capabilities to AI assistants.
+  # Connect MCP clients to http://localhost:8030/mcp
+  mviewerstudio-mcp:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    image: mviewer/mviewerstudio:latest
+    command:
+      - python
+      - -m
+      - src.mcp_server.server
+      - --transport
+      - streamable-http
+      - --host
+      - 0.0.0.0
+      - --port
+      - "8030"
+    environment:
+      - MVIEWERSTUDIO_BASE_URL=http://mviewerstudio:8000/mviewerstudio
+      - MVIEWER_BASE_URL=http://localhost/mviewer/
+      - MVIEWER_INSTANCE_PATH=/mviewer/
+      - MVIEWER_CONF_PATH=apps/store/
+      - MVIEWER_PUBLIC_PATH=apps/public
+      - MCP_DEFAULT_USERNAME=ai
+      - MCP_DEFAULT_ORG=my_org
+      - MVIEWERSTUDIO_CONFIG_PATH=/home/mvuser/src/static/config.json
+    ports:
+      - "127.0.0.1:8030:8030"
+    volumes:
+      - "./src/static/config.json:/home/mvuser/src/static/config.json:ro"
+    depends_on:
+      - mviewerstudio
   # Served under /mviewer/ see docker/nginx/default.conf.template
   mviewer:
     depends_on:
