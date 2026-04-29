@@ -25,8 +25,11 @@ WORKDIR /home/mvuser
 COPY --chown=mvuser:mvuser src ./src
 COPY --chown=mvuser:mvuser install ./install
 # We need to install the app so that the config is properly read (there might be something to fix on
-# app-factory.py, calling app.config.from_object requires the package to be installed
-RUN pip install --user -r install/requirements.txt && pip install --user ./src
+# app-factory.py, calling app.config.from_object requires the package to be installed).
+# MCP dependencies stay in a separate file because the Flask app can still run without an MCP transport.
+RUN pip install --user -r install/requirements.txt \
+    && pip install --user -r install/mcp-requirements.txt \
+    && pip install --user ./src
 
 VOLUME [ "/home/mvuser/apps" ]
 

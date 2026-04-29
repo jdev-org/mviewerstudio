@@ -1,0 +1,2 @@
+# FastMCP SDK used by src/mcp_server/server.py.
+mcp>=1.0

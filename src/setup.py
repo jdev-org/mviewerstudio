@@ -17,8 +17,17 @@ setup(
     author="mviewer community",
     author_email="",
     url="https://github.com/mviewer/mviewerstudio",
+    # The MCP server is packaged with the Flask backend so Docker and local
+    # installs can run it with `python -m src.mcp_server.server`.
     packages=find_namespace_packages(
-        include=["models", "models.*", "utils", "utils.*"]
+        include=[
+            "models",
+            "models.*",
+            "utils",
+            "utils.*",
+            "mcp_server",
+            "mcp_server.*",
+        ]
     ),
     py_modules=[
         "app",
