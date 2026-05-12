@@ -16,6 +16,7 @@ services:
       - EXPORT_CONF_FOLDER=/home/mvuser/apps/store
       - MVIEWERSTUDIO_PUBLISH_PATH=/home/mvuser/apps/public
       - MVIEWERSTUDIO_URL_PATH_PREFIX=mviewerstudio
+      - MVIEWERSTUDIO_AUTH_TYPE=georchestra
     volumes:
       - "./apps:/home/mvuser/apps"
       - "./src/static/config.json:/home/mvuser/src/static/config.json"

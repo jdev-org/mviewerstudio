@@ -47,7 +47,7 @@ test_xml = """<?xml version="1.0" encoding="UTF-8"?>
 @pytest.fixture
 def cleandir():
     yield
-    shutil.rmtree(Path("./store"))
+    shutil.rmtree(Path("./store"), ignore_errors=True)
 
 
 @pytest.fixture
@@ -91,7 +91,7 @@ class TestAuthenticationUser:
             assert c.username == "anonymous"
             assert c.firstname == "anonymous"
             assert c.lastname == "anonymous"
-            assert c.organisation is None
+            assert c.organisation == "public"
             assert c.roles == [""]
 
     def test_headers(self):
@@ -112,6 +112,26 @@ class TestAuthenticationUser:
             assert c.firstname == "baz"
             # this should not happened IRL.
             assert c.lastname == "anonymous"
+
+    def test_keycloak_headers(self):
+        app = create_app()
+        app.testing = True
+        app.config["MVIEWERSTUDIO_AUTH_TYPE"] = "keycloak"
+        headers = {
+            "X-Forwarded-Preferred-Username": "foo",
+            "X-Forwarded-Given-Name": "baz",
+            "X-Forwarded-Family-Name": "baf",
+            "X-Forwarded-Org": "bar",
+            "X-Forwarded-Roles": "USER,ADMIN",
+        }
+        with app.test_request_context("/", headers=headers):
+            c = _get_current_user()
+            assert isinstance(c, User)
+            assert c.username == "foo"
+            assert c.organisation == "bar"
+            assert c.roles == ["USER", "ADMIN"]
+            assert c.firstname == "baz"
+            assert c.lastname == "baf"
 
 
 class TestUserInfos:
@@ -138,6 +158,31 @@ class TestUserInfos:
             "roles": ["USER", "SUPERUSER"],
             "user_name": "foo",
         }
+
+
+class TestKeycloakAccessProtection:
+    def test_keycloak_access_requires_authenticated_user(self):
+        app = create_app()
+        app.testing = True
+        app.config["MVIEWERSTUDIO_AUTH_TYPE"] = "keycloak"
+        with app.test_client() as client:
+            r = client.get("/api/user")
+            assert r.status_code == 401
+
+    def test_keycloak_access_allows_authenticated_user(self):
+        app = create_app()
+        app.testing = True
+        app.config["MVIEWERSTUDIO_AUTH_TYPE"] = "keycloak"
+        with app.test_client() as client:
+            r = client.get(
+                "/api/user",
+                headers={
+                    "X-Forwarded-Preferred-Username": "foo",
+                    "X-Forwarded-Roles": "VIEWER",
+                },
+            )
+            assert r.status_code == 200
+            assert r.json["user_name"] == "foo"
 
 
 @pytest.mark.usefixtures("cleandir")

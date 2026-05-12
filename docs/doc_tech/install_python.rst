@@ -101,6 +101,16 @@ Ces variables doivent être définies dans l'environnement soit via la console (
 - ``LOG_LEVEL``: Niveau logs (voir https://docs.python.org/3/library/logging.html)
 - ``MVIEWERSTUDIO_PUBLISH_PATH``: Répertoire de publication lors du passage du mode brouillon au mode publié.
 - ``DEFAULT_ORG``: Nom de l'organisation par défaut à utiliser pour un usage non sécurisé (e.g en dehors d'un georchestra, ANONYMOUS).
+- ``MVIEWERSTUDIO_AUTH_TYPE``: Type d'authentification à utiliser pour normaliser l'identité transmise par le reverse-proxy. Valeurs possibles : ``georchestra`` ou ``keycloak``. La valeur par défaut est ``georchestra``.
+
+Authentification
+----------------
+
+En mode ``keycloak``, l'accès à mviewerstudio doit être protégé par ``oauth2-proxy`` configuré avec Keycloak. mviewerstudio attend les en-têtes OAuth2/OIDC transmis par ``oauth2-proxy``, par exemple ``X-Auth-Request-Preferred-Username``, ``X-Auth-Request-Given-Name``, ``X-Auth-Request-Family-Name`` et ``X-Auth-Request-Groups``. Sans utilisateur authentifié transmis par ``oauth2-proxy``, mviewerstudio renvoie ``401``.
+
+Les rôles et groupes autorisés doivent être gérés dans Keycloak et filtrés par ``oauth2-proxy``. mviewerstudio ne porte pas la règle d'autorisation par rôle.
+
+En mode ``georchestra``, mviewerstudio lit les anciens en-têtes ``sec-*`` fournis par le security-proxy geOrchestra puis les convertit vers son modèle utilisateur interne normalisé.
 
 Autres Variables
 ----------------
@@ -127,6 +137,7 @@ Lancement de l'application avec Flask (mode developpement)
     export MVIEWERSTUDIO_PUBLISH_PATH=/var/www/mviewer/apps/prod
     export CONF_PUBLISH_PATH_FROM_MVIEWER=apps/prod
     export DEFAULT_ORG=monorg
+    export MVIEWERSTUDIO_AUTH_TYPE=georchestra
     flask run -p 5007
 
 
