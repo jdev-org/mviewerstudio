@@ -21,3 +21,6 @@ class Config:
     )
     DEFAULT_ORG = os.getenv("DEFAULT_ORG", "public")
     MVIEWERSTUDIO_URL_PATH_PREFIX = os.getenv("MVIEWERSTUDIO_URL_PATH_PREFIX", "")
+    MVIEWERSTUDIO_AUTH_TYPE = os.getenv(
+        "MVIEWERSTUDIO_AUTH_TYPE", "georchestra"
+    ).lower()
