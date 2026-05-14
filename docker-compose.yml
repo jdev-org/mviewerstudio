@@ -23,6 +23,7 @@ services:
       - MVIEWERSTUDIO_URL_PATH_PREFIX=mviewerstudio
       - QGS_FOLDER=/home/mvuser/qgis
       - QGIS_SERVER_INTERNAL_URL=http://qgis-server/ogc/
+      - MVIEWERSTUDIO_PROXY_WHITE_LIST=geobretagne.fr,ows.region-bretagne.fr,kartenn.region-bretagne.fr,data.geopf.fr,tile.geobretagne.fr
     volumes:
       - "./apps:/home/mvuser/apps"
       - "./qgis:/home/mvuser/qgis"
@@ -67,9 +68,12 @@ services:
       - MVIEWER_PUBLIC_PATH=apps/public
       - MCP_DEFAULT_USERNAME=ai
       - MCP_DEFAULT_ORG=my_org
+      - MVIEWERSTUDIO_MCP_TRUST_REQUEST_HEADERS=false
+      - MVIEWERSTUDIO_MCP_ALLOW_IDENTITY_OVERRIDE=false
       - MVIEWERSTUDIO_CONFIG_PATH=/home/mvuser/src/static/config.json
       - QGS_FOLDER=/home/mvuser/qgis
       - QGIS_SERVER_INTERNAL_URL=http://qgis-server/ogc/
+      - MVIEWER_APPS_ROOT=/home/mvuser/apps
     ports:
       - "127.0.0.1:8030:8030"
     volumes:

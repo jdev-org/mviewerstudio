@@ -12,6 +12,13 @@ docker compose up --build mviewerstudio-mcp www
 
 Endpoint MCP HTTP : **http://localhost:8030/mcp**
 
+Ouvrir `http://localhost:8030/mcp` directement dans un navigateur peut retourner
+`Not Acceptable: Client must accept text/event-stream`. C'est normal : cet
+endpoint doit etre appele par un client MCP avec les en-tetes HTTP attendus.
+Le serveur est configure en HTTP stateless par defaut
+(`MVIEWERSTUDIO_MCP_STATELESS_HTTP=true`) pour les clients qui ne conservent pas
+le header de session `mcp-session-id` entre deux requetes.
+
 Vous pouvez le tester avec le MCP Inspector :
 
 ```
@@ -19,6 +26,45 @@ npx -y @modelcontextprotocol/inspector
 ```
 
 Puis connectez l'inspector à `http://localhost:8030/mcp`.
+
+### Identite et securite
+
+Le LLM ne doit pas choisir l'identite envoyee a MviewerStudio. Les outils MCP
+n'exposent pas d'arguments `username` ou `organisation`.
+
+Le serveur MCP construit les headers `sec-*` dans cet ordre :
+
+1. Headers `sec-username`, `sec-org`, `sec-roles`, etc. recus par le MCP,
+   uniquement si `MVIEWERSTUDIO_MCP_TRUST_REQUEST_HEADERS=true`.
+2. Variables serveur `MCP_DEFAULT_USERNAME` et `MCP_DEFAULT_ORG`.
+
+En local mono-utilisateur, gardez le MCP expose seulement sur `127.0.0.1` et
+fixez l'identite du compte de travail :
+
+```
+MCP_DEFAULT_USERNAME=pierre
+MCP_DEFAULT_ORG=my_org
+MVIEWERSTUDIO_MCP_TRUST_REQUEST_HEADERS=false
+MVIEWERSTUDIO_MCP_ALLOW_IDENTITY_OVERRIDE=false
+```
+
+Derriere geOrchestra Gateway, ne publiez pas le port MCP directement. Faites
+passer le client MCP par la gateway, configurez la gateway pour authentifier
+l'utilisateur, supprimer/ecraser tout header `sec-*` entrant du client, puis
+injecter ses propres headers securises. Dans ce cas seulement :
+
+```
+MVIEWERSTUDIO_MCP_TRUST_REQUEST_HEADERS=true
+MVIEWERSTUDIO_MCP_ALLOW_IDENTITY_OVERRIDE=false
+```
+
+`MVIEWERSTUDIO_MCP_ALLOW_IDENTITY_OVERRIDE=true` ne doit pas etre activee sur
+une instance partagee. Elle ne sert qu'aux appels Python internes ou aux tests
+de developpement qui utiliseraient encore l'ancien client MCP avec surcharge
+d'identite.
+
+L'outil `get_mcp_effective_identity` permet de verifier quelle identite sera
+transmise au backend.
 
 ### Utilisation avec Codex
 
@@ -50,6 +96,36 @@ Utilise un fond OpenStreetMap, cherche une couche WMS pertinente dans le fournis
 - l'URL de prévisualisation
 ```
 
+Exemple avec centrage geographique et fond ortho :
+
+```
+Tu as acces au serveur MCP MviewerStudio.
+
+Cree une carte centree sur Paris avec un fond ortho IGN.
+Utilise `prepare_centered_mviewer_app_spec` avec `location="Paris"` et
+`baselayer_query="ortho"`, puis `preview_mviewer_app`.
+```
+
+Exemple d'analyse des cartes existantes :
+
+```
+Tu as acces au serveur MCP MviewerStudio.
+
+Cherche dans les cartes mviewer stockees quelle couche operationnelle est la
+plus frequemment utilisee. Appelle `analyze_mviewer_layer_usage` avec
+`scope="all"` et resume les premieres couches.
+```
+
+Exemple de modification d'une carte existante :
+
+```
+Tu as acces au serveur MCP MviewerStudio.
+
+Liste mes cartes avec `list_mviewer_apps`, charge la carte voulue avec
+`get_existing_mviewer_app_spec`, modifie le JSON `spec`, puis enregistre avec
+`update_existing_mviewer_app` en donnant un message de modification explicite.
+```
+
 ### Local en stdio
 
 ```
@@ -73,3 +149,27 @@ Procédure attendue :
 
 Ne génère pas de XML à la main sauf pour diagnostiquer avec `build_mviewer_config_xml`.
 ```
+
+### Outils MCP ajoutes pour l'assistance cartographique
+
+- `get_mcp_effective_identity()` : affiche la source d'identite active et les
+  headers `sec-*` qui seront transmis a MviewerStudio.
+- `geocode_map_location(query, limit=5)` : resout une ville, adresse ou zone
+  francaise avec l'API Adresse et retourne `center` en EPSG:3857, directement
+  reutilisable dans `ApplicationSpec.center`.
+- `get_baselayer_from_config(query="ortho", visible=true)` : extrait un fond de
+  plan configure dans `src/static/config.json` sous forme compatible
+  `ApplicationSpec.baselayers`. Par exemple `ortho` retourne le fond IGN
+  `ortho_ign`.
+- `prepare_centered_mviewer_app_spec(title, location, baselayer_query="ortho",
+  zoom=13)` : compose directement une specification d'application centree sur
+  un lieu geocode avec un fond de plan configure.
+- `get_existing_mviewer_app_spec(app_id)` : charge une carte existante visible
+  pour l'utilisateur courant et retourne son XML plus une `ApplicationSpec`
+  modifiable.
+- `update_existing_mviewer_app(app_id, spec, message="MCP update")` : met a jour
+  uniquement une carte existante via le meme endpoint `PUT /api/app` que l'IHM,
+  avec commit git, mise a jour du registre et nettoyage des previews.
+- `analyze_mviewer_layer_usage(scope="all", limit=20, include_previews=false)` :
+  parcourt les XML mviewer dans `apps/store` et/ou `apps/public`, ignore les
+  previews par defaut, puis retourne les couches les plus utilisees.

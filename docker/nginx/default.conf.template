@@ -11,6 +11,24 @@ server {
         proxy_pass http://mviewer:8080/;
     }
 
+    # Same-origin proxy for mviewer configs using <proxy url="proxy/?url="/>.
+    # This avoids browser CORS issues in local Docker deployments while keeping
+    # the backend whitelist enforced by MviewerStudio.
+    location /mviewer/proxy/ {
+        proxy_pass http://mviewerstudio:8000/${MVIEWERSTUDIO_URL_PATH_PREFIX}/proxy/;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+    }
+
+    # Convenience alias when a config uses an absolute /proxy/?url= path.
+    location /proxy/ {
+        proxy_pass http://mviewerstudio:8000/${MVIEWERSTUDIO_URL_PATH_PREFIX}/proxy/;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+    }
+
     location /apps/ {
         alias /usr/share/nginx/html/apps/;
     }

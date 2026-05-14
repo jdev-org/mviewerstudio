@@ -7,11 +7,53 @@ MviewerStudio API that the browser already uses.
 
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Any, Mapping, Optional
 from urllib.parse import quote
 import os
 import posixpath
 import requests
+
+
+SEC_IDENTITY_HEADERS = (
+    "sec-username",
+    "sec-firstname",
+    "sec-lastname",
+    "sec-org",
+    "sec-roles",
+)
+
+
+def _normalize_identity_headers(headers: Mapping[str, str]) -> dict[str, str]:
+    """Keep only sec-* identity headers with normalized lowercase keys."""
+    normalized: dict[str, str] = {}
+    for key, value in headers.items():
+        lower_key = key.lower()
+        if lower_key in SEC_IDENTITY_HEADERS and value:
+            normalized[lower_key] = str(value)
+    return normalized
+
+
+def _complete_identity_headers(headers: Mapping[str, str]) -> dict[str, str]:
+    """Return a complete identity header set using trusted values or server defaults."""
+    user = headers.get("sec-username") or os.getenv("MCP_DEFAULT_USERNAME", "ai")
+    org = headers.get("sec-org") or os.getenv("MCP_DEFAULT_ORG", "my_org")
+    return {
+        "sec-username": user,
+        "sec-firstname": headers.get("sec-firstname") or user,
+        "sec-lastname": headers.get("sec-lastname") or "mcp",
+        "sec-org": org,
+        "sec-roles": headers.get("sec-roles") or "USER",
+    }
+
+
+def _identity_override_allowed() -> bool:
+    """Allow tool-provided identity only when explicitly enabled for development."""
+    return os.getenv("MVIEWERSTUDIO_MCP_ALLOW_IDENTITY_OVERRIDE", "").lower() in {
+        "1",
+        "true",
+        "yes",
+        "on",
+    }
 
 
 class MviewerStudioClient:
@@ -21,6 +63,7 @@ class MviewerStudioClient:
         self,
         base_url: Optional[str] = None,
         mviewer_base_url: Optional[str] = None,
+        identity_headers: Optional[Mapping[str, str]] = None,
         timeout: float = 30,
     ) -> None:
         # Environment defaults make the same code usable from Docker, local
@@ -32,6 +75,7 @@ class MviewerStudioClient:
         self.conf_path = os.getenv("MVIEWER_CONF_PATH", "apps/store/")
         self.public_path = os.getenv("MVIEWER_PUBLIC_PATH", "apps/public")
         self.mviewer_instance = os.getenv("MVIEWER_INSTANCE_PATH", "/mviewer/")
+        self.identity_headers = _normalize_identity_headers(identity_headers or {})
         self.timeout = timeout
         self.session = requests.Session()
 
@@ -43,16 +87,28 @@ class MviewerStudioClient:
         lastname: Optional[str] = None,
         roles: Optional[str] = None,
     ) -> dict[str, str]:
-        """Build the sec-* headers consumed by MviewerStudio's proxy login shim."""
-        user = username or os.getenv("MCP_DEFAULT_USERNAME", "ai")
-        org = organisation or os.getenv("MCP_DEFAULT_ORG", "my_org")
+        """Build trusted sec-* headers consumed by MviewerStudio's proxy login shim."""
+        if _identity_override_allowed() and any(
+            value for value in (username, organisation, firstname, lastname, roles)
+        ):
+            return _complete_identity_headers(
+                {
+                    "sec-username": username or "",
+                    "sec-firstname": firstname or "",
+                    "sec-lastname": lastname or "",
+                    "sec-org": organisation or "",
+                    "sec-roles": roles or "",
+                }
+            )
+        if self.identity_headers:
+            return _complete_identity_headers(self.identity_headers)
         return {
-            "sec-username": user,
-            "sec-firstname": firstname or user,
-            "sec-lastname": lastname or "mcp",
-            "sec-org": org,
-            "sec-roles": roles or "USER",
+            **_complete_identity_headers({}),
         }
+
+    def active_identity(self) -> dict[str, str]:
+        """Return the effective identity that will be sent to the backend."""
+        return self.user_headers()
 
     def create_or_update_app(
         self,
@@ -75,6 +131,41 @@ class MviewerStudioClient:
                 "Content-Type": "text/xml",
             },
             params=params,
+        )
+
+    def update_existing_app(
+        self,
+        app_id: str,
+        xml: str,
+        username: Optional[str] = None,
+        organisation: Optional[str] = None,
+        message: str = "MCP update",
+    ) -> dict[str, Any]:
+        """Update an existing app through the same PUT endpoint used by the UI."""
+        if not self.app_exists(app_id, username=username, organisation=organisation):
+            raise RuntimeError(f"Application does not exist: {app_id}")
+        return self.request(
+            "PUT",
+            "api/app",
+            data=xml.encode("utf-8"),
+            headers={
+                **self.user_headers(username=username, organisation=organisation),
+                "Content-Type": "text/xml",
+            },
+            params={"message": message},
+        )
+
+    def get_app(
+        self,
+        app_id: str,
+        username: Optional[str] = None,
+        organisation: Optional[str] = None,
+    ) -> dict[str, Any]:
+        """Return one stored app XML and register metadata visible to the user."""
+        return self.request(
+            "GET",
+            f"api/app/{quote(app_id, safe='')}",
+            headers=self.user_headers(username=username, organisation=organisation),
         )
 
     def app_exists(
