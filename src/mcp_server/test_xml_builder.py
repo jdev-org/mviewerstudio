@@ -41,6 +41,31 @@ class TestXmlBuilder(unittest.TestCase):
         spec = ApplicationSpec.from_dict({"spec": example_application_spec()})
         self.assertEqual(spec.title, "Demo MCP mviewer")
 
+    def test_wmts_baselayer_extra_attributes_are_serialized(self) -> None:
+        """Configured IGN orthophoto baselayers should keep WMTS-specific fields."""
+        data = example_application_spec()
+        data["baselayers"] = [
+            {
+                "id": "ortho_ign",
+                "label": "Photographies aeriennes",
+                "title": "IGN",
+                "type": "WMTS",
+                "url": "https://data.geopf.fr/wmts",
+                "visible": True,
+                "layers": "ORTHOIMAGERY.ORTHOPHOTOS",
+                "format": "image/jpeg",
+                "fromcapacity": "false",
+                "style": "normal",
+                "matrixset": "PM",
+            }
+        ]
+        spec = ApplicationSpec.from_dict(data)
+        root = ET.fromstring(build_mviewer_xml(spec))
+        baselayer = root.find("./baselayers/baselayer")
+        self.assertEqual(baselayer.get("id"), "ortho_ign")
+        self.assertEqual(baselayer.get("layers"), "ORTHOIMAGERY.ORTHOPHOTOS")
+        self.assertEqual(baselayer.get("matrixset"), "PM")
+
 
 if __name__ == "__main__":
     unittest.main()

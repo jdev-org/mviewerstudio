@@ -15,6 +15,7 @@ services:
       - EXPORT_CONF_FOLDER=/home/mvuser/apps/store
       - MVIEWERSTUDIO_PUBLISH_PATH=/home/mvuser/apps/public
       - MVIEWERSTUDIO_URL_PATH_PREFIX=mviewerstudio
+      - MVIEWERSTUDIO_PROXY_WHITE_LIST=geobretagne.fr,ows.region-bretagne.fr,kartenn.region-bretagne.fr,data.geopf.fr,tile.geobretagne.fr
     volumes:
       - "./apps:/home/mvuser/apps"
       - "./src/static/config.json:/home/mvuser/src/static/config.json"
@@ -43,11 +44,15 @@ services:
       - MVIEWER_PUBLIC_PATH=apps/public
       - MCP_DEFAULT_USERNAME=ai
       - MCP_DEFAULT_ORG=my_org
+      - MVIEWERSTUDIO_MCP_TRUST_REQUEST_HEADERS=false
+      - MVIEWERSTUDIO_MCP_ALLOW_IDENTITY_OVERRIDE=false
       - MVIEWERSTUDIO_CONFIG_PATH=/home/mvuser/src/static/config.json
+      - MVIEWER_APPS_ROOT=/home/mvuser/apps
     ports:
       - "127.0.0.1:8030:8030"
     volumes:
       - "./src/static/config.json:/home/mvuser/src/static/config.json:ro"
+      - "./apps:/home/mvuser/apps:ro"
     depends_on:
       - mviewerstudio
   # Served under /mviewer/ see docker/nginx/default.conf.template
