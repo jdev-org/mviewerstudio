@@ -94,11 +94,17 @@ class Git_manager:
     def create_version(self, msg=""):
         """
         Create a tag.
-        By default, tag name is formated as '2023-02-27-15-37-34'.
+        By default, tag name is formated as '2023-02-27-15-37-34.123456'.
         :param msg: str tag message
         """
         logger.debug("GIT : CREATE TAG")
-        self.repo.create_tag(datetime.now().strftime("%Y-%m-%d-%H-%M-%S"), message=msg)
+        tag_name = datetime.now().strftime("%Y-%m-%d-%H-%M-%S-%f")
+        try:
+            self.repo.create_tag(tag_name, message=msg)
+        except git.exc.GitCommandError as e:
+            logger.warning(f"GIT : TAG {tag_name} ALREADY EXISTS, RETRYING")
+            tag_name = datetime.now().strftime("%Y-%m-%d-%H-%M-%S-%f")
+            self.repo.create_tag(tag_name, message=msg)
 
     def delete_version(self, version_name):
         """
