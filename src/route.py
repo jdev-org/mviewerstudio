@@ -26,6 +26,7 @@ from shutil import rmtree, copyfile, copytree
 from flask.blueprints import BlueprintSetupState
 from urllib.parse import urlparse
 import requests
+import xml.etree.ElementTree as ET
 from .utils.git_utils import Git_manager
 from datetime import datetime
 
@@ -139,6 +140,8 @@ def update_config() -> Response:
     message = request.args.get("message")
     if not request.data:
         raise BadRequest("No XML found in the request body !")
+    app_id = _xml_identifier(request.data)
+    _assert_config_visible(app_id)
     config = Config(request.data, current_app)
     if not config:
         raise BadRequest("This XML UUID doesn't exists !")
@@ -173,6 +176,25 @@ def update_config() -> Response:
     )
 
 
+@basic_store.route("/api/app/<id>", methods=["GET"])
+def get_stored_config(id) -> Response:
+    """
+    Return one stored mviewer XML config visible to the current user organisation.
+    """
+    config = _assert_config_visible(id)[0]
+    xml_path = path.join(current_app.config["EXPORT_CONF_FOLDER"], config["url"])
+    if not path.exists(xml_path):
+        raise BadRequest("Application file does not exists !")
+    xml = read_xml_file_content(xml_path)
+    return jsonify(
+        {
+            "success": True,
+            "config": config,
+            "xml": ET.tostring(xml, encoding="unicode"),
+        }
+    )
+
+
 @basic_store.route("/api/app", methods=["GET"])
 def list_stored_configs() -> Response:
     """
@@ -198,6 +220,28 @@ def list_stored_configs() -> Response:
             current_app.config["CONF_PATH_FROM_MVIEWER"], config["url"]
         )
     return jsonify(configs)
+
+
+def _xml_identifier(data: bytes) -> str:
+    """Extract the DC identifier from an XML request before saving it."""
+    try:
+        xml = ET.fromstring(data.decode("utf-8"))
+    except ET.ParseError:
+        raise BadRequest("XML seems not correct !")
+    identifier = xml.find(".//{*}identifier")
+    if identifier is None or not identifier.text:
+        raise BadRequest("Missing XML identifier !")
+    return identifier.text
+
+
+def _assert_config_visible(id: str) -> list[dict]:
+    """Reuse the IHM visibility rule: apps are scoped to the current organisation."""
+    config = current_app.register.read_json(id)
+    if not config:
+        raise BadRequest("This config doesn't exists !")
+    if config[0]["publisher"] != current_user.normalize_name:
+        raise MethodNotAllowed("Not allowed !")
+    return config
 
 
 @basic_store.route("/api/app/<id>/publish/<name>", methods=["POST", "DELETE"])
