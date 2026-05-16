@@ -17,6 +17,11 @@ import xml.etree.ElementTree as ET
 from xml.sax.saxutils import escape
 import requests
 
+from .mcp_config import load_mcp_config
+
+
+load_mcp_config()
+
 
 XLINK_HREF = "{http://www.w3.org/1999/xlink}href"
 CSW_NS = "http://www.opengis.net/cat/csw/2.0.2"

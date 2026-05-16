@@ -8,6 +8,11 @@ from typing import Any
 import os
 import xml.etree.ElementTree as ET
 
+from .mcp_config import load_mcp_config
+
+
+load_mcp_config()
+
 
 def layer_usage(
     root_dir: str | Path | None = None,
