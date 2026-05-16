@@ -13,6 +13,11 @@ import os
 import posixpath
 import requests
 
+from .mcp_config import load_mcp_config
+
+
+load_mcp_config()
+
 
 SEC_IDENTITY_HEADERS = (
     "sec-username",
@@ -234,6 +239,97 @@ class MviewerStudioClient:
             },
         )
 
+    def unpublish_app(
+        self,
+        app_id: str,
+        publish_name: str,
+        username: Optional[str] = None,
+        organisation: Optional[str] = None,
+    ) -> dict[str, Any]:
+        return self.request(
+            "DELETE",
+            f"api/app/{quote(app_id, safe='')}/publish/{quote(publish_name, safe='')}",
+            headers=self.user_headers(username=username, organisation=organisation),
+        )
+
+    def delete_app(
+        self,
+        app_id: str,
+        username: Optional[str] = None,
+        organisation: Optional[str] = None,
+    ) -> dict[str, Any]:
+        return self.request(
+            "DELETE",
+            f"api/app/{quote(app_id, safe='')}",
+            headers=self.user_headers(username=username, organisation=organisation),
+        )
+
+    def list_app_versions(
+        self,
+        app_id: str,
+        username: Optional[str] = None,
+        organisation: Optional[str] = None,
+    ) -> dict[str, Any]:
+        return self.request(
+            "GET",
+            f"api/app/{quote(app_id, safe='')}/versions",
+            headers=self.user_headers(username=username, organisation=organisation),
+        )
+
+    def preview_app_version(
+        self,
+        app_id: str,
+        version: str,
+        username: Optional[str] = None,
+        organisation: Optional[str] = None,
+    ) -> dict[str, Any]:
+        return self.request(
+            "GET",
+            f"api/app/{quote(app_id, safe='')}/version/{quote(version, safe='')}/preview",
+            headers=self.user_headers(username=username, organisation=organisation),
+        )
+
+    def restore_app_version(
+        self,
+        app_id: str,
+        version: str,
+        as_new: bool = False,
+        username: Optional[str] = None,
+        organisation: Optional[str] = None,
+    ) -> dict[str, Any]:
+        return self.request(
+            "PUT",
+            f"api/app/{quote(app_id, safe='')}/version/{quote(version, safe='')}",
+            json={"as_new": as_new},
+            headers=self.user_headers(username=username, organisation=organisation),
+        )
+
+    def create_app_version(
+        self,
+        app_id: str,
+        username: Optional[str] = None,
+        organisation: Optional[str] = None,
+    ) -> dict[str, Any]:
+        return self.request(
+            "POST",
+            f"api/app/{quote(app_id, safe='')}/version",
+            headers=self.user_headers(username=username, organisation=organisation),
+        )
+
+    def delete_app_versions(
+        self,
+        app_id: str,
+        versions: list[str],
+        username: Optional[str] = None,
+        organisation: Optional[str] = None,
+    ) -> dict[str, Any]:
+        return self.request(
+            "DELETE",
+            f"api/app/{quote(app_id, safe='')}/version",
+            json={"versions": versions},
+            headers=self.user_headers(username=username, organisation=organisation),
+        )
+
     def store_template(
         self,
         app_id: str,
@@ -265,6 +361,24 @@ class MviewerStudioClient:
             headers={
                 **self.user_headers(username=username, organisation=organisation),
                 "Content-Type": "text/plain",
+            },
+        )
+
+    def store_spatial_file(
+        self,
+        app_id: str,
+        filename: str,
+        content: bytes,
+        username: Optional[str] = None,
+        organisation: Optional[str] = None,
+    ) -> dict[str, Any]:
+        return self.request(
+            "POST",
+            f"api/app/{quote(app_id, safe='')}/file/{quote(filename, safe='')}",
+            data=content,
+            headers={
+                **self.user_headers(username=username, organisation=organisation),
+                "Content-Type": "application/octet-stream",
             },
         )
 

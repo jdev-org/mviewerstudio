@@ -17,7 +17,15 @@ from mcp.server.fastmcp import Context, FastMCP
 
 from .analytics import layer_usage
 from .client import MviewerStudioClient
+from .connectivity import fix_app_connectivity, validate_app_connectivity
 from .geo_tools import geocode_location
+from .intent_tools import app_spec_from_intent
+from .map_tools import (
+    apply_mviewer_tool_recommendation,
+    available_mviewer_tools,
+    suggest_mviewer_tools_for_intent,
+)
+from .mcp_config import load_mcp_config
 from .ogc_tools import (
     allowed_ogc_hosts,
     inspect_wms_layer,
@@ -25,8 +33,12 @@ from .ogc_tools import (
     search_wms_layers,
 )
 from .schemas import ApplicationSpec, example_application_spec
+from .spatial_files import decode_spatial_file_content, spatial_file_response
 from .xml_builder import build_mviewer_xml
 from .xml_parser import mviewer_xml_to_spec
+
+
+load_mcp_config()
 
 
 def create_mcp_server(host: str = "127.0.0.1", port: int = 8030) -> FastMCP:
@@ -78,6 +90,39 @@ def create_mcp_server(host: str = "127.0.0.1", port: int = 8030) -> FastMCP:
     def get_application_spec_example() -> dict[str, Any]:
         """Get a minimal JSON payload for create_or_update_mviewer_app."""
         return example_application_spec()
+
+    @mcp.tool()
+    def list_available_mviewer_tools() -> dict[str, Any]:
+        """List standard and advanced cartographic tools known by this MCP server."""
+        return available_mviewer_tools()
+
+    @mcp.tool()
+    def suggest_mviewer_tools(
+        intent: str,
+        audience: str = "grand_public",
+        preset: str = "",
+    ) -> dict[str, Any]:
+        """Recommend mviewer tools for a business need and target audience."""
+        return suggest_mviewer_tools_for_intent(
+            intent=intent,
+            audience=audience,
+            preset=preset,
+        )
+
+    @mcp.tool()
+    def apply_mviewer_tools_to_app_spec(
+        spec: dict[str, Any],
+        intent: str = "",
+        audience: str = "grand_public",
+        preset: str = "",
+    ) -> dict[str, Any]:
+        """Apply recommended mviewer tool options to an ApplicationSpec copy."""
+        return apply_mviewer_tool_recommendation(
+            spec=spec,
+            intent=intent,
+            audience=audience,
+            preset=preset,
+        )
 
     @mcp.tool()
     def get_mcp_effective_identity(ctx: Context) -> dict[str, Any]:
@@ -139,16 +184,58 @@ def create_mcp_server(host: str = "127.0.0.1", port: int = 8030) -> FastMCP:
         return {"app_id": app_spec.id, "xml": xml}
 
     @mcp.tool()
+    def validate_mviewer_app_connectivity(
+        spec: dict[str, Any],
+        ctx: Context,
+        public_origin: str = "",
+        timeout: float = 10,
+    ) -> dict[str, Any]:
+        """Check layer availability, browser CORS risk and proxy fallback."""
+        client = _mviewer_client(ctx)
+        return validate_app_connectivity(
+            spec,
+            public_origin=public_origin,
+            timeout=timeout,
+            backend_headers=client.user_headers(),
+        )
+
+    @mcp.tool()
+    def fix_mviewer_app_connectivity(
+        spec: dict[str, Any],
+        ctx: Context,
+        public_origin: str = "",
+        timeout: float = 10,
+    ) -> dict[str, Any]:
+        """Return an ApplicationSpec copy with useproxy enabled only where required."""
+        client = _mviewer_client(ctx)
+        return fix_app_connectivity(
+            spec,
+            public_origin=public_origin,
+            timeout=timeout,
+            backend_headers=client.user_headers(),
+        )
+
+    @mcp.tool()
     def create_or_update_mviewer_app(
         spec: dict[str, Any],
         ctx: Context,
+        validate_connectivity: bool = True,
+        public_origin: str = "",
+        connectivity_timeout: float = 10,
     ) -> dict[str, Any]:
         """Create or update a MviewerStudio draft application from ApplicationSpec."""
         # ApplicationSpec is the backend contract: callers provide structured
         # intent, while Python owns XML serialization and MviewerStudio API calls.
+        client = _mviewer_client(ctx)
+        spec, connectivity = _maybe_fix_app_connectivity(
+            spec,
+            client,
+            validate_connectivity=validate_connectivity,
+            public_origin=public_origin,
+            timeout=connectivity_timeout,
+        )
         app_spec = ApplicationSpec.from_dict(spec)
         xml = build_mviewer_xml(app_spec)
-        client = _mviewer_client(ctx)
         response = client.create_or_update_app(
             app_spec.id,
             xml,
@@ -158,6 +245,7 @@ def create_mcp_server(host: str = "127.0.0.1", port: int = 8030) -> FastMCP:
             "app_id": app_spec.id,
             "draft_file": filepath,
             "preview_url": client.draft_url(filepath) if filepath else "",
+            "connectivity": connectivity,
             "mviewerstudio_response": response,
         }
 
@@ -165,13 +253,23 @@ def create_mcp_server(host: str = "127.0.0.1", port: int = 8030) -> FastMCP:
     def preview_mviewer_app(
         spec: dict[str, Any],
         ctx: Context,
+        validate_connectivity: bool = True,
+        public_origin: str = "",
+        connectivity_timeout: float = 10,
     ) -> dict[str, Any]:
         """Save the draft and create a temporary preview URL for this ApplicationSpec."""
         # Preview in MviewerStudio expects the draft workspace to exist, so this
         # first saves the XML through the normal create/update endpoint.
+        client = _mviewer_client(ctx)
+        spec, connectivity = _maybe_fix_app_connectivity(
+            spec,
+            client,
+            validate_connectivity=validate_connectivity,
+            public_origin=public_origin,
+            timeout=connectivity_timeout,
+        )
         app_spec = ApplicationSpec.from_dict(spec)
         xml = build_mviewer_xml(app_spec)
-        client = _mviewer_client(ctx)
         save_response = client.create_or_update_app(
             app_spec.id,
             xml,
@@ -187,6 +285,7 @@ def create_mcp_server(host: str = "127.0.0.1", port: int = 8030) -> FastMCP:
             or save_response.get("config", {}).get("url"),
             "preview_file": preview_file,
             "preview_url": client.preview_url(preview_file) if preview_file else "",
+            "connectivity": connectivity,
         }
 
     @mcp.tool()
@@ -194,13 +293,23 @@ def create_mcp_server(host: str = "127.0.0.1", port: int = 8030) -> FastMCP:
         spec: dict[str, Any],
         ctx: Context,
         publish_name: str = "",
+        validate_connectivity: bool = True,
+        public_origin: str = "",
+        connectivity_timeout: float = 10,
     ) -> dict[str, Any]:
         """Save then publish a mviewer application and return share/iframe URLs."""
         # Publishing receives the same XML as saving to keep draft and public
         # content aligned when an agent performs both operations in one step.
+        client = _mviewer_client(ctx)
+        spec, connectivity = _maybe_fix_app_connectivity(
+            spec,
+            client,
+            validate_connectivity=validate_connectivity,
+            public_origin=public_origin,
+            timeout=connectivity_timeout,
+        )
         app_spec = ApplicationSpec.from_dict(spec)
         xml = build_mviewer_xml(app_spec)
-        client = _mviewer_client(ctx)
         client.create_or_update_app(
             app_spec.id,
             xml,
@@ -224,6 +333,7 @@ def create_mcp_server(host: str = "127.0.0.1", port: int = 8030) -> FastMCP:
                 if share_url
                 else ""
             ),
+            "connectivity": connectivity,
             "mviewerstudio_response": response,
         }
 
@@ -261,15 +371,25 @@ def create_mcp_server(host: str = "127.0.0.1", port: int = 8030) -> FastMCP:
         spec: dict[str, Any],
         ctx: Context,
         message: str = "MCP update",
+        validate_connectivity: bool = True,
+        public_origin: str = "",
+        connectivity_timeout: float = 10,
     ) -> dict[str, Any]:
         """Update an existing draft through MviewerStudio PUT, preserving UI rules."""
         payload = dict(spec)
         payload["id"] = app_id
+        client = _mviewer_client(ctx)
+        payload, connectivity = _maybe_fix_app_connectivity(
+            payload,
+            client,
+            validate_connectivity=validate_connectivity,
+            public_origin=public_origin,
+            timeout=connectivity_timeout,
+        )
         app_spec = ApplicationSpec.from_dict(payload)
         if app_spec.id != app_id:
             raise ValueError("ApplicationSpec id must match app_id")
         xml = build_mviewer_xml(app_spec)
-        client = _mviewer_client(ctx)
         response = client.update_existing_app(
             app_id,
             xml,
@@ -280,8 +400,80 @@ def create_mcp_server(host: str = "127.0.0.1", port: int = 8030) -> FastMCP:
             "app_id": app_id,
             "draft_file": filepath,
             "preview_url": client.draft_url(filepath) if filepath else "",
+            "connectivity": connectivity,
             "mviewerstudio_response": response,
         }
+
+    @mcp.tool()
+    def delete_mviewer_app(
+        app_id: str,
+        ctx: Context,
+    ) -> dict[str, Any]:
+        """Delete an existing draft application visible to the effective identity."""
+        return _mviewer_client(ctx).delete_app(app_id)
+
+    @mcp.tool()
+    def unpublish_mviewer_app(
+        app_id: str,
+        publish_name: str,
+        ctx: Context,
+    ) -> dict[str, Any]:
+        """Remove a published application while keeping the draft workspace."""
+        return _mviewer_client(ctx).unpublish_app(app_id, publish_name)
+
+    @mcp.tool()
+    def list_mviewer_app_versions(
+        app_id: str,
+        ctx: Context,
+    ) -> dict[str, Any]:
+        """List saved git versions for one existing application."""
+        return _mviewer_client(ctx).list_app_versions(app_id)
+
+    @mcp.tool()
+    def preview_mviewer_app_version(
+        app_id: str,
+        version: str,
+        ctx: Context,
+    ) -> dict[str, Any]:
+        """Create a preview URL for a specific saved application version."""
+        client = _mviewer_client(ctx)
+        response = client.preview_app_version(app_id, version)
+        preview_file = response.get("file", "")
+        return {
+            **response,
+            "preview_url": client.preview_url(preview_file) if preview_file else "",
+        }
+
+    @mcp.tool()
+    def restore_mviewer_app_version(
+        app_id: str,
+        version: str,
+        ctx: Context,
+        as_new: bool = False,
+    ) -> dict[str, Any]:
+        """Restore a saved version. Use as_new=true to detach it as a new working state."""
+        return _mviewer_client(ctx).restore_app_version(
+            app_id,
+            version,
+            as_new=as_new,
+        )
+
+    @mcp.tool()
+    def create_mviewer_app_version(
+        app_id: str,
+        ctx: Context,
+    ) -> dict[str, Any]:
+        """Create a named backend version from the current draft state."""
+        return _mviewer_client(ctx).create_app_version(app_id)
+
+    @mcp.tool()
+    def delete_mviewer_app_versions(
+        app_id: str,
+        versions: list[str],
+        ctx: Context,
+    ) -> dict[str, Any]:
+        """Delete saved application versions except the main working branch."""
+        return _mviewer_client(ctx).delete_app_versions(app_id, versions)
 
     @mcp.tool()
     def analyze_mviewer_layer_usage(
@@ -317,6 +509,32 @@ def create_mcp_server(host: str = "127.0.0.1", port: int = 8030) -> FastMCP:
         )
 
     @mcp.tool()
+    def upload_spatial_file_to_mviewer_app(
+        app_id: str,
+        filename: str,
+        ctx: Context,
+        content: str = "",
+        content_base64: str = "",
+        layer_name: str = "",
+        layer_id: str = "",
+    ) -> dict[str, Any]:
+        """Store a GeoJSON/KML/CSV/Shapefile resource in an app workspace."""
+        file_content = decode_spatial_file_content(
+            content=content,
+            content_base64=content_base64,
+        )
+        stored_file = _mviewer_client(ctx).store_spatial_file(
+            app_id,
+            filename,
+            file_content,
+        )
+        return spatial_file_response(
+            stored_file,
+            layer_name=layer_name,
+            layer_id=layer_id,
+        )
+
+    @mcp.tool()
     def search_wms(
         url: str,
         keyword: str = "",
@@ -341,6 +559,75 @@ def create_mcp_server(host: str = "127.0.0.1", port: int = 8030) -> FastMCP:
     ) -> dict[str, Any]:
         """Inspect one WMS layer: title, styles, metadata and bounding box."""
         return inspect_wms_layer(url, layer_id)
+
+    @mcp.tool()
+    def create_mviewer_app_from_intent(
+        intent: str,
+        ctx: Context,
+        title: str = "",
+        location: str = "",
+        baselayer_query: str = "plan",
+        max_layers: int = 3,
+        audience: str = "grand_public",
+        tool_preset: str = "",
+        validate_connectivity: bool = True,
+        public_origin: str = "",
+        connectivity_timeout: float = 10,
+        publish: bool = False,
+        publish_name: str = "",
+    ) -> dict[str, Any]:
+        """Create and preview a simple public-friendly map from a plain-language need."""
+        client = _mviewer_client(ctx)
+        spec, choices = app_spec_from_intent(
+            intent=intent,
+            title=title,
+            location=location,
+            baselayer_query=baselayer_query,
+            max_layers=max_layers,
+            audience=audience,
+            tool_preset=tool_preset,
+        )
+        connectivity: dict[str, Any] = {}
+        if validate_connectivity:
+            spec, connectivity = _maybe_fix_app_connectivity(
+                spec,
+                client,
+                validate_connectivity=True,
+                public_origin=public_origin,
+                timeout=connectivity_timeout,
+            )
+            choices["connectivity"] = {
+                "ok": connectivity.get("ok", False),
+                "proxy_required_count": connectivity.get("proxy_required_count", 0),
+                "proxy_fixable_count": connectivity.get("proxy_fixable_count", 0),
+                "changed_layers": connectivity.get("changed_layers", []),
+            }
+        app_spec = ApplicationSpec.from_dict(spec)
+        xml = build_mviewer_xml(app_spec)
+        save_response = client.create_or_update_app(app_spec.id, xml)
+        preview_response = client.preview_app(app_spec.id, xml)
+        preview_file = preview_response.get("file", "")
+        result: dict[str, Any] = {
+            "app_id": app_spec.id,
+            "title": app_spec.title,
+            "spec": spec,
+            "choices": choices,
+            "draft_file": save_response.get("filepath")
+            or save_response.get("config", {}).get("url"),
+            "preview_file": preview_file,
+            "preview_url": client.preview_url(preview_file) if preview_file else "",
+        }
+        if publish:
+            name = publish_name or _publish_name(app_spec.title)
+            publish_response = client.publish_app(app_spec.id, name, xml)
+            online_file = publish_response.get("online_file", "")
+            result["publication"] = {
+                "publish_name": name,
+                "online_file": online_file,
+                "share_url": client.public_url(online_file) if online_file else "",
+                "mviewerstudio_response": publish_response,
+            }
+        return result
 
     @mcp.prompt(title="Tester la creation d'application mviewer")
     def test_mviewer_creation_prompt(topic: str = "mobilite") -> str:
@@ -414,6 +701,28 @@ def _find_baselayer(query: str = "ortho", visible: bool = True) -> dict[str, Any
 def _mviewer_client(ctx: Context) -> MviewerStudioClient:
     """Create a backend client using only trusted MCP identity sources."""
     return MviewerStudioClient(identity_headers=_trusted_request_identity_headers(ctx))
+
+
+def _maybe_fix_app_connectivity(
+    spec: dict[str, Any],
+    client: MviewerStudioClient,
+    validate_connectivity: bool,
+    public_origin: str,
+    timeout: float,
+) -> tuple[dict[str, Any], dict[str, Any]]:
+    """Optionally validate layers and enable useproxy only where it is needed."""
+    if not validate_connectivity:
+        return spec, {"enabled": False}
+    fixed = fix_app_connectivity(
+        spec,
+        public_origin=public_origin,
+        timeout=timeout,
+        backend_headers=client.user_headers(),
+    )
+    connectivity = dict(fixed["connectivity"])
+    connectivity["enabled"] = True
+    connectivity["changed_layers"] = fixed.get("changed_layers", [])
+    return fixed["spec"], connectivity
 
 
 def _trusted_request_identity_headers(ctx: Context) -> dict[str, str]:

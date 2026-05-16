@@ -27,6 +27,25 @@ npx -y @modelcontextprotocol/inspector
 
 Puis connectez l'inspector à `http://localhost:8030/mcp`.
 
+### Configuration MCP
+
+Les parametres specifiques au serveur MCP peuvent etre centralises dans
+`src/mcp_server/mcp_server.conf`. Ce fichier est au format `KEY=VALUE` avec
+commentaires `#`. Les variables d'environnement deja presentes gardent la
+priorite, ce qui permet de conserver les surcharges Docker, systemd ou
+geOrchestra Gateway.
+
+Le chemin du fichier peut etre surcharge avec :
+
+```
+MVIEWERSTUDIO_MCP_CONFIG=/chemin/vers/mcp_server.conf
+```
+
+Le parametre `MVIEWER_FQDN` sert d'origine publique pour les tests CORS lorsque
+`MVIEWER_PUBLIC_ORIGIN` n'est pas renseigne. Il peut etre donne avec ou sans
+schema, par exemple `MVIEWER_FQDN=https://cartes.example.org` ou
+`MVIEWER_FQDN=cartes.example.org`.
+
 ### Identite et securite
 
 Le LLM ne doit pas choisir l'identite envoyee a MviewerStudio. Les outils MCP
@@ -173,3 +192,9 @@ Ne génère pas de XML à la main sauf pour diagnostiquer avec `build_mviewer_co
 - `analyze_mviewer_layer_usage(scope="all", limit=20, include_previews=false)` :
   parcourt les XML mviewer dans `apps/store` et/ou `apps/public`, ignore les
   previews par defaut, puis retourne les couches les plus utilisees.
+- `upload_spatial_file_to_mviewer_app(app_id, filename, content|content_base64)` :
+  depose un fichier spatial dans le repertoire `data` de la carte via l'API
+  mviewerstudio. Pour GeoJSON/JSON/KML, l'outil retourne aussi un `layer_spec`
+  directement ajoutable a une thematique mviewer. CSV et Shapefile sont stockes,
+  mais necessitent une conversion GeoJSON/KML ou une custom layer pour etre
+  affiches comme couche standard.
