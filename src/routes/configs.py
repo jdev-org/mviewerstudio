@@ -1,12 +1,13 @@
 import hashlib
 import xml.etree.ElementTree as ET
 from datetime import datetime
-from os import mkdir, path, remove
+from os import makedirs, mkdir, path, remove
 from shutil import copyfile, copytree, rmtree
 
 from flask import current_app, jsonify, request
 from flask.typing import ResponseReturnValue
 from werkzeug.exceptions import BadRequest, Conflict, MethodNotAllowed
+from werkzeug.utils import secure_filename
 
 from ..utils.commons import create_zip, make_archive
 from ..utils.config_utils import (
@@ -14,9 +15,11 @@ from ..utils.config_utils import (
     control_relation,
     edit_xml_string,
     read_xml_file_content,
+    replace_resource_url_prefix,
     replace_templates_url,
     write_file,
 )
+from ..utils.git_utils import Git_manager
 from ..utils.login_utils import current_user
 from ..utils.register_utils import from_xml_path
 from .shared import (
@@ -220,6 +223,24 @@ def publish_config(id, name) -> ResponseReturnValue:
         if mviewer_instance:
             absolute_path = path.join(mviewer_instance, relative_publish_dir)
             replace_templates_url(past_file, absolute_path)
+        draft_resource_prefix = path.join(
+            current_app.config["CONF_PATH_FROM_MVIEWER"],
+            current_user.normalize_name,
+            config.uuid,
+            config.directory,
+            "data",
+        )
+        public_resource_prefix = path.join(
+            current_app.config["CONF_PUBLISH_PATH_FROM_MVIEWER"],
+            current_user.normalize_name,
+            xml_publish_name,
+            "data",
+        )
+        replace_resource_url_prefix(
+            past_file,
+            draft_resource_prefix,
+            public_resource_prefix,
+        )
 
     draft_file = path.join(
         current_app.config["CONF_PATH_FROM_MVIEWER"], config.as_dict()["url"]
@@ -320,6 +341,67 @@ def add_layer_template(id, file_name) -> ResponseReturnValue:
                 "templates",
                 f"{file_name}.mst",
             ),
+        }
+    )
+
+
+@basic_store.route("/api/app/<id>/file/<file_name>", methods=["POST"])
+def add_spatial_file(id, file_name) -> ResponseReturnValue:
+    content = request.data
+    if not content:
+        raise BadRequest("Empty file content !")
+    if len(content) > current_app.config["SPATIAL_FILE_MAX_BYTES"]:
+        raise BadRequest("File is too large !")
+
+    safe_name = secure_filename(file_name)
+    if not safe_name:
+        raise BadRequest("Invalid file name !")
+    extension = path.splitext(safe_name)[1].lower().lstrip(".")
+    allowed = {
+        ext.strip().lower()
+        for ext in current_app.config["SPATIAL_FILE_ALLOWED_EXTENSIONS"]
+        if ext.strip()
+    }
+    if extension not in allowed:
+        raise BadRequest("File extension is not allowed !")
+
+    config = _assert_config_visible(id)[0]
+    draftspace = path.join(
+        current_app.config["EXPORT_CONF_FOLDER"],
+        current_user.normalize_name,
+        config["id"],
+    )
+    data_dir = path.join(draftspace, config["directory"], "data")
+    if not path.exists(data_dir):
+        makedirs(data_dir)
+    target_file = path.join(data_dir, safe_name)
+    with open(target_file, "wb") as file:
+        file.write(content)
+
+    git = Git_manager(draftspace)
+    relative_file = path.join(config["directory"], "data", safe_name)
+    git.repo.git.add(relative_file)
+    if git.repo.git.status("--porcelain"):
+        git.repo.git.commit("-m", f"Add spatial file {safe_name}")
+
+    relative_path = path.join(
+        current_user.normalize_name,
+        config["id"],
+        config["directory"],
+        "data",
+        safe_name,
+    )
+    return jsonify(
+        {
+            "success": True,
+            "filename": safe_name,
+            "extension": extension,
+            "filepath": path.join(
+                current_app.config["CONF_PATH_FROM_MVIEWER"],
+                relative_path,
+            ),
+            "relative_filepath": relative_path,
+            "size": len(content),
         }
     )
 

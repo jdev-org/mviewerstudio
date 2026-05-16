@@ -379,6 +379,53 @@ paths:
                   filepath:
                     type: string
 
+  /api/app/{id}/file/{file_name}:
+    post:
+      tags: [Files]
+      summary: Store app spatial file
+      description: Store a spatial resource in the app workspace data directory.
+      parameters:
+        - $ref: '#/components/parameters/AppId'
+        - name: file_name
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/octet-stream:
+            schema:
+              type: string
+              format: binary
+          text/plain:
+            schema:
+              type: string
+      responses:
+        '200':
+          description: Stored file path
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  filename:
+                    type: string
+                  extension:
+                    type: string
+                  filepath:
+                    type: string
+                  relative_filepath:
+                    type: string
+                  size:
+                    type: integer
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '405':
+          $ref: '#/components/responses/MethodNotAllowed'
+
   /api/app/{id}/template/{file_name}:
     post:
       tags: [Templates]

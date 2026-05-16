@@ -27,3 +27,10 @@ class Config:
     QGS_FOLDER = os.getenv(
         "QGS_FOLDER", "/home/gaetan/projects/qgis/compo-jm/volumes/qgis-srv"
     )
+    SPATIAL_FILE_ALLOWED_EXTENSIONS = os.getenv(
+        "MVIEWERSTUDIO_SPATIAL_FILE_ALLOWED_EXTENSIONS",
+        "geojson,json,kml,gpx,csv,zip,shp,shx,dbf,prj,cpg",
+    ).split(",")
+    SPATIAL_FILE_MAX_BYTES = int(
+        os.getenv("MVIEWERSTUDIO_SPATIAL_FILE_MAX_BYTES", "10485760")
+    )
