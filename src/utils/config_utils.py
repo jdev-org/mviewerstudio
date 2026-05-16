@@ -108,6 +108,20 @@ def replace_templates_url(target_xml, new_path):
     return
 
 
+def replace_resource_url_prefix(target_xml, old_prefix, new_prefix):
+    """Replace draft resource URLs in layer attributes when publishing."""
+    file_to_replace = open(target_xml, "r")
+    xml_str = file_to_replace.read()
+    xml_parser = ET.fromstring(xml_str)
+    for layer in xml_parser.findall(".//layer"):
+        for attr in ("url", "styleurl", "legendurl"):
+            current_url = layer.get(attr, "")
+            if current_url.startswith(old_prefix):
+                layer.set(attr, current_url.replace(old_prefix, new_prefix, 1))
+    write_file(xml_parser, target_xml)
+    return
+
+
 """
 This class ease git repo manipulations.
 A register from store/register.json is use as global configs metadata store.

@@ -16,12 +16,13 @@ from .utils.config_utils import (
     edit_xml_string,
     control_relation,
     replace_templates_url,
+    replace_resource_url_prefix,
     read_xml_file_content,
 )
 from .utils.commons import clean_preview, init_preview, create_zip, make_archive
 import hashlib, uuid
 from .utils.register_utils import from_xml_path
-from os import path, mkdir, remove
+from os import path, makedirs, mkdir, remove
 from shutil import rmtree, copyfile, copytree
 from flask.blueprints import BlueprintSetupState
 from urllib.parse import urlparse
@@ -31,6 +32,7 @@ from .utils.git_utils import Git_manager
 from datetime import datetime
 
 from werkzeug.exceptions import BadRequest, MethodNotAllowed, Conflict
+from werkzeug.utils import secure_filename
 
 import logging
 
@@ -344,6 +346,24 @@ def publish_config(id, name) -> Response:
         if mviewer_instance:
             absolute_path = path.join(mviewer_instance, relative_publish_dir)
             replace_templates_url(past_file, absolute_path)
+        draft_resource_prefix = path.join(
+            current_app.config["CONF_PATH_FROM_MVIEWER"],
+            current_user.normalize_name,
+            config.uuid,
+            config.directory,
+            "data",
+        )
+        public_resource_prefix = path.join(
+            current_app.config["CONF_PUBLISH_PATH_FROM_MVIEWER"],
+            current_user.normalize_name,
+            xml_publish_name,
+            "data",
+        )
+        replace_resource_url_prefix(
+            past_file,
+            draft_resource_prefix,
+            public_resource_prefix,
+        )
 
     draft_file = path.join(
         current_app.config["CONF_PATH_FROM_MVIEWER"], config.as_dict()["url"]
@@ -689,6 +709,76 @@ def add_layer_template(id, file_name) -> Response:
                 "templates",
                 "%s.mst" % file_name,
             ),
+        }
+    )
+
+
+@basic_store.route("/api/app/<id>/file/<file_name>", methods=["POST"])
+def add_spatial_file(id, file_name) -> Response:
+    """
+    Store an application spatial resource in the draft workspace.
+    """
+    content = request.data
+    if not content:
+        raise BadRequest("Empty file content !")
+    if len(content) > current_app.config["SPATIAL_FILE_MAX_BYTES"]:
+        raise BadRequest("File is too large !")
+
+    safe_name = secure_filename(file_name)
+    if not safe_name:
+        raise BadRequest("Invalid file name !")
+    extension = path.splitext(safe_name)[1].lower().lstrip(".")
+    allowed = {
+        ext.strip().lower()
+        for ext in current_app.config["SPATIAL_FILE_ALLOWED_EXTENSIONS"]
+        if ext.strip()
+    }
+    if extension not in allowed:
+        raise BadRequest("File extension is not allowed !")
+
+    config = current_app.register.read_json(id)
+    if not config:
+        raise BadRequest("This config doesn't exists !")
+    config = config[0]
+    if config["publisher"] != current_user.normalize_name:
+        raise MethodNotAllowed("Not allowed !")
+
+    draftspace = path.join(
+        current_app.config["EXPORT_CONF_FOLDER"],
+        current_user.normalize_name,
+        config["id"],
+    )
+    data_dir = path.join(draftspace, config["directory"], "data")
+    if not path.exists(data_dir):
+        makedirs(data_dir)
+    target_file = path.join(data_dir, safe_name)
+    with open(target_file, "wb") as file:
+        file.write(content)
+
+    git = Git_manager(draftspace)
+    relative_file = path.join(config["directory"], "data", safe_name)
+    git.repo.git.add(relative_file)
+    if git.repo.git.status("--porcelain"):
+        git.repo.git.commit("-m", f"Add spatial file {safe_name}")
+
+    relative_path = path.join(
+        current_user.normalize_name,
+        config["id"],
+        config["directory"],
+        "data",
+        safe_name,
+    )
+    return jsonify(
+        {
+            "success": True,
+            "filename": safe_name,
+            "extension": extension,
+            "filepath": path.join(
+                current_app.config["CONF_PATH_FROM_MVIEWER"],
+                relative_path,
+            ),
+            "relative_filepath": relative_path,
+            "size": len(content),
         }
     )
 

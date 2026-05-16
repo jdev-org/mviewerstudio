@@ -21,3 +21,10 @@ class Config:
     )
     DEFAULT_ORG = os.getenv("DEFAULT_ORG", "public")
     MVIEWERSTUDIO_URL_PATH_PREFIX = os.getenv("MVIEWERSTUDIO_URL_PATH_PREFIX", "")
+    SPATIAL_FILE_ALLOWED_EXTENSIONS = os.getenv(
+        "MVIEWERSTUDIO_SPATIAL_FILE_ALLOWED_EXTENSIONS",
+        "geojson,json,kml,gpx,csv,zip,shp,shx,dbf,prj,cpg",
+    ).split(",")
+    SPATIAL_FILE_MAX_BYTES = int(
+        os.getenv("MVIEWERSTUDIO_SPATIAL_FILE_MAX_BYTES", "10485760")
+    )
