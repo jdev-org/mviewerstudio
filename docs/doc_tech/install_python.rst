@@ -136,6 +136,12 @@ Mise en production
 
 **Cette partie décrit l'installation en production de mviewerstudio sur un serveur Linux (Ubuntu / Debian) avec le backend python.**
 
+.. note::
+
+   Pour une procédure de production complète sur Debian 12/13 ou Ubuntu 24.04,
+   incluant le serveur MCP, les services systemd et Nginx, consultez
+   :ref:`install_vm_production`.
+
 Prérequis
 =========
 
