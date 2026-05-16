@@ -1,0 +1,20 @@
+[Unit]
+Description=mviewerstudio MCP server
+After=network.target mviewerstudio.service
+
+[Service]
+User=monuser
+WorkingDirectory=/var/mviewerstudio
+Environment="MVIEWERSTUDIO_MCP_CONFIG=/etc/mviewerstudio/mcp_server.conf"
+ExecStart=/var/mviewerstudio/.venv/bin/python -m src.mcp_server.server \
+    --transport streamable-http \
+    --host 127.0.0.1 \
+    --port 8030
+
+Restart=on-failure
+RestartSec=5
+StandardOutput=append:/var/log/mviewerstudio/mcp.log
+StandardError=append:/var/log/mviewerstudio/mcp.log
+
+[Install]
+WantedBy=multi-user.target
