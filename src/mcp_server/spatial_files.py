@@ -7,6 +7,7 @@ from typing import Any
 import base64
 import re
 import unicodedata
+from urllib.parse import unquote_to_bytes
 
 
 DIRECT_MVIEWER_LAYER_TYPES = {
@@ -14,6 +15,26 @@ DIRECT_MVIEWER_LAYER_TYPES = {
     "json": "geojson",
     "kml": "kml",
 }
+
+
+def is_data_uri(value: str) -> bool:
+    """Return whether a layer URL embeds data directly in the XML."""
+    return value.strip().lower().startswith("data:")
+
+
+def data_uri_payload_size(value: str) -> int:
+    """Return the decoded payload size for a data URI, best effort."""
+    if not is_data_uri(value):
+        return 0
+    header, separator, payload = value.partition(",")
+    if not separator:
+        return len(value.encode("utf-8"))
+    if header.lower().endswith(";base64"):
+        try:
+            return len(base64.b64decode(payload, validate=True))
+        except ValueError:
+            return len(payload.encode("utf-8"))
+    return len(unquote_to_bytes(payload))
 
 
 def decode_spatial_file_content(
@@ -73,4 +94,3 @@ def _slug(value: str, fallback: str) -> str:
     ascii_value = normalized.encode("ascii", "ignore").decode("ascii")
     slug = re.sub(r"[^a-zA-Z0-9_]+", "_", ascii_value).strip("_").lower()
     return slug or fallback
-

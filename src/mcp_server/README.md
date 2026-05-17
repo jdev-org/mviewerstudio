@@ -30,8 +30,9 @@ Puis connectez l'inspector à `http://localhost:8030/mcp`.
 ### Configuration MCP
 
 Les parametres specifiques au serveur MCP peuvent etre centralises dans
-`src/mcp_server/mcp_server.conf`. Ce fichier est au format `KEY=VALUE` avec
-commentaires `#`. Les variables d'environnement deja presentes gardent la
+`/etc/mviewerstudio/mcp_server.conf`. Le depot fournit un exemple commente dans
+`src/mcp_server/mcp_server.conf.example`. Ce fichier est au format `KEY=VALUE`
+avec commentaires `#`. Les variables d'environnement deja presentes gardent la
 priorite, ce qui permet de conserver les surcharges Docker, systemd ou
 geOrchestra Gateway.
 
@@ -45,6 +46,14 @@ Le parametre `MVIEWER_FQDN` sert d'origine publique pour les tests CORS lorsque
 `MVIEWER_PUBLIC_ORIGIN` n'est pas renseigne. Il peut etre donne avec ou sans
 schema, par exemple `MVIEWER_FQDN=https://cartes.example.org` ou
 `MVIEWER_FQDN=cartes.example.org`.
+
+Par defaut, le MCP appelle aussi l'API backend
+`/api/config/mcp` (`MVIEWERSTUDIO_MCP_USE_BACKEND_CONFIG=true`) pour reprendre
+les chemins mviewer et les limites d'upload deja configurees dans
+mviewerstudio. Les variables MCP comme `MVIEWER_CONF_PATH`,
+`MVIEWER_PUBLIC_PATH`, `MVIEWERSTUDIO_MCP_XML_MAX_BYTES` et
+`MVIEWERSTUDIO_MCP_SPATIAL_FILE_MAX_BYTES` ne servent alors qu'aux surcharges
+locales.
 
 ### Identite et securite
 
@@ -154,6 +163,14 @@ python -m src.mcp_server.server --transport stdio
 
 Le serveur MCP utilise le SDK MCP Python, qui nécessite Python >= 3.10.
 
+### Tests
+
+Les tests du serveur MCP sont separes du code runtime dans `tests/mcp_server` :
+
+```
+python -m unittest discover -s tests/mcp_server -p 'test_*.py'
+```
+
 ### Prompt de test
 
 ```
@@ -198,3 +215,16 @@ Ne génère pas de XML à la main sauf pour diagnostiquer avec `build_mviewer_co
   directement ajoutable a une thematique mviewer. CSV et Shapefile sont stockes,
   mais necessitent une conversion GeoJSON/KML ou une custom layer pour etre
   affiches comme couche standard.
+
+Les couches `geojson` ou `kml` peuvent techniquement utiliser une URL `data:`
+dans le XML pour de tres petits contenus. Pour eviter des XML lourds et peu
+maintenables, le MCP refuse les donnees inline qui depassent
+`MVIEWERSTUDIO_MCP_INLINE_DATA_MAX_BYTES` et demande d'utiliser
+`upload_spatial_file_to_mviewer_app`. La limite courante est aussi exposee dans
+`get_mviewerstudio_capabilities().inline_data_policy`.
+
+Le MCP refuse aussi les XML et fichiers spatiaux depassant
+`MVIEWERSTUDIO_MCP_XML_MAX_BYTES` ou
+`MVIEWERSTUDIO_MCP_SPATIAL_FILE_MAX_BYTES` avant l'appel HTTP. L'API
+mviewerstudio garde ses propres limites avec `MVIEWERSTUDIO_XML_MAX_BYTES` et
+`MVIEWERSTUDIO_SPATIAL_FILE_MAX_BYTES`.

@@ -5,13 +5,9 @@ from __future__ import annotations
 from collections import Counter, defaultdict
 from pathlib import Path
 from typing import Any
-import os
 import xml.etree.ElementTree as ET
 
-from .mcp_config import load_mcp_config
-
-
-load_mcp_config()
+from .mcp_config import current_settings
 
 
 def layer_usage(
@@ -74,7 +70,7 @@ def layer_usage(
 
 
 def _apps_root() -> Path:
-    return Path(os.getenv("MVIEWER_APPS_ROOT", Path.cwd() / "apps"))
+    return Path(current_settings().mviewer_apps_root)
 
 
 def _xml_files(base: Path, scope: str, include_previews: bool) -> list[Path]:

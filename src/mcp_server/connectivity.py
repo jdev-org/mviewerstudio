@@ -5,15 +5,11 @@ from __future__ import annotations
 from copy import deepcopy
 from typing import Any, Mapping
 from urllib.parse import parse_qsl, quote, urlencode, urljoin, urlparse, urlunparse
-import os
 
 import requests
 
-from .mcp_config import load_mcp_config
-from .ogc_tools import _assert_allowed_url
-
-
-load_mcp_config()
+from .mcp_config import current_settings
+from .network_policy import assert_allowed_url
 
 
 def validate_app_connectivity(
@@ -122,7 +118,7 @@ def _validate_layer(
         return report
 
     try:
-        _assert_allowed_url(url)
+        assert_allowed_url(url)
     except ValueError as error:
         report["direct"] = {"available": False, "error": str(error)}
         return report
@@ -307,21 +303,22 @@ def _absolute_proxy_url(proxy_url: str) -> str:
     parsed = urlparse(proxy_url)
     if parsed.scheme and parsed.netloc:
         return proxy_url
+    settings = current_settings()
     base_url = (
-        os.getenv("MVIEWERSTUDIO_BASE_URL") or "http://localhost/mviewerstudio"
+        settings.mviewerstudio_base_url or "http://localhost/mviewerstudio"
     ).rstrip("/") + "/"
     return urljoin(base_url, proxy_url.lstrip("/"))
 
 
 def _default_public_origin() -> str:
-    explicit = os.getenv("MVIEWER_PUBLIC_ORIGIN", "")
-    if explicit:
-        return explicit.rstrip("/")
-    fqdn = _origin_from_fqdn(os.getenv("MVIEWER_FQDN", ""))
+    settings = current_settings()
+    if settings.mviewer_public_origin:
+        return settings.mviewer_public_origin.rstrip("/")
+    fqdn = _origin_from_fqdn(settings.mviewer_fqdn)
     if fqdn:
         return fqdn
-    for env_name in ("MVIEWER_BASE_URL", "MVIEWERSTUDIO_BASE_URL"):
-        origin = _origin(os.getenv(env_name, ""))
+    for value in (settings.mviewer_base_url, settings.mviewerstudio_base_url):
+        origin = _origin(value)
         if origin:
             return origin
     return "http://localhost"

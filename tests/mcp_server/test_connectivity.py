@@ -6,7 +6,7 @@ import os
 import unittest
 from unittest.mock import patch
 
-from .connectivity import (
+from src.mcp_server.connectivity import (
     _default_public_origin,
     fix_app_connectivity,
     validate_app_connectivity,

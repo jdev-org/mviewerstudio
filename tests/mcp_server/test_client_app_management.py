@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
+import os
 import unittest
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 
-from .client import MviewerStudioClient
+from src.mcp_server.client import MviewerStudioClient
 
 
 class _Response:
@@ -59,6 +60,38 @@ class TestClientAppManagement(unittest.TestCase):
         self.assertEqual(method, "POST")
         self.assertEqual(url, "http://studio/api/app/app-1/file/points.geojson")
         self.assertEqual(client.session.request.call_args.kwargs["data"], b"{}")
+
+    def test_store_spatial_file_rejects_payload_above_mcp_limit(self) -> None:
+        client = MviewerStudioClient(base_url="http://studio")
+        client.session.request = Mock(return_value=_Response())
+
+        with patch.dict(
+            os.environ,
+            {
+                "MVIEWERSTUDIO_MCP_CONFIG": "/tmp/missing-mcp.conf",
+                "MVIEWERSTUDIO_MCP_SPATIAL_FILE_MAX_BYTES": "2",
+            },
+        ):
+            with self.assertRaisesRegex(ValueError, "spatial file is too large"):
+                client.store_spatial_file("app-1", "points.geojson", b"{}{}")
+
+        client.session.request.assert_not_called()
+
+    def test_preview_app_rejects_xml_above_mcp_limit(self) -> None:
+        client = MviewerStudioClient(base_url="http://studio")
+        client.session.request = Mock(return_value=_Response())
+
+        with patch.dict(
+            os.environ,
+            {
+                "MVIEWERSTUDIO_MCP_CONFIG": "/tmp/missing-mcp.conf",
+                "MVIEWERSTUDIO_MCP_XML_MAX_BYTES": "8",
+            },
+        ):
+            with self.assertRaisesRegex(ValueError, "mviewer XML is too large"):
+                client.preview_app("app-1", "<config></config>")
+
+        client.session.request.assert_not_called()
 
 
 if __name__ == "__main__":

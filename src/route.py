@@ -107,11 +107,38 @@ def user() -> Response:
     return jsonify(current_user.as_dict())
 
 
+@basic_store.route("/api/config/mcp", methods=["GET"])
+def mcp_backend_config() -> Response:
+    """
+    Return non-sensitive backend settings useful to the MCP server.
+
+    The MCP server can reuse these values instead of duplicating backend
+    limits and mviewer-relative paths in its own configuration file.
+    """
+    return jsonify(
+        {
+            "success": True,
+            "mviewer": {
+                "conf_path": current_app.config["CONF_PATH_FROM_MVIEWER"],
+                "public_path": current_app.config["CONF_PUBLISH_PATH_FROM_MVIEWER"],
+            },
+            "limits": {
+                "xml_max_bytes": current_app.config["XML_MAX_BYTES"],
+                "spatial_file_max_bytes": current_app.config["SPATIAL_FILE_MAX_BYTES"],
+                "spatial_file_allowed_extensions": current_app.config[
+                    "SPATIAL_FILE_ALLOWED_EXTENSIONS"
+                ],
+            },
+        }
+    )
+
+
 @basic_store.route("/api/app", methods=["POST"])
 def create_config() -> Response:
     """
     Create XML.
     """
+    _assert_request_size("XML", "XML_MAX_BYTES")
     try:
         config = Config(request.data, current_app)
     except:
@@ -142,6 +169,7 @@ def update_config() -> Response:
     message = request.args.get("message")
     if not request.data:
         raise BadRequest("No XML found in the request body !")
+    _assert_request_size("XML", "XML_MAX_BYTES")
     app_id = _xml_identifier(request.data)
     _assert_config_visible(app_id)
     config = Config(request.data, current_app)
@@ -261,6 +289,8 @@ def publish_config(id, name) -> Response:
 
     if not request.data and request.method == "POST":
         return BadRequest("Empty request POST data !")
+    if request.method == "POST":
+        _assert_request_size("XML", "XML_MAX_BYTES")
 
     # control publish directory exists
     publish_dir = current_app.config["MVIEWERSTUDIO_PUBLISH_PATH"]
@@ -578,6 +608,7 @@ def preview_uncommited_app(id) -> Response:
     """
     # init preview
     app_config = current_app.config
+    _assert_request_size("XML", "XML_MAX_BYTES")
     # read XML
     xml = request.data.decode("utf-8")
     xml.replace("anonymous", current_user.username)
@@ -721,8 +752,7 @@ def add_spatial_file(id, file_name) -> Response:
     content = request.data
     if not content:
         raise BadRequest("Empty file content !")
-    if len(content) > current_app.config["SPATIAL_FILE_MAX_BYTES"]:
-        raise BadRequest("File is too large !")
+    _assert_request_size("File", "SPATIAL_FILE_MAX_BYTES")
 
     safe_name = secure_filename(file_name)
     if not safe_name:
@@ -781,6 +811,17 @@ def add_spatial_file(id, file_name) -> Response:
             "size": len(content),
         }
     )
+
+
+def _assert_request_size(label: str, config_key: str) -> None:
+    max_bytes = int(current_app.config.get(config_key, -1))
+    if max_bytes < 0:
+        return
+    size = len(request.data or b"")
+    if size > max_bytes:
+        raise BadRequest(
+            f"{label} is too large: {size} bytes, limit is {max_bytes} bytes"
+        )
 
 
 @basic_store.route("/api/app/<id>/template/<id_layer>", methods=["DELETE"])

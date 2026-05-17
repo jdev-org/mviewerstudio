@@ -7,11 +7,13 @@ store, preview and publish.
 
 from __future__ import annotations
 
+import os
 import unittest
 import xml.etree.ElementTree as ET
+from unittest.mock import patch
 
-from .schemas import ApplicationSpec, example_application_spec
-from .xml_builder import build_mviewer_xml
+from src.mcp_server.schemas import ApplicationSpec, example_application_spec
+from src.mcp_server.xml_builder import build_mviewer_xml
 
 
 class TestXmlBuilder(unittest.TestCase):
@@ -65,6 +67,61 @@ class TestXmlBuilder(unittest.TestCase):
         self.assertEqual(baselayer.get("id"), "ortho_ign")
         self.assertEqual(baselayer.get("layers"), "ORTHOIMAGERY.ORTHOPHOTOS")
         self.assertEqual(baselayer.get("matrixset"), "PM")
+
+    def test_large_inline_data_uri_is_rejected(self) -> None:
+        """Generated spatial files should be uploaded once they exceed policy."""
+        data = example_application_spec()
+        data["themes"][0]["layers"][0].update(
+            {
+                "type": "geojson",
+                "url": "data:application/geo+json;charset=utf-8,%7B%22payload%22%3A%22abcdef%22%7D",
+            }
+        )
+        spec = ApplicationSpec.from_dict(data)
+
+        with patch.dict(
+            os.environ,
+            {
+                "MVIEWERSTUDIO_MCP_CONFIG": "/tmp/missing-mcp.conf",
+                "MVIEWERSTUDIO_MCP_INLINE_DATA_MAX_BYTES": "8",
+            },
+        ):
+            with self.assertRaisesRegex(ValueError, "upload_spatial_file_to_mviewer_app"):
+                build_mviewer_xml(spec)
+
+    def test_small_inline_data_uri_is_allowed(self) -> None:
+        data = example_application_spec()
+        data["themes"][0]["layers"][0].update(
+            {
+                "type": "geojson",
+                "url": "data:application/geo+json;charset=utf-8,%7B%7D",
+            }
+        )
+        spec = ApplicationSpec.from_dict(data)
+
+        with patch.dict(
+            os.environ,
+            {
+                "MVIEWERSTUDIO_MCP_CONFIG": "/tmp/missing-mcp.conf",
+                "MVIEWERSTUDIO_MCP_INLINE_DATA_MAX_BYTES": "8",
+            },
+        ):
+            root = ET.fromstring(build_mviewer_xml(spec))
+
+        self.assertTrue(root.find("./themes/theme/layer").get("url").startswith("data:"))
+
+    def test_xml_above_mcp_limit_is_rejected_by_builder(self) -> None:
+        spec = ApplicationSpec.from_dict(example_application_spec())
+
+        with patch.dict(
+            os.environ,
+            {
+                "MVIEWERSTUDIO_MCP_CONFIG": "/tmp/missing-mcp.conf",
+                "MVIEWERSTUDIO_MCP_XML_MAX_BYTES": "8",
+            },
+        ):
+            with self.assertRaisesRegex(ValueError, "mviewer XML is too large"):
+                build_mviewer_xml(spec)
 
 
 if __name__ == "__main__":

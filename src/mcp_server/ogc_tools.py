@@ -8,35 +8,24 @@ catalogs. It returns plain dictionaries that can be fed directly into
 
 from __future__ import annotations
 
-from pathlib import Path
 from typing import Any, Optional
-from urllib.parse import parse_qsl, urlencode, urlparse, urlunparse
-import json
-import os
+from urllib.parse import parse_qsl, urlencode, urlunparse, urlparse
 import xml.etree.ElementTree as ET
 from xml.sax.saxutils import escape
 import requests
 
-from .mcp_config import load_mcp_config
-
-
-load_mcp_config()
+from .network_policy import (
+    allowed_ogc_hosts,
+    assert_allowed_url,
+    configured_providers,
+    host_from_url,
+)
 
 
 XLINK_HREF = "{http://www.w3.org/1999/xlink}href"
 CSW_NS = "http://www.opengis.net/cat/csw/2.0.2"
 OGC_NS = "http://www.opengis.net/ogc"
 GMD_NS = "http://www.isotc211.org/2005/gmd"
-
-
-def allowed_ogc_hosts() -> list[str]:
-    """Return hosts that MCP OGC tools are allowed to contact.
-
-    The allow-list is generated from `app_conf.data_providers.wms` and
-    `app_conf.data_providers.csw` in config.json. Operators can still add
-    deployment-specific exceptions with MVIEWERSTUDIO_MCP_ALLOWED_HOSTS.
-    """
-    return sorted(_allowed_hosts())
 
 
 def search_csw_records(
@@ -85,7 +74,7 @@ def inspect_wms_layer(url: str, layer_id: str) -> dict[str, Any]:
 
 def _fetch_wms_capabilities(url: str) -> ET.Element:
     """Fetch and parse a WMS 1.3.0 GetCapabilities document."""
-    _assert_allowed_url(url)
+    assert_allowed_url(url)
     capabilities_url = _with_query(
         url,
         {
@@ -101,7 +90,7 @@ def _fetch_wms_capabilities(url: str) -> ET.Element:
 
 def _fetch_csw_records(url: str, keyword: str = "", limit: int = 20) -> ET.Element:
     """Fetch and parse a CSW GetRecords response."""
-    _assert_allowed_url(url)
+    assert_allowed_url(url)
     response = requests.post(
         url,
         data=_csw_get_records_body(keyword=keyword, limit=limit).encode("utf-8"),
@@ -153,99 +142,16 @@ def _csw_keyword_constraint(keyword: str) -> str:
     </csw:Constraint>"""
 
 
-def _assert_allowed_url(url: str) -> None:
-    """Restrict remote OGC calls to configured providers and explicit extras."""
-    allowed = _allowed_hosts()
-    if not allowed:
-        if _allow_unconfigured_hosts():
-            return
-        raise ValueError(
-            "No OGC host is allowed. Configure config.json data_providers, "
-            "MVIEWERSTUDIO_MCP_ALLOWED_HOSTS, or set "
-            "MVIEWERSTUDIO_MCP_ALLOW_UNCONFIGURED_HOSTS=true for development."
-        )
-    host = _host_from_url(url)
-    if host not in allowed:
-        raise ValueError(
-            f"Host {host} is not allowed. Add it to config.json data_providers "
-            "or MVIEWERSTUDIO_MCP_ALLOWED_HOSTS."
-        )
-
-
-def _allow_unconfigured_hosts() -> bool:
-    """Allow unrestricted OGC calls only when explicitly requested."""
-    return os.getenv("MVIEWERSTUDIO_MCP_ALLOW_UNCONFIGURED_HOSTS", "").lower() in {
-        "1",
-        "true",
-        "yes",
-        "on",
-    }
+_assert_allowed_url = assert_allowed_url
 
 
 def _metadata_baseref_for_url(url: str) -> str:
     """Return the configured CSW human-readable metadata base URL if available."""
-    target_host = _host_from_url(url)
-    for provider in _configured_providers("csw"):
-        if _host_from_url(provider.get("url", "")) == target_host:
+    target_host = host_from_url(url)
+    for provider in configured_providers("csw"):
+        if host_from_url(provider.get("url", "")) == target_host:
             return str(provider.get("baseref", ""))
     return ""
-
-
-def _allowed_hosts() -> set[str]:
-    """Build the network allow-list from config.json and optional env extras."""
-    return _configured_provider_hosts() | _env_allowed_hosts()
-
-
-def _configured_providers(provider_type: str) -> list[dict[str, Any]]:
-    """Read configured providers of one type from config.json."""
-    providers = _configured_data_providers()
-    return [
-        provider
-        for provider in providers.get(provider_type, [])
-        if isinstance(provider, dict)
-    ]
-
-
-def _configured_data_providers() -> dict[str, Any]:
-    """Read the data_providers section from the frontend configuration."""
-    config_path = Path(
-        os.getenv(
-            "MVIEWERSTUDIO_CONFIG_PATH",
-            Path(__file__).resolve().parents[1] / "static" / "config.json",
-        )
-    )
-    try:
-        with config_path.open(encoding="utf-8") as config_file:
-            data = json.load(config_file)
-    except (OSError, json.JSONDecodeError):
-        return {}
-    return data.get("app_conf", {}).get("data_providers", {})
-
-
-def _configured_provider_hosts() -> set[str]:
-    """Extract WMS and CSW provider hosts from the frontend configuration."""
-    hosts: set[str] = set()
-    for provider_type in ("wms", "csw"):
-        for provider in _configured_providers(provider_type):
-            host = _host_from_url(provider.get("url", ""))
-            if host:
-                hosts.add(host)
-    return hosts
-
-
-def _env_allowed_hosts() -> set[str]:
-    """Read optional extra hosts for deployments with additional open flows."""
-    return {
-        host.strip().lower()
-        for host in os.getenv("MVIEWERSTUDIO_MCP_ALLOWED_HOSTS", "").split(",")
-        if host.strip()
-    }
-
-
-def _host_from_url(url: str) -> str:
-    """Normalize a URL or host value into a lowercase hostname."""
-    parsed = urlparse(url if "://" in url else f"//{url}")
-    return (parsed.hostname or "").lower()
 
 
 def _with_query(url: str, params: dict[str, str]) -> str:

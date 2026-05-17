@@ -8,7 +8,11 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
-from .ogc_tools import _assert_allowed_url, allowed_ogc_hosts, search_csw_records
+from src.mcp_server.ogc_tools import (
+    _assert_allowed_url,
+    allowed_ogc_hosts,
+    search_csw_records,
+)
 
 
 class _Response:
@@ -63,6 +67,22 @@ class TestOgcTools(unittest.TestCase):
         ):
             with self.assertRaises(ValueError):
                 _assert_allowed_url("https://ows.example.org/geoserver/wms")
+
+    def test_explicit_allowed_hosts_accept_plain_hosts_or_urls(self) -> None:
+        """Operational config should accept both host names and copied URLs."""
+        with patch.dict(
+            os.environ,
+            {
+                "MVIEWERSTUDIO_CONFIG_PATH": "/tmp/missing-mviewerstudio-config.json",
+                "MVIEWERSTUDIO_MCP_ALLOWED_HOSTS": (
+                    "ows.example.org,https://catalog.example.org/csw"
+                ),
+            },
+        ):
+            _assert_allowed_url("https://ows.example.org/geoserver/wms")
+            _assert_allowed_url("https://catalog.example.org/csw")
+            with self.assertRaises(ValueError):
+                _assert_allowed_url("https://other.example.org/wms")
 
     def test_search_csw_returns_layer_ready_wms_resources(self) -> None:
         """CSW ISO records should expose WMS resources as mviewer layer inputs."""

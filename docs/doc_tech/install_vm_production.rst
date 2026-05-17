@@ -107,6 +107,7 @@ Créez un fichier d'environnement pour mviewerstudio :
    # Depot de fichiers spatiaux via le MCP et l'API mviewerstudio.
    MVIEWERSTUDIO_SPATIAL_FILE_ALLOWED_EXTENSIONS=geojson,json,kml,gpx,csv,zip,shp,shx,dbf,prj,cpg
    MVIEWERSTUDIO_SPATIAL_FILE_MAX_BYTES=10485760
+   MVIEWERSTUDIO_XML_MAX_BYTES=1048576
 
    # Si mviewerstudio est publié sous /mviewerstudio/.
    MVIEWERSTUDIO_URL_PATH_PREFIX=mviewerstudio
@@ -154,7 +155,7 @@ Copiez le fichier de configuration MCP exemple, puis adaptez-le :
 
 .. code-block:: sh
 
-   sudo cp /var/mviewerstudio/src/mcp_server/mcp_server.conf /etc/mviewerstudio/mcp_server.conf
+   sudo cp /var/mviewerstudio/src/mcp_server/mcp_server.conf.example /etc/mviewerstudio/mcp_server.conf
    sudo chown root:mviewerstudio /etc/mviewerstudio/mcp_server.conf
    sudo chmod 640 /etc/mviewerstudio/mcp_server.conf
    sudo nano /etc/mviewerstudio/mcp_server.conf
@@ -169,10 +170,10 @@ Exemple minimal pour une instance publique ``https://cartes.example.org`` :
    MVIEWERSTUDIO_MCP_STATELESS_HTTP=true
 
    MVIEWERSTUDIO_BASE_URL=http://127.0.0.1:5007/mviewerstudio
+   MVIEWERSTUDIO_MCP_USE_BACKEND_CONFIG=true
+   MVIEWERSTUDIO_MCP_BACKEND_CONFIG_TIMEOUT=0.5
    MVIEWER_BASE_URL=https://cartes.example.org/mviewer/
    MVIEWER_FQDN=https://cartes.example.org
-   MVIEWER_CONF_PATH=apps/store/
-   MVIEWER_PUBLIC_PATH=apps/public
    MVIEWER_INSTANCE_PATH=/mviewer/
    MVIEWER_APPS_ROOT=/var/www/mviewer/apps
    MVIEWERSTUDIO_CONFIG_PATH=/var/mviewerstudio/src/static/config.json
@@ -184,11 +185,22 @@ Exemple minimal pour une instance publique ``https://cartes.example.org`` :
 
    MVIEWERSTUDIO_MCP_ALLOWED_HOSTS=ows.region-bretagne.fr,geobretagne.fr
    MVIEWERSTUDIO_MCP_ALLOW_UNCONFIGURED_HOSTS=false
+   MVIEWERSTUDIO_MCP_INLINE_DATA_MAX_BYTES=8192
 
 ``MVIEWER_FQDN`` est utilisé par les tests CORS du MCP lorsque
 ``MVIEWER_PUBLIC_ORIGIN`` n'est pas défini. Si vous êtes derrière un reverse
 proxy ou une gateway avec une origine publique différente, renseignez
 explicitement ``MVIEWER_PUBLIC_ORIGIN``.
+
+``MVIEWERSTUDIO_MCP_INLINE_DATA_MAX_BYTES`` limite la taille des URL ``data:``
+dans les couches. Au-delà, le MCP demande de déposer le GeoJSON/KML avec
+``upload_spatial_file_to_mviewer_app`` pour garder les XML mviewer légers.
+Avec ``MVIEWERSTUDIO_MCP_USE_BACKEND_CONFIG=true``, les chemins mviewer et les
+limites d'upload sont repris depuis l'API backend ``/api/config/mcp``. Les
+variables ``MVIEWER_CONF_PATH``, ``MVIEWER_PUBLIC_PATH``,
+``MVIEWERSTUDIO_MCP_XML_MAX_BYTES`` et
+``MVIEWERSTUDIO_MCP_SPATIAL_FILE_MAX_BYTES`` ne sont donc nécessaires que pour
+forcer une valeur différente côté MCP.
 
 Installez le service MCP :
 
@@ -361,5 +373,6 @@ Pour mettre à jour le code :
    sudo systemctl restart mviewerstudio.service mviewerstudio-mcp.service
 
 Après chaque mise à jour, comparez votre ``src/static/config.json`` et
-``/etc/mviewerstudio/mcp_server.conf`` avec les versions du dépôt afin de
-repérer les nouveaux paramètres disponibles.
+``/etc/mviewerstudio/mcp_server.conf`` avec les exemples du dépôt, notamment
+``src/mcp_server/mcp_server.conf.example``, afin de repérer les nouveaux
+paramètres disponibles.
