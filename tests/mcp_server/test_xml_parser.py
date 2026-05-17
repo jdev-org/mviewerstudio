@@ -4,9 +4,9 @@ from __future__ import annotations
 
 import unittest
 
-from .schemas import ApplicationSpec, example_application_spec
-from .xml_builder import build_mviewer_xml
-from .xml_parser import mviewer_xml_to_spec
+from src.mcp_server.schemas import ApplicationSpec, example_application_spec
+from src.mcp_server.xml_builder import build_mviewer_xml
+from src.mcp_server.xml_parser import mviewer_xml_to_spec
 
 
 class TestXmlParser(unittest.TestCase):

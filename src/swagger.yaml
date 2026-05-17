@@ -8,6 +8,7 @@ servers:
 
 tags:
   - name: User
+  - name: Config
   - name: Apps
   - name: Versions
   - name: Publication
@@ -28,6 +29,40 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/User'
+
+  /api/config/mcp:
+    get:
+      tags: [Config]
+      summary: Return non-sensitive backend settings for the MCP server
+      description: Expose mviewer-relative paths and upload limits so the MCP server does not duplicate backend configuration.
+      responses:
+        '200':
+          description: MCP backend defaults
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  mviewer:
+                    type: object
+                    properties:
+                      conf_path:
+                        type: string
+                      public_path:
+                        type: string
+                  limits:
+                    type: object
+                    properties:
+                      xml_max_bytes:
+                        type: integer
+                      spatial_file_max_bytes:
+                        type: integer
+                      spatial_file_allowed_extensions:
+                        type: array
+                        items:
+                          type: string
 
   /api/app:
     post:

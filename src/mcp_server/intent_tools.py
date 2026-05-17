@@ -2,19 +2,13 @@
 
 from __future__ import annotations
 
-from pathlib import Path
 from typing import Any
-import json
-import os
 import re
 
+from .capabilities import find_baselayer, load_map_catalog
 from .geo_tools import geocode_location
 from .map_tools import suggest_mviewer_tools_for_intent
-from .mcp_config import load_mcp_config
 from .ogc_tools import search_wms_layers
-
-
-load_mcp_config()
 
 
 def app_spec_from_intent(
@@ -42,7 +36,7 @@ def app_spec_from_intent(
         "title": effective_title,
         "description": f"Carte creee depuis la demande : {intent.strip()}",
         "keywords": _keywords_from_intent(intent),
-        "baselayers": [_find_baselayer(query=baselayer_query, visible=True)],
+        "baselayers": [find_baselayer(query=baselayer_query, visible=True)],
         "themes": [],
         "options": tool_recommendation["recommended"],
         "search": {
@@ -95,7 +89,7 @@ def app_spec_from_intent(
 
 def discover_layers_for_intent(intent: str, max_layers: int = 3) -> list[dict[str, Any]]:
     """Search configured WMS providers with simple intent-derived keywords."""
-    providers = _load_capabilities().get("data_providers", {}).get("wms", [])
+    providers = load_map_catalog().get("data_providers", {}).get("wms", [])
     keywords = _search_terms_from_intent(intent)
     selected: list[dict[str, Any]] = []
     seen: set[str] = set()
@@ -145,44 +139,6 @@ def public_layer(layer: dict[str, Any], visible: bool = True) -> dict[str, Any]:
         value = layer.get(key)
         if value:
             result[key] = value
-    return result
-
-
-def _load_capabilities() -> dict[str, Any]:
-    config_path = Path(
-        os.getenv(
-            "MVIEWERSTUDIO_CONFIG_PATH",
-            Path(__file__).resolve().parents[1] / "static" / "config.json",
-        )
-    )
-    with config_path.open(encoding="utf-8") as config_file:
-        data = json.load(config_file)
-    app_conf = data.get("app_conf", {})
-    return {
-        "baselayers": app_conf.get("baselayers", {}),
-        "data_providers": app_conf.get("data_providers", {}),
-    }
-
-
-def _find_baselayer(query: str = "ortho", visible: bool = True) -> dict[str, Any]:
-    baselayers = _load_capabilities().get("baselayers", {})
-    if not isinstance(baselayers, dict) or not baselayers:
-        raise ValueError("No baselayers configured")
-    lowered = (query or "").lower()
-    candidates = list(baselayers.values())
-    selected = None
-    for layer in candidates:
-        haystack = " ".join(
-            str(layer.get(key, ""))
-            for key in ("id", "label", "title", "layers", "type")
-        ).lower()
-        if lowered and lowered in haystack:
-            selected = layer
-            break
-    if selected is None:
-        selected = candidates[0]
-    result = dict(selected)
-    result["visible"] = visible
     return result
 
 

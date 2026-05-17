@@ -6,7 +6,7 @@ from pathlib import Path
 import tempfile
 import unittest
 
-from .analytics import layer_usage
+from src.mcp_server.analytics import layer_usage
 
 
 class TestAnalytics(unittest.TestCase):

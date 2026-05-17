@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import unittest
 
-from .geo_tools import lonlat_to_web_mercator, web_mercator_to_lonlat
+from src.mcp_server.geo_tools import lonlat_to_web_mercator, web_mercator_to_lonlat
 
 
 class TestGeoTools(unittest.TestCase):

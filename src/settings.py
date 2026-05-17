@@ -34,3 +34,4 @@ class Config:
     SPATIAL_FILE_MAX_BYTES = int(
         os.getenv("MVIEWERSTUDIO_SPATIAL_FILE_MAX_BYTES", "10485760")
     )
+    XML_MAX_BYTES = int(os.getenv("MVIEWERSTUDIO_XML_MAX_BYTES", "1048576"))

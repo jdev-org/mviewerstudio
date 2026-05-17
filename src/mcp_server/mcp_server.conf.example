@@ -30,6 +30,12 @@ MVIEWERSTUDIO_MCP_STATELESS_HTTP=true
 # URL de MviewerStudio vue par le serveur MCP pour appeler l'API Flask.
 MVIEWERSTUDIO_BASE_URL=http://localhost/mviewerstudio
 
+# Recupere automatiquement les chemins mviewer et limites d'upload publies par
+# l'API mviewerstudio /api/config/mcp. Garder true pour eviter de dupliquer la
+# configuration backend dans ce fichier.
+MVIEWERSTUDIO_MCP_USE_BACKEND_CONFIG=true
+MVIEWERSTUDIO_MCP_BACKEND_CONFIG_TIMEOUT=0.5
+
 # URL publique de mviewer utilisee pour construire les liens de brouillon.
 MVIEWER_BASE_URL=http://localhost/mviewer/
 
@@ -43,8 +49,11 @@ MVIEWER_FQDN=
 MVIEWER_PUBLIC_ORIGIN=
 
 # Chemins relatifs vus depuis mviewer pour les brouillons et publications.
-MVIEWER_CONF_PATH=apps/store/
-MVIEWER_PUBLIC_PATH=apps/public
+# Si MVIEWERSTUDIO_MCP_USE_BACKEND_CONFIG=true et que l'API est joignable,
+# ces valeurs sont reprises depuis CONF_PATH_FROM_MVIEWER et
+# CONF_PUBLISH_PATH_FROM_MVIEWER cote backend.
+# MVIEWER_CONF_PATH=apps/store/
+# MVIEWER_PUBLIC_PATH=apps/public
 MVIEWER_INSTANCE_PATH=/mviewer/
 
 # Racine locale analysee par les outils de statistiques d'usage.
@@ -84,3 +93,20 @@ MVIEWERSTUDIO_MCP_ALLOWED_HOSTS=
 # Mode developpement uniquement : autorise les appels vers des hotes non declares
 # si aucun fournisseur OGC n'est configure.
 MVIEWERSTUDIO_MCP_ALLOW_UNCONFIGURED_HOSTS=false
+
+# Taille maximale, en octets, d'une donnee inline dans une URL data: de couche.
+# Au-dela, le MCP refuse le XML et demande d'utiliser
+# upload_spatial_file_to_mviewer_app pour stocker le GeoJSON/KML avec la carte.
+# 0 interdit toute URL data:. Une valeur negative desactive cette limite.
+MVIEWERSTUDIO_MCP_INLINE_DATA_MAX_BYTES=8192
+
+# Taille maximale, en octets, d'un XML mviewer envoye par le MCP a l'API.
+# Par defaut, la valeur est reprise depuis MVIEWERSTUDIO_XML_MAX_BYTES exposee
+# par le backend. Decommenter uniquement pour une surcharge MCP locale.
+# MVIEWERSTUDIO_MCP_XML_MAX_BYTES=1048576
+
+# Taille maximale, en octets, d'un fichier spatial envoye par le MCP.
+# Par defaut, la valeur est reprise depuis MVIEWERSTUDIO_SPATIAL_FILE_MAX_BYTES
+# exposee par le backend. Decommenter uniquement pour une surcharge MCP locale.
+# Une valeur negative desactive cette limite cote MCP, mais pas celle de l'API.
+# MVIEWERSTUDIO_MCP_SPATIAL_FILE_MAX_BYTES=10485760

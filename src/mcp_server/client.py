@@ -9,14 +9,10 @@ from __future__ import annotations
 
 from typing import Any, Mapping, Optional
 from urllib.parse import quote
-import os
 import posixpath
 import requests
 
-from .mcp_config import load_mcp_config
-
-
-load_mcp_config()
+from .mcp_config import current_settings
 
 
 SEC_IDENTITY_HEADERS = (
@@ -40,8 +36,9 @@ def _normalize_identity_headers(headers: Mapping[str, str]) -> dict[str, str]:
 
 def _complete_identity_headers(headers: Mapping[str, str]) -> dict[str, str]:
     """Return a complete identity header set using trusted values or server defaults."""
-    user = headers.get("sec-username") or os.getenv("MCP_DEFAULT_USERNAME", "ai")
-    org = headers.get("sec-org") or os.getenv("MCP_DEFAULT_ORG", "my_org")
+    settings = current_settings()
+    user = headers.get("sec-username") or settings.default_username
+    org = headers.get("sec-org") or settings.default_org
     return {
         "sec-username": user,
         "sec-firstname": headers.get("sec-firstname") or user,
@@ -53,12 +50,7 @@ def _complete_identity_headers(headers: Mapping[str, str]) -> dict[str, str]:
 
 def _identity_override_allowed() -> bool:
     """Allow tool-provided identity only when explicitly enabled for development."""
-    return os.getenv("MVIEWERSTUDIO_MCP_ALLOW_IDENTITY_OVERRIDE", "").lower() in {
-        "1",
-        "true",
-        "yes",
-        "on",
-    }
+    return current_settings().allow_identity_override
 
 
 class MviewerStudioClient:
@@ -73,13 +65,12 @@ class MviewerStudioClient:
     ) -> None:
         # Environment defaults make the same code usable from Docker, local
         # stdio MCP sessions, and tests that inject explicit URLs.
-        self.base_url = (base_url or os.getenv("MVIEWERSTUDIO_BASE_URL") or "http://localhost/mviewerstudio").rstrip("/")
-        self.mviewer_base_url = (
-            mviewer_base_url or os.getenv("MVIEWER_BASE_URL") or "http://localhost/mviewer/"
-        )
-        self.conf_path = os.getenv("MVIEWER_CONF_PATH", "apps/store/")
-        self.public_path = os.getenv("MVIEWER_PUBLIC_PATH", "apps/public")
-        self.mviewer_instance = os.getenv("MVIEWER_INSTANCE_PATH", "/mviewer/")
+        settings = current_settings()
+        self.base_url = (base_url or settings.mviewerstudio_base_url).rstrip("/")
+        self.mviewer_base_url = mviewer_base_url or settings.mviewer_base_url
+        self.conf_path = settings.mviewer_conf_path
+        self.public_path = settings.mviewer_public_path
+        self.mviewer_instance = settings.mviewer_instance_path
         self.identity_headers = _normalize_identity_headers(identity_headers or {})
         self.timeout = timeout
         self.session = requests.Session()
@@ -124,13 +115,14 @@ class MviewerStudioClient:
         message: str = "MCP update",
     ) -> dict[str, Any]:
         """Use POST for new apps and PUT for existing apps."""
+        xml_bytes = _checked_xml_payload(xml)
         exists = self.app_exists(app_id, username=username, organisation=organisation)
         path = "api/app"
         params = {"message": message} if exists else None
         return self.request(
             "PUT" if exists else "POST",
             path,
-            data=xml.encode("utf-8"),
+            data=xml_bytes,
             headers={
                 **self.user_headers(username=username, organisation=organisation),
                 "Content-Type": "text/xml",
@@ -149,10 +141,11 @@ class MviewerStudioClient:
         """Update an existing app through the same PUT endpoint used by the UI."""
         if not self.app_exists(app_id, username=username, organisation=organisation):
             raise RuntimeError(f"Application does not exist: {app_id}")
+        xml_bytes = _checked_xml_payload(xml)
         return self.request(
             "PUT",
             "api/app",
-            data=xml.encode("utf-8"),
+            data=xml_bytes,
             headers={
                 **self.user_headers(username=username, organisation=organisation),
                 "Content-Type": "text/xml",
@@ -210,10 +203,11 @@ class MviewerStudioClient:
         username: Optional[str] = None,
         organisation: Optional[str] = None,
     ) -> dict[str, Any]:
+        xml_bytes = _checked_xml_payload(xml)
         return self.request(
             "POST",
             f"api/app/{quote(app_id, safe='')}/preview",
-            data=xml.encode("utf-8"),
+            data=xml_bytes,
             headers={
                 **self.user_headers(username=username, organisation=organisation),
                 "Content-Type": "text/xml",
@@ -228,11 +222,12 @@ class MviewerStudioClient:
         username: Optional[str] = None,
         organisation: Optional[str] = None,
     ) -> dict[str, Any]:
+        xml_bytes = _checked_xml_payload(xml)
         return self.request(
             "POST",
             f"api/app/{quote(app_id, safe='')}/publish/{quote(publish_name, safe='')}",
             params={"instance": self.mviewer_instance},
-            data=xml.encode("utf-8"),
+            data=xml_bytes,
             headers={
                 **self.user_headers(username=username, organisation=organisation),
                 "Content-Type": "text/xml",
@@ -372,6 +367,12 @@ class MviewerStudioClient:
         username: Optional[str] = None,
         organisation: Optional[str] = None,
     ) -> dict[str, Any]:
+        _assert_payload_size(
+            len(content),
+            current_settings().spatial_file_max_bytes,
+            "spatial file",
+            "MVIEWERSTUDIO_MCP_SPATIAL_FILE_MAX_BYTES",
+        )
         return self.request(
             "POST",
             f"api/app/{quote(app_id, safe='')}/file/{quote(filename, safe='')}",
@@ -419,3 +420,28 @@ class MviewerStudioClient:
         base = self.mviewer_base_url
         separator = "&" if "?" in base else "?"
         return f"{base}{separator}config={config_path}"
+
+
+def _checked_xml_payload(xml: str) -> bytes:
+    payload = xml.encode("utf-8")
+    _assert_payload_size(
+        len(payload),
+        current_settings().xml_max_bytes,
+        "mviewer XML",
+        "MVIEWERSTUDIO_MCP_XML_MAX_BYTES",
+    )
+    return payload
+
+
+def _assert_payload_size(
+    size: int,
+    max_bytes: int,
+    label: str,
+    setting_name: str,
+) -> None:
+    if max_bytes < 0 or size <= max_bytes:
+        return
+    raise ValueError(
+        f"{label} is too large: {size} bytes, limit is {max_bytes} bytes. "
+        f"Adjust {setting_name} if this is expected."
+    )

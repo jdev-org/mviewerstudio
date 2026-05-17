@@ -5,7 +5,7 @@ from __future__ import annotations
 import unittest
 from unittest.mock import patch
 
-from .intent_tools import app_spec_from_intent
+from src.mcp_server.intent_tools import app_spec_from_intent
 
 
 class TestIntentTools(unittest.TestCase):

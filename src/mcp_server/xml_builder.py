@@ -10,7 +10,9 @@ from __future__ import annotations
 from typing import Any
 import xml.etree.ElementTree as ET
 
+from .mcp_config import current_settings
 from .schemas import ApplicationSpec, BaseLayerSpec, GroupSpec, LayerSpec, ThemeSpec
+from .spatial_files import data_uri_payload_size, is_data_uri
 
 
 RDF_NS = "http://www.w3.org/1999/02/22-rdf-syntax-ns#"
@@ -39,6 +41,7 @@ def _clean_attrs(attrs: dict[str, Any]) -> dict[str, str]:
 
 def build_mviewer_xml(spec: ApplicationSpec) -> str:
     """Build a full mviewer XML document from an ApplicationSpec."""
+    _validate_inline_data_urls(spec)
     root = ET.Element(
         "config",
         {
@@ -54,6 +57,7 @@ def build_mviewer_xml(spec: ApplicationSpec) -> str:
     _append_baselayers(root, spec)
     _append_themes(root, spec)
     xml = ET.tostring(root, encoding="utf-8", xml_declaration=True)
+    _validate_xml_size(len(xml))
     return xml.decode("utf-8")
 
 
@@ -212,3 +216,42 @@ def _layer_attrs(layer: LayerSpec) -> dict[str, str]:
         **layer.extra,
     }
     return _clean_attrs(attrs)
+
+
+def _validate_inline_data_urls(spec: ApplicationSpec) -> None:
+    """Keep generated XML lightweight by limiting inline spatial data."""
+    max_bytes = current_settings().inline_data_max_bytes
+    if max_bytes < 0:
+        return
+    for layer in _iter_layers(spec):
+        if not is_data_uri(layer.url):
+            continue
+        payload_size = data_uri_payload_size(layer.url)
+        if payload_size > max_bytes:
+            raise ValueError(
+                "Inline data URI too large for layer "
+                f"{layer.id}: {payload_size} bytes, limit is {max_bytes} bytes. "
+                "Store generated spatial data with "
+                "upload_spatial_file_to_mviewer_app, then use the returned "
+                "layer_spec URL instead of embedding GeoJSON/KML in XML."
+            )
+
+
+def _iter_layers(spec: ApplicationSpec) -> list[LayerSpec]:
+    layers: list[LayerSpec] = []
+    for theme in spec.themes:
+        layers.extend(theme.layers)
+        for group in theme.groups:
+            layers.extend(group.layers)
+    return layers
+
+
+def _validate_xml_size(size: int) -> None:
+    max_bytes = current_settings().xml_max_bytes
+    if max_bytes < 0 or size <= max_bytes:
+        return
+    raise ValueError(
+        f"mviewer XML is too large: {size} bytes, limit is {max_bytes} bytes. "
+        "Reduce inline content, split the application, or adjust "
+        "MVIEWERSTUDIO_MCP_XML_MAX_BYTES if this is expected."
+    )

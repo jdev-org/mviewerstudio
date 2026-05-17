@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import unittest
 
-from .map_tools import (
+from src.mcp_server.map_tools import (
     apply_mviewer_tool_recommendation,
     available_mviewer_tools,
     suggest_mviewer_tools_for_intent,

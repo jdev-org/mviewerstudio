@@ -4,7 +4,12 @@ from __future__ import annotations
 
 import unittest
 
-from .spatial_files import decode_spatial_file_content, spatial_file_response
+from src.mcp_server.spatial_files import (
+    data_uri_payload_size,
+    decode_spatial_file_content,
+    is_data_uri,
+    spatial_file_response,
+)
 
 
 class TestSpatialFiles(unittest.TestCase):
@@ -13,6 +18,12 @@ class TestSpatialFiles(unittest.TestCase):
 
     def test_decode_base64_content(self) -> None:
         self.assertEqual(decode_spatial_file_content(content_base64="e30="), b"{}")
+
+    def test_data_uri_payload_size_decodes_url_encoded_content(self) -> None:
+        uri = "data:application/geo+json;charset=utf-8,%7B%22type%22%3A%22Point%22%7D"
+
+        self.assertTrue(is_data_uri(uri))
+        self.assertEqual(data_uri_payload_size(uri), len(b'{"type":"Point"}'))
 
     def test_geojson_response_includes_ready_layer_spec(self) -> None:
         result = spatial_file_response(

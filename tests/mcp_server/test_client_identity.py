@@ -6,7 +6,7 @@ import os
 import unittest
 from unittest.mock import patch
 
-from .client import MviewerStudioClient
+from src.mcp_server.client import MviewerStudioClient
 
 
 class TestClientIdentity(unittest.TestCase):
