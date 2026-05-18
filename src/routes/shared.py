@@ -117,6 +117,17 @@ def _xml_text_or_default(node: ET.Element | None, default: str = "") -> str:
     return node.text
 
 
+def _assert_request_size(label: str, config_key: str) -> None:
+    max_bytes = int(current_app.config.get(config_key, -1))
+    if max_bytes < 0:
+        return
+    size = len(request.data or b"")
+    if size > max_bytes:
+        raise BadRequest(
+            f"{label} is too large: {size} bytes, limit is {max_bytes} bytes"
+        )
+
+
 def _qgs_project_payload(qgs_dir: str, absolute_file: str) -> dict:
     relative_file = path.relpath(absolute_file, qgs_dir)
     filename = path.basename(absolute_file)

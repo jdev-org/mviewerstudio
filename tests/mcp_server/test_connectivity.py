@@ -132,6 +132,82 @@ class TestConnectivity(unittest.TestCase):
         self.assertEqual(report["layer_count"], 1)
         self.assertEqual(report["layers"][0]["path"], "themes[0].groups[0].layers[0]")
 
+    def test_baselayer_cors_is_reported(self) -> None:
+        spec = {
+            "title": "Carte marine",
+            "themes": [],
+            "baselayers": [
+                {
+                    "id": "openseamap",
+                    "label": "OpenSeaMap",
+                    "type": "OSM",
+                    "url": "https://t2.openseamap.org/tile/{z}/{x}/{y}.png",
+                    "visible": True,
+                }
+            ],
+        }
+
+        def fake_get(url: str, **_: object) -> _Response:
+            if "localhost/mviewerstudio/proxy/" in url:
+                return _Response(status_code=405)
+            self.assertEqual(url, "https://t2.openseamap.org/tile/6/31/22.png")
+            return _Response(headers={"Content-Type": "image/png"})
+
+        with patch.dict(
+            os.environ,
+            {"MVIEWERSTUDIO_MCP_ALLOWED_HOSTS": "t2.openseamap.org"},
+        ), patch("src.mcp_server.connectivity.requests.get", side_effect=fake_get):
+            report = validate_app_connectivity(
+                spec,
+                public_origin="http://localhost",
+            )
+
+        self.assertFalse(report["ok"])
+        self.assertEqual(report["baselayer_count"], 1)
+        self.assertEqual(report["baselayer_issue_count"], 1)
+        self.assertEqual(report["baselayer_proxy_required_count"], 1)
+        self.assertEqual(report["baselayer_proxy_fixable_count"], 0)
+        self.assertIn("cors_missing", report["baselayers"][0]["issue_reasons"])
+        self.assertFalse(report["baselayers"][0]["direct"]["cors_ok"])
+
+    def test_baselayer_cors_is_fixed_with_proxy_when_proxy_works(self) -> None:
+        spec = {
+            "title": "Carte marine",
+            "proxy_url": "http://localhost/mviewerstudio/proxy/?url=",
+            "themes": [],
+            "baselayers": [
+                {
+                    "id": "openseamap",
+                    "label": "OpenSeaMap",
+                    "type": "OSM",
+                    "url": "https://t2.openseamap.org/tile/{z}/{x}/{y}.png",
+                    "visible": True,
+                }
+            ],
+        }
+
+        def fake_get(url: str, **_: object) -> _Response:
+            if "localhost/mviewerstudio/proxy/" in url:
+                return _Response(headers={"Content-Type": "image/png"})
+            return _Response(headers={"Content-Type": "image/png"})
+
+        with patch.dict(
+            os.environ,
+            {"MVIEWERSTUDIO_MCP_ALLOWED_HOSTS": "t2.openseamap.org"},
+        ), patch("src.mcp_server.connectivity.requests.get", side_effect=fake_get):
+            result = fix_app_connectivity(
+                spec,
+                public_origin="http://localhost",
+            )
+
+        baselayer = result["spec"]["baselayers"][0]
+        self.assertEqual(result["connectivity"]["baselayer_proxy_fixable_count"], 1)
+        self.assertEqual(result["changed_baselayers"][0]["reason"], "cors_missing")
+        self.assertTrue(
+            baselayer["url"].startswith("http://localhost/mviewerstudio/proxy/?url=")
+        )
+        self.assertIn("{z}", baselayer["url"])
+
 
 if __name__ == "__main__":
     unittest.main()

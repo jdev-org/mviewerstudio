@@ -19,6 +19,10 @@ class Config:
         "MVIEWERSTUDIO_PUBLISH_PATH",
         "/home/gaetan/projects/mviewer/mviewer/apps/public",
     )
+    MVIEWER_ADDONS_PATH = os.getenv(
+        "MVIEWER_ADDONS_PATH",
+        "/home/gaetan/projects/mviewer/mviewer/addons",
+    )
     DEFAULT_ORG = os.getenv("DEFAULT_ORG", "public")
     MVIEWERSTUDIO_URL_PATH_PREFIX = os.getenv("MVIEWERSTUDIO_URL_PATH_PREFIX", "")
     QGIS_SERVER_INTERNAL_URL = os.getenv("QGIS_SERVER_INTERNAL_URL", "")
@@ -34,4 +38,5 @@ class Config:
     SPATIAL_FILE_MAX_BYTES = int(
         os.getenv("MVIEWERSTUDIO_SPATIAL_FILE_MAX_BYTES", "10485760")
     )
+    HELP_FILE_MAX_BYTES = int(os.getenv("MVIEWERSTUDIO_HELP_FILE_MAX_BYTES", "262144"))
     XML_MAX_BYTES = int(os.getenv("MVIEWERSTUDIO_XML_MAX_BYTES", "1048576"))

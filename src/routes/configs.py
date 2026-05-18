@@ -1,4 +1,6 @@
 import hashlib
+import json
+import re
 import xml.etree.ElementTree as ET
 from datetime import datetime
 from os import makedirs, mkdir, path, remove
@@ -14,6 +16,8 @@ from ..utils.config_utils import (
     Config,
     control_relation,
     edit_xml_string,
+    replace_extension_path_prefix,
+    replace_help_url_prefix,
     read_xml_file_content,
     replace_resource_url_prefix,
     replace_templates_url,
@@ -23,6 +27,7 @@ from ..utils.git_utils import Git_manager
 from ..utils.login_utils import current_user
 from ..utils.register_utils import from_xml_path
 from .shared import (
+    _assert_request_size,
     _config_register,
     _publish_path,
     _xml_text_or_default,
@@ -30,8 +35,30 @@ from .shared import (
 )
 
 
+@basic_store.route("/api/config/mcp", methods=["GET"])
+def mcp_backend_config() -> ResponseReturnValue:
+    return jsonify(
+        {
+            "success": True,
+            "mviewer": {
+                "conf_path": current_app.config["CONF_PATH_FROM_MVIEWER"],
+                "public_path": current_app.config["CONF_PUBLISH_PATH_FROM_MVIEWER"],
+            },
+            "limits": {
+                "xml_max_bytes": current_app.config["XML_MAX_BYTES"],
+                "spatial_file_max_bytes": current_app.config["SPATIAL_FILE_MAX_BYTES"],
+                "help_file_max_bytes": current_app.config["HELP_FILE_MAX_BYTES"],
+                "spatial_file_allowed_extensions": current_app.config[
+                    "SPATIAL_FILE_ALLOWED_EXTENSIONS"
+                ],
+            },
+        }
+    )
+
+
 @basic_store.route("/api/app", methods=["POST"])
 def create_config() -> ResponseReturnValue:
+    _assert_request_size("XML", "XML_MAX_BYTES")
     try:
         config = Config(request.data, current_app)
     except Exception:
@@ -55,6 +82,7 @@ def update_config() -> ResponseReturnValue:
     message = request.args.get("message")
     if not request.data:
         raise BadRequest("No XML found in the request body !")
+    _assert_request_size("XML", "XML_MAX_BYTES")
     app_id = _xml_identifier(request.data)
     _assert_config_visible(app_id)
     config = Config(request.data, current_app)
@@ -154,6 +182,8 @@ def publish_config(id, name) -> ResponseReturnValue:
 
     if not request.data and request.method == "POST":
         raise BadRequest("Empty request POST data !")
+    if request.method == "POST":
+        _assert_request_size("XML", "XML_MAX_BYTES")
 
     publish_dir = current_app.config["MVIEWERSTUDIO_PUBLISH_PATH"]
     if not publish_dir or not path.exists(publish_dir):
@@ -240,6 +270,42 @@ def publish_config(id, name) -> ResponseReturnValue:
             past_file,
             draft_resource_prefix,
             public_resource_prefix,
+        )
+        draft_extension_prefix = path.join(
+            current_app.config["CONF_PATH_FROM_MVIEWER"],
+            current_user.normalize_name,
+            config.uuid,
+            config.directory,
+            "extensions",
+        )
+        public_extension_prefix = path.join(
+            current_app.config["CONF_PUBLISH_PATH_FROM_MVIEWER"],
+            current_user.normalize_name,
+            xml_publish_name,
+            "extensions",
+        )
+        replace_extension_path_prefix(
+            past_file,
+            draft_extension_prefix,
+            public_extension_prefix,
+        )
+        draft_help_prefix = path.join(
+            current_app.config["CONF_PATH_FROM_MVIEWER"],
+            current_user.normalize_name,
+            config.uuid,
+            config.directory,
+            "help",
+        )
+        public_help_prefix = path.join(
+            current_app.config["CONF_PUBLISH_PATH_FROM_MVIEWER"],
+            current_user.normalize_name,
+            xml_publish_name,
+            "help",
+        )
+        replace_help_url_prefix(
+            past_file,
+            draft_help_prefix,
+            public_help_prefix,
         )
 
     draft_file = path.join(
@@ -350,8 +416,7 @@ def add_spatial_file(id, file_name) -> ResponseReturnValue:
     content = request.data
     if not content:
         raise BadRequest("Empty file content !")
-    if len(content) > current_app.config["SPATIAL_FILE_MAX_BYTES"]:
-        raise BadRequest("File is too large !")
+    _assert_request_size("File", "SPATIAL_FILE_MAX_BYTES")
 
     safe_name = secure_filename(file_name)
     if not safe_name:
@@ -404,6 +469,191 @@ def add_spatial_file(id, file_name) -> ResponseReturnValue:
             "size": len(content),
         }
     )
+
+
+@basic_store.route("/api/app/<id>/help/<file_name>", methods=["POST"])
+def add_help_page(id, file_name) -> ResponseReturnValue:
+    content = request.data
+    if not content:
+        raise BadRequest("Empty help page content !")
+    _assert_request_size("Help page", "HELP_FILE_MAX_BYTES")
+
+    safe_name = secure_filename(file_name)
+    if not safe_name:
+        raise BadRequest("Invalid file name !")
+    extension = path.splitext(safe_name)[1].lower().lstrip(".")
+    if extension not in {"html", "htm"}:
+        raise BadRequest("Help page extension must be html or htm !")
+    try:
+        html = content.decode("utf-8")
+    except UnicodeDecodeError as error:
+        raise BadRequest("Help page must be UTF-8 encoded !") from error
+    _assert_safe_help_html(html)
+
+    config = _assert_config_visible(id)[0]
+    draftspace = path.join(
+        current_app.config["EXPORT_CONF_FOLDER"],
+        current_user.normalize_name,
+        config["id"],
+    )
+    help_dir = path.join(draftspace, config["directory"], "help")
+    if not path.exists(help_dir):
+        makedirs(help_dir)
+    target_file = path.join(help_dir, safe_name)
+    with open(target_file, "w", encoding="utf-8") as file:
+        file.write(html)
+
+    git = Git_manager(draftspace)
+    relative_file = path.join(config["directory"], "help", safe_name)
+    git.repo.git.add(relative_file)
+    if git.repo.git.status("--porcelain"):
+        git.repo.git.commit("-m", f"Add help page {safe_name}")
+
+    relative_path = path.join(
+        current_user.normalize_name,
+        config["id"],
+        config["directory"],
+        "help",
+        safe_name,
+    )
+    return jsonify(
+        {
+            "success": True,
+            "filename": safe_name,
+            "extension": extension,
+            "filepath": path.join(
+                current_app.config["CONF_PATH_FROM_MVIEWER"],
+                relative_path,
+            ),
+            "relative_filepath": relative_path,
+            "size": len(content),
+        }
+    )
+
+
+@basic_store.route("/api/app/<id>/extension/<extension_id>", methods=["POST"])
+def add_app_extension(id, extension_id) -> ResponseReturnValue:
+    safe_extension_id = secure_filename(extension_id)
+    if not safe_extension_id or safe_extension_id != extension_id:
+        raise BadRequest("Invalid extension id !")
+
+    config = _assert_config_visible(id)[0]
+    payload = request.get_json(silent=True) or {}
+    overwrite = bool(payload.get("overwrite", True))
+    copy_shared_libs = bool(payload.get("copy_shared_libs", True))
+    config_override = payload.get("config_override") or {}
+    if config_override and not isinstance(config_override, dict):
+        raise BadRequest("config_override must be a JSON object !")
+
+    addons_root = path.realpath(current_app.config["MVIEWER_ADDONS_PATH"])
+    source_dir = path.realpath(path.join(addons_root, safe_extension_id))
+    if not _is_child_path(source_dir, addons_root) or not path.isdir(source_dir):
+        raise BadRequest("Extension source doesn't exist !")
+    if not path.exists(path.join(source_dir, "config.json")):
+        raise BadRequest("Extension source has no config.json !")
+
+    draftspace = path.join(
+        current_app.config["EXPORT_CONF_FOLDER"],
+        current_user.normalize_name,
+        config["id"],
+    )
+    app_dir = path.join(draftspace, config["directory"])
+    extensions_dir = path.join(app_dir, "extensions")
+    target_dir = path.join(extensions_dir, safe_extension_id)
+    if not path.exists(extensions_dir):
+        makedirs(extensions_dir)
+    if path.exists(target_dir):
+        if not overwrite:
+            raise Conflict("Extension already exists in this app !")
+        rmtree(target_dir)
+    copytree(source_dir, target_dir)
+
+    copied_shared_libs = False
+    source_lib_dir = path.join(addons_root, "lib")
+    target_lib_dir = path.join(extensions_dir, "lib")
+    if copy_shared_libs and path.isdir(source_lib_dir):
+        if path.exists(target_lib_dir):
+            rmtree(target_lib_dir)
+        copytree(source_lib_dir, target_lib_dir)
+        copied_shared_libs = True
+
+    if config_override:
+        config_path = path.join(target_dir, "config.json")
+        with open(config_path, encoding="utf-8") as file:
+            extension_config = json.load(file)
+        _deep_merge(extension_config, config_override)
+        with open(config_path, "w", encoding="utf-8") as file:
+            json.dump(extension_config, file, ensure_ascii=False, indent=2)
+            file.write("\n")
+
+    git = Git_manager(draftspace)
+    relative_extension_dir = path.join(
+        config["directory"], "extensions", safe_extension_id
+    )
+    git.repo.git.add(relative_extension_dir)
+    if copied_shared_libs:
+        git.repo.git.add(path.join(config["directory"], "extensions", "lib"))
+    if git.repo.git.status("--porcelain"):
+        git.repo.git.commit("-m", f"Add mviewer extension {safe_extension_id}")
+
+    extension_path = path.join(
+        current_app.config["CONF_PATH_FROM_MVIEWER"],
+        current_user.normalize_name,
+        config["id"],
+        config["directory"],
+        "extensions",
+    )
+    return jsonify(
+        {
+            "success": True,
+            "extension": safe_extension_id,
+            "path": extension_path,
+            "extension_spec": {
+                "type": "component",
+                "id": safe_extension_id,
+                "path": extension_path,
+            },
+            "copied_shared_libs": copied_shared_libs,
+            "relative_path": path.join(
+                current_user.normalize_name,
+                config["id"],
+                config["directory"],
+                "extensions",
+                safe_extension_id,
+            ),
+        }
+    )
+
+
+def _is_child_path(child_path: str, parent_path: str) -> bool:
+    return path.commonpath([child_path, parent_path]) == parent_path
+
+
+def _deep_merge(target: dict, source: dict) -> dict:
+    for key, value in source.items():
+        if isinstance(value, dict) and isinstance(target.get(key), dict):
+            _deep_merge(target[key], value)
+        else:
+            target[key] = value
+    return target
+
+
+def _assert_safe_help_html(html: str) -> None:
+    lowered = html.lower()
+    forbidden = (
+        "<script",
+        "<iframe",
+        "<object",
+        "<embed",
+        "<form",
+        "<base",
+        "http-equiv",
+        "javascript:",
+    )
+    if any(value in lowered for value in forbidden):
+        raise BadRequest("Help page contains forbidden active HTML !")
+    if re.search(r"\son[a-z0-9_-]+\s*=", lowered):
+        raise BadRequest("Help page contains forbidden event attributes !")
 
 
 @basic_store.route("/api/app/<id>/template/<id_layer>", methods=["DELETE"])

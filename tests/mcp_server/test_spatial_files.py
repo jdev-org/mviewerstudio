@@ -42,6 +42,8 @@ class TestSpatialFiles(unittest.TestCase):
             result["layer_spec"]["url"],
             "apps/store/org/app/map/data/points.geojson",
         )
+        self.assertEqual(result["layer_spec"]["style"], "elsStyle")
+        self.assertTrue(result["warnings"])
 
     def test_csv_response_warns_that_conversion_is_needed(self) -> None:
         result = spatial_file_response(

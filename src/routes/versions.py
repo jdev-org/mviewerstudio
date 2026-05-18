@@ -7,10 +7,14 @@ from flask.typing import ResponseReturnValue
 from werkzeug.exceptions import BadRequest
 
 from ..utils.commons import clean_preview, init_preview
-from ..utils.config_utils import replace_templates_url
+from ..utils.config_utils import (
+    replace_extension_path_prefix,
+    replace_help_url_prefix,
+    replace_templates_url,
+)
 from ..utils.git_utils import Git_manager
 from ..utils.login_utils import current_user
-from .shared import _config_register, basic_store
+from .shared import _assert_request_size, _config_register, basic_store
 
 
 @basic_store.route("/api/app/<id>/versions", methods=["GET"])
@@ -98,6 +102,46 @@ def preview_app_version(id, version) -> ResponseReturnValue:
         "templates",
     )
     replace_templates_url(path_preview_file, relative_publish_dir)
+    draft_extension_prefix = path.join(
+        current_app.config["CONF_PATH_FROM_MVIEWER"],
+        config["publisher"],
+        config["id"],
+        config["directory"],
+        "extensions",
+    )
+    preview_extension_prefix = path.join(
+        current_app.config["CONF_PATH_FROM_MVIEWER"],
+        config["publisher"],
+        config["id"],
+        "preview",
+        version,
+        "extensions",
+    )
+    replace_extension_path_prefix(
+        path_preview_file,
+        draft_extension_prefix,
+        preview_extension_prefix,
+    )
+    draft_help_prefix = path.join(
+        current_app.config["CONF_PATH_FROM_MVIEWER"],
+        config["publisher"],
+        config["id"],
+        config["directory"],
+        "help",
+    )
+    preview_help_prefix = path.join(
+        current_app.config["CONF_PATH_FROM_MVIEWER"],
+        config["publisher"],
+        config["id"],
+        "preview",
+        version,
+        "help",
+    )
+    replace_help_url_prefix(
+        path_preview_file,
+        draft_help_prefix,
+        preview_help_prefix,
+    )
     git.repo.git.checkout("master")
 
     preview_url = path.join(config["publisher"], preview_file)
@@ -107,6 +151,7 @@ def preview_app_version(id, version) -> ResponseReturnValue:
 @basic_store.route("/api/app/<id>/preview", methods=["POST"])
 def preview_uncommited_app(id) -> ResponseReturnValue:
     app_config = current_app.config
+    _assert_request_size("XML", "XML_MAX_BYTES")
     xml = request.data.decode("utf-8")
     xml.replace("anonymous", current_user.username)
 

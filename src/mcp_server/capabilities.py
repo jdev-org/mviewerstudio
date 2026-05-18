@@ -8,6 +8,7 @@ import json
 
 from .mcp_config import current_settings
 from .network_policy import allowed_ogc_hosts
+from .extensions import list_mviewer_extensions
 
 
 def load_capabilities() -> dict[str, Any]:
@@ -22,6 +23,7 @@ def load_capabilities() -> dict[str, Any]:
         "baselayers": app_conf.get("baselayers", {}),
         "data_providers": app_conf.get("data_providers", {}),
         "default_layer_params": app_conf.get("default_params", {}).get("layer", {}),
+        "extensions": list_mviewer_extensions(include_advanced=True),
         "mcp_allowed_ogc_hosts": allowed_ogc_hosts(),
         "inline_data_policy": {
             "max_bytes": settings.inline_data_max_bytes,
@@ -33,6 +35,7 @@ def load_capabilities() -> dict[str, Any]:
         "upload_size_policy": {
             "xml_max_bytes": settings.xml_max_bytes,
             "spatial_file_max_bytes": settings.spatial_file_max_bytes,
+            "help_file_max_bytes": settings.help_file_max_bytes,
         },
     }
 

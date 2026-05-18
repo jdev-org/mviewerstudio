@@ -219,6 +219,37 @@ class ThemeSpec:
 
 
 @dataclass
+class ExtensionSpec:
+    """Configuration for one mviewer extension declaration."""
+
+    type: str
+    id: str = ""
+    path: str = ""
+    src: str = ""
+    extra: dict[str, Any] = field(default_factory=dict)
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> "ExtensionSpec":
+        extension_type = _text(data.get("type"), "component")
+        known = {"type", "id", "path", "src"}
+        extra = {k: v for k, v in data.items() if k not in known and v is not None}
+        if extension_type == "component":
+            if not data.get("id"):
+                raise ValueError("extension.id is required for component extensions")
+            if not data.get("path"):
+                raise ValueError(f"extension.path is required for {data['id']}")
+        if extension_type == "javascript" and not data.get("src"):
+            raise ValueError("extension.src is required for javascript extensions")
+        return cls(
+            type=extension_type,
+            id=_text(data.get("id")),
+            path=_text(data.get("path")),
+            src=_text(data.get("src")),
+            extra=extra,
+        )
+
+
+@dataclass
 class ApplicationSpec:
     """Top-level contract for generating a complete mviewer XML config."""
 
@@ -251,6 +282,7 @@ class ApplicationSpec:
     search: dict[str, Any] = field(default_factory=dict)
     baselayers: list[BaseLayerSpec] = field(default_factory=list)
     themes: list[ThemeSpec] = field(default_factory=list)
+    extensions: list[ExtensionSpec] = field(default_factory=list)
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "ApplicationSpec":
@@ -291,6 +323,10 @@ class ApplicationSpec:
             search=dict(data.get("search", {})),
             baselayers=baselayers,
             themes=[ThemeSpec.from_dict(theme) for theme in data.get("themes", [])],
+            extensions=[
+                ExtensionSpec.from_dict(extension)
+                for extension in data.get("extensions", [])
+            ],
         )
 
 

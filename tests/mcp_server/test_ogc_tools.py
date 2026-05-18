@@ -55,6 +55,35 @@ class TestOgcTools(unittest.TestCase):
         finally:
             os.unlink(config_path)
 
+    def test_allowed_hosts_include_configured_baselayers(self) -> None:
+        """Configured baselayer tile hosts should be allowed for connectivity checks."""
+        config = {
+            "app_conf": {
+                "baselayers": {
+                    "positron": {
+                        "url": "https://{a-c}.basemaps.example.org/light/{z}/{x}/{y}.png"
+                    }
+                }
+            }
+        }
+        with tempfile.NamedTemporaryFile("w", encoding="utf-8", delete=False) as file:
+            json.dump(config, file)
+            config_path = file.name
+        try:
+            with patch.dict(
+                os.environ,
+                {
+                    "MVIEWERSTUDIO_CONFIG_PATH": config_path,
+                    "MVIEWERSTUDIO_MCP_ALLOWED_HOSTS": "",
+                },
+            ):
+                self.assertIn("a.basemaps.example.org", allowed_ogc_hosts())
+                _assert_allowed_url(
+                    "https://a.basemaps.example.org/light/6/31/22.png"
+                )
+        finally:
+            os.unlink(config_path)
+
     def test_missing_allow_list_rejects_by_default(self) -> None:
         """A missing config should not silently allow unrestricted OGC calls."""
         with patch.dict(

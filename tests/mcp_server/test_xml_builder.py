@@ -38,6 +38,22 @@ class TestXmlBuilder(unittest.TestCase):
         template = root.find("./themes/theme/layer/template")
         self.assertEqual(template.get("url"), "apps/store/demo/template.mst")
 
+    def test_help_page_attributes_are_serialized(self) -> None:
+        data = example_application_spec()
+        data["help"] = "apps/store/org/app/help/help.html"
+        data["options"] = {
+            "showhelp": True,
+            "titlehelp": "Bienvenue",
+            "iconhelp": "fas fa-home",
+        }
+        spec = ApplicationSpec.from_dict(data)
+        application = ET.fromstring(build_mviewer_xml(spec)).find("./application")
+
+        self.assertEqual(application.get("help"), "apps/store/org/app/help/help.html")
+        self.assertEqual(application.get("showhelp"), "true")
+        self.assertEqual(application.get("titlehelp"), "Bienvenue")
+        self.assertEqual(application.get("iconhelp"), "fas fa-home")
+
     def test_application_spec_can_be_wrapped_like_inspector_payload(self) -> None:
         """MCP inspector payload wrappers should not break parsing."""
         spec = ApplicationSpec.from_dict({"spec": example_application_spec()})
@@ -67,6 +83,20 @@ class TestXmlBuilder(unittest.TestCase):
         self.assertEqual(baselayer.get("id"), "ortho_ign")
         self.assertEqual(baselayer.get("layers"), "ORTHOIMAGERY.ORTHOPHOTOS")
         self.assertEqual(baselayer.get("matrixset"), "PM")
+
+    def test_extensions_are_serialized(self) -> None:
+        """Mviewer component extensions should be emitted in a dedicated XML block."""
+        data = example_application_spec()
+        data["extensions"] = [
+            {"type": "component", "id": "fullscreen", "path": "addons"}
+        ]
+        spec = ApplicationSpec.from_dict(data)
+        root = ET.fromstring(build_mviewer_xml(spec))
+        extension = root.find("./extensions/extension")
+
+        self.assertEqual(extension.get("type"), "component")
+        self.assertEqual(extension.get("id"), "fullscreen")
+        self.assertEqual(extension.get("path"), "addons")
 
     def test_large_inline_data_uri_is_rejected(self) -> None:
         """Generated spatial files should be uploaded once they exceed policy."""

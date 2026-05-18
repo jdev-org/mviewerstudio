@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from typing import Any
 
 from mcp.server.fastmcp import Context
@@ -9,6 +10,9 @@ from mcp.server.fastmcp import Context
 from .client import MviewerStudioClient
 from .connectivity import fix_app_connectivity
 from .mcp_config import current_settings
+
+
+logger = logging.getLogger(__name__)
 
 
 def mviewer_client(ctx: Context) -> MviewerStudioClient:
@@ -25,6 +29,7 @@ def maybe_fix_app_connectivity(
 ) -> tuple[dict[str, Any], dict[str, Any]]:
     """Optionally validate layers and enable useproxy only where it is needed."""
     if not validate_connectivity:
+        logger.debug("MCP connectivity validation disabled for this tool call")
         return spec, {"enabled": False}
     fixed = fix_app_connectivity(
         spec,
@@ -35,6 +40,12 @@ def maybe_fix_app_connectivity(
     connectivity = dict(fixed["connectivity"])
     connectivity["enabled"] = True
     connectivity["changed_layers"] = fixed.get("changed_layers", [])
+    logger.info(
+        "MCP connectivity validation ok=%s proxy_required=%s changed_layers=%s",
+        connectivity.get("ok"),
+        connectivity.get("proxy_required_count"),
+        len(connectivity["changed_layers"]),
+    )
     return fixed["spec"], connectivity
 
 

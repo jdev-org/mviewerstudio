@@ -20,6 +20,7 @@ def mviewer_xml_to_spec(xml: str) -> dict[str, Any]:
     search = root.find("./searchparameters")
     baselayers = root.find("./baselayers")
     themes = root.find("./themes")
+    extensions = root.find("./extensions")
 
     spec: dict[str, Any] = {
         "id": metadata.get("identifier", ""),
@@ -50,6 +51,10 @@ def mviewer_xml_to_spec(xml: str) -> dict[str, Any]:
         "search": _attrs(search),
         "baselayers": [_baselayer(layer) for layer in _children(baselayers, "baselayer")],
         "themes": [_theme(theme) for theme in _children(themes, "theme")],
+        "extensions": [
+            _extension(extension)
+            for extension in _children(extensions, "extension")
+        ],
     }
     return spec
 
@@ -122,6 +127,17 @@ def _baselayer(node: ET.Element) -> dict[str, Any]:
         "visible": _bool(node.get("visible", "false")),
         "thumbgallery": node.get("thumbgallery", ""),
         "attribution": node.get("attribution", ""),
+        **_extra_attrs(node, known),
+    }
+
+
+def _extension(node: ET.Element) -> dict[str, Any]:
+    known = {"type", "id", "path", "src"}
+    return {
+        "type": node.get("type", ""),
+        "id": node.get("id", ""),
+        "path": node.get("path", ""),
+        "src": node.get("src", ""),
         **_extra_attrs(node, known),
     }
 

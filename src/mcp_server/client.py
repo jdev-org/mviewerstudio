@@ -7,13 +7,18 @@ MviewerStudio API that the browser already uses.
 
 from __future__ import annotations
 
+import logging
+import posixpath
+import time
 from typing import Any, Mapping, Optional
 from urllib.parse import quote
-import posixpath
+
 import requests
 
 from .mcp_config import current_settings
 
+
+logger = logging.getLogger(__name__)
 
 SEC_IDENTITY_HEADERS = (
     "sec-username",
@@ -117,6 +122,12 @@ class MviewerStudioClient:
         """Use POST for new apps and PUT for existing apps."""
         xml_bytes = _checked_xml_payload(xml)
         exists = self.app_exists(app_id, username=username, organisation=organisation)
+        logger.info(
+            "%s mviewer app %s xml_bytes=%s",
+            "Updating" if exists else "Creating",
+            app_id,
+            len(xml_bytes),
+        )
         path = "api/app"
         params = {"message": message} if exists else None
         return self.request(
@@ -142,6 +153,11 @@ class MviewerStudioClient:
         if not self.app_exists(app_id, username=username, organisation=organisation):
             raise RuntimeError(f"Application does not exist: {app_id}")
         xml_bytes = _checked_xml_payload(xml)
+        logger.info(
+            "Updating existing mviewer app %s xml_bytes=%s",
+            app_id,
+            len(xml_bytes),
+        )
         return self.request(
             "PUT",
             "api/app",
@@ -204,6 +220,11 @@ class MviewerStudioClient:
         organisation: Optional[str] = None,
     ) -> dict[str, Any]:
         xml_bytes = _checked_xml_payload(xml)
+        logger.info(
+            "Creating mviewer preview for app %s xml_bytes=%s",
+            app_id,
+            len(xml_bytes),
+        )
         return self.request(
             "POST",
             f"api/app/{quote(app_id, safe='')}/preview",
@@ -223,6 +244,12 @@ class MviewerStudioClient:
         organisation: Optional[str] = None,
     ) -> dict[str, Any]:
         xml_bytes = _checked_xml_payload(xml)
+        logger.info(
+            "Publishing mviewer app %s as %s xml_bytes=%s",
+            app_id,
+            publish_name,
+            len(xml_bytes),
+        )
         return self.request(
             "POST",
             f"api/app/{quote(app_id, safe='')}/publish/{quote(publish_name, safe='')}",
@@ -241,6 +268,7 @@ class MviewerStudioClient:
         username: Optional[str] = None,
         organisation: Optional[str] = None,
     ) -> dict[str, Any]:
+        logger.info("Unpublishing mviewer app %s publication=%s", app_id, publish_name)
         return self.request(
             "DELETE",
             f"api/app/{quote(app_id, safe='')}/publish/{quote(publish_name, safe='')}",
@@ -253,6 +281,7 @@ class MviewerStudioClient:
         username: Optional[str] = None,
         organisation: Optional[str] = None,
     ) -> dict[str, Any]:
+        logger.info("Deleting mviewer app %s", app_id)
         return self.request(
             "DELETE",
             f"api/app/{quote(app_id, safe='')}",
@@ -333,6 +362,7 @@ class MviewerStudioClient:
         username: Optional[str] = None,
         organisation: Optional[str] = None,
     ) -> dict[str, Any]:
+        logger.info("Storing template for app %s layer %s", app_id, layer_id)
         return self.request(
             "POST",
             f"api/app/{quote(app_id, safe='')}/template/{quote(layer_id, safe='')}",
@@ -349,6 +379,7 @@ class MviewerStudioClient:
         username: Optional[str] = None,
         organisation: Optional[str] = None,
     ) -> dict[str, Any]:
+        logger.info("Storing SLD style bytes=%s", len(sld.encode("utf-8")))
         return self.request(
             "POST",
             "api/style",
@@ -373,6 +404,12 @@ class MviewerStudioClient:
             "spatial file",
             "MVIEWERSTUDIO_MCP_SPATIAL_FILE_MAX_BYTES",
         )
+        logger.info(
+            "Storing spatial file for app %s filename=%s bytes=%s",
+            app_id,
+            filename,
+            len(content),
+        )
         return self.request(
             "POST",
             f"api/app/{quote(app_id, safe='')}/file/{quote(filename, safe='')}",
@@ -381,6 +418,68 @@ class MviewerStudioClient:
                 **self.user_headers(username=username, organisation=organisation),
                 "Content-Type": "application/octet-stream",
             },
+        )
+
+    def store_help_page(
+        self,
+        app_id: str,
+        filename: str,
+        content: bytes,
+        username: Optional[str] = None,
+        organisation: Optional[str] = None,
+    ) -> dict[str, Any]:
+        _assert_payload_size(
+            len(content),
+            current_settings().help_file_max_bytes,
+            "help page",
+            "MVIEWERSTUDIO_MCP_HELP_FILE_MAX_BYTES",
+        )
+        logger.info(
+            "Storing help page for app %s filename=%s bytes=%s",
+            app_id,
+            filename,
+            len(content),
+        )
+        return self.request(
+            "POST",
+            f"api/app/{quote(app_id, safe='')}/help/{quote(filename, safe='')}",
+            data=content,
+            headers={
+                **self.user_headers(username=username, organisation=organisation),
+                "Content-Type": "text/html; charset=utf-8",
+            },
+        )
+
+    def store_extension(
+        self,
+        app_id: str,
+        extension_id: str,
+        config_override: dict[str, Any] | None = None,
+        overwrite: bool = True,
+        copy_shared_libs: bool = True,
+        username: Optional[str] = None,
+        organisation: Optional[str] = None,
+    ) -> dict[str, Any]:
+        """Copy an installed mviewer addon into one app workspace."""
+        logger.info(
+            "Copying mviewer extension %s into app %s overwrite=%s copy_shared_libs=%s",
+            extension_id,
+            app_id,
+            overwrite,
+            copy_shared_libs,
+        )
+        return self.request(
+            "POST",
+            (
+                f"api/app/{quote(app_id, safe='')}/extension/"
+                f"{quote(extension_id, safe='')}"
+            ),
+            json={
+                "config_override": config_override or {},
+                "overwrite": overwrite,
+                "copy_shared_libs": copy_shared_libs,
+            },
+            headers=self.user_headers(username=username, organisation=organisation),
         )
 
     def draft_url(self, filepath: str) -> str:
@@ -402,18 +501,56 @@ class MviewerStudioClient:
     def request(self, method: str, path: str, **kwargs: Any) -> Any:
         """Send a request and normalize backend errors into RuntimeError."""
         url = f"{self.base_url}/{path.lstrip('/')}"
-        response = self.session.request(method, url, timeout=self.timeout, **kwargs)
+        start = time.monotonic()
+        logger.debug(
+            "MviewerStudio API request method=%s url=%s params=%s json_keys=%s data_bytes=%s",
+            method,
+            url,
+            kwargs.get("params"),
+            _json_keys(kwargs.get("json")),
+            _payload_size(kwargs.get("data")),
+        )
+        try:
+            response = self.session.request(
+                method,
+                url,
+                timeout=self.timeout,
+                **kwargs,
+            )
+        except requests.RequestException:
+            logger.exception(
+                "MviewerStudio API request failed method=%s url=%s",
+                method,
+                url,
+            )
+            raise
+        elapsed_ms = int((time.monotonic() - start) * 1000)
+        status_code = getattr(response, "status_code", "unknown")
         if response.ok:
+            logger.debug(
+                "MviewerStudio API response method=%s url=%s status=%s duration_ms=%s",
+                method,
+                url,
+                status_code,
+                elapsed_ms,
+            )
             if response.content:
                 return response.json()
             return {}
+        logger.warning(
+            "MviewerStudio API error method=%s url=%s status=%s duration_ms=%s",
+            method,
+            url,
+            status_code,
+            elapsed_ms,
+        )
         message = response.text
         try:
             payload = response.json()
             message = payload.get("description") or payload.get("message") or message
         except ValueError:
             pass
-        raise RuntimeError(f"{method} {url} failed with {response.status_code}: {message}")
+        raise RuntimeError(f"{method} {url} failed with {status_code}: {message}")
 
     def _mviewer_url(self, config_path: str) -> str:
         """Append the config parameter while preserving existing query params."""
@@ -445,3 +582,21 @@ def _assert_payload_size(
         f"{label} is too large: {size} bytes, limit is {max_bytes} bytes. "
         f"Adjust {setting_name} if this is expected."
     )
+
+
+def _json_keys(value: Any) -> list[str] | str:
+    if isinstance(value, Mapping):
+        return sorted(str(key) for key in value.keys())
+    if value is None:
+        return []
+    return type(value).__name__
+
+
+def _payload_size(value: Any) -> int:
+    if value is None:
+        return 0
+    if isinstance(value, (bytes, bytearray)):
+        return len(value)
+    if isinstance(value, str):
+        return len(value.encode("utf-8"))
+    return 0

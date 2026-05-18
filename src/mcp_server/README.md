@@ -55,6 +55,26 @@ mviewerstudio. Les variables MCP comme `MVIEWER_CONF_PATH`,
 `MVIEWERSTUDIO_MCP_SPATIAL_FILE_MAX_BYTES` ne servent alors qu'aux surcharges
 locales.
 
+### Logs MCP
+
+Le serveur MCP trace son demarrage, les appels outils principaux, les appels HTTP
+vers l'API mviewerstudio et les corrections de connectivite dans un fichier
+rotatif. Les parametres sont dans `mcp_server.conf.example` :
+
+```
+MVIEWERSTUDIO_MCP_LOG_LEVEL=INFO
+MVIEWERSTUDIO_MCP_LOG_FILE=logs/mcp_server.log
+MVIEWERSTUDIO_MCP_LOG_MAX_BYTES=10485760
+MVIEWERSTUDIO_MCP_LOG_BACKUP_COUNT=5
+```
+
+En production sans Docker, utilisez typiquement
+`MVIEWERSTUDIO_MCP_LOG_FILE=/var/log/mviewerstudio/mcp_server.log` et assurez
+vous que l'utilisateur systemd du service peut ecrire dans ce repertoire.
+Mettre `MVIEWERSTUDIO_MCP_LOG_LEVEL=DEBUG` permet de diagnostiquer les requetes
+HTTP vers le backend sans journaliser le contenu XML ou les en-tetes
+d'authentification.
+
 ### Identite et securite
 
 Le LLM ne doit pas choisir l'identite envoyee a MviewerStudio. Les outils MCP
@@ -197,6 +217,23 @@ Ne génère pas de XML à la main sauf pour diagnostiquer avec `build_mviewer_co
   plan configure dans `src/static/config.json` sous forme compatible
   `ApplicationSpec.baselayers`. Par exemple `ortho` retourne le fond IGN
   `ortho_ign`.
+- `list_available_mviewer_extensions(query="", include_advanced=true)` :
+  liste les addons mviewer installes dans `MVIEWER_ADDONS_PATH` ou dans le
+  repertoire `addons` du depot mviewer detecte localement.
+- `suggest_mviewer_extensions_for_intent(intent, audience="grand_public")` :
+  recommande des extensions existantes selon un besoin metier, par exemple
+  impression avancee, plein ecran, recherche dans les couches, Panoramax,
+  parcours GPX ou filtres attributaires.
+- `apply_mviewer_extensions_to_app_spec(spec, extension_ids, path="addons")` :
+  ajoute les declarations `<extension type="component" .../>` dans
+  `ApplicationSpec.extensions` sans recopier le code des addons.
+- `copy_mviewer_extension_to_app(app_id, extension_id, config_override={})` :
+  copie un addon installe dans le repertoire de la carte, sous
+  `extensions/<extension_id>`, avec ses dependances `addons/lib` si necessaire.
+  L'outil retourne le fragment `extension_spec` a ajouter a la carte.
+- `install_mviewer_extensions_to_app_spec(app_id, extension_ids, spec,
+  config_overrides={})` : copie plusieurs addons dans la carte et ajoute les
+  chemins locaux dans `ApplicationSpec.extensions`.
 - `prepare_centered_mviewer_app_spec(title, location, baselayer_query="ortho",
   zoom=13)` : compose directement une specification d'application centree sur
   un lieu geocode avec un fond de plan configure.
@@ -209,12 +246,68 @@ Ne génère pas de XML à la main sauf pour diagnostiquer avec `build_mviewer_co
 - `analyze_mviewer_layer_usage(scope="all", limit=20, include_previews=false)` :
   parcourt les XML mviewer dans `apps/store` et/ou `apps/public`, ignore les
   previews par defaut, puis retourne les couches les plus utilisees.
+- `build_public_mviewer_template(title_field="name",
+  description_field="description", fields=[], preset="tourism")` : genere un
+  template Mustache `.mst` lisible par un public non expert. Le contenu peut
+  ensuite etre stocke avec `store_layer_template` et reference par
+  `template_url` dans la couche.
+- `build_mviewer_help_page(title, introduction, sections=[])` : genere une
+  page HTML statique d'accueil/aide pour une carte grand public.
+- `upload_mviewer_help_page_to_app(app_id, filename, html|html_base64)` :
+  depose une page HTML dans `help/` avec la carte et retourne le patch
+  `ApplicationSpec.help` + `options.showhelp/titlehelp/iconhelp`.
+- `install_mviewer_help_page_to_app_spec(app_id, spec, filename,
+  html|html_base64)` : depose la page HTML puis retourne une copie de la spec
+  deja patchée.
+- `recommend_mviewer_vector_style(geometry_type="route")` : rappelle que
+  mviewer n'utilise pas les proprietes de style dans un GeoJSON et retourne un
+  `layer_patch` avec un style `mviewer.featureStyles` compatible, par exemple
+  `highlight`, `elsStyle` ou `circle1`.
+- `sanitize_geojson_properties_for_mviewer(content|content_base64)` : supprime
+  les proprietes de style GeoJSON (`stroke`, `fill`, `marker-color`, etc.) pour
+  eviter qu'elles apparaissent dans les templates sans etre prises en compte a
+  l'affichage.
 - `upload_spatial_file_to_mviewer_app(app_id, filename, content|content_base64)` :
   depose un fichier spatial dans le repertoire `data` de la carte via l'API
   mviewerstudio. Pour GeoJSON/JSON/KML, l'outil retourne aussi un `layer_spec`
   directement ajoutable a une thematique mviewer. CSV et Shapefile sont stockes,
   mais necessitent une conversion GeoJSON/KML ou une custom layer pour etre
   affiches comme couche standard.
+
+Pour les couches GeoJSON, la symbologie doit donc etre portee par l'attribut de
+couche `style`, pas par les proprietes des features. Un style entierement sur
+mesure demande une fonction `mviewer.featureStyles` cote mviewer ou une custom
+layer.
+
+Les extensions mviewer sont referencees dans le XML de la carte avec un bloc
+`extensions`, par exemple :
+
+```xml
+<extensions>
+  <extension type="component" id="fullscreen" path="addons"/>
+</extensions>
+```
+
+Le MCP ne genere pas de code d'addon a la volee. Il copie un addon installe et
+versionne avec mviewer dans le repertoire de la carte, puis reference ce chemin
+local dans `ApplicationSpec.extensions`. C'est plus maintenable : le XML reste
+lisible, la carte embarque la version exacte de l'extension qu'elle utilise, et
+le `config.json` de l'addon peut etre adapte pour cette carte sans impacter les
+autres applications. Les dependances partagees declarees en `../lib/...` sont
+copiees dans `extensions/lib`.
+
+Pour un addon configurable (`trackview`, `filter`, `stats`, `label`,
+`zoomToArea`), passer les surcharges avec `config_override` ou
+`config_overrides`. Le backend versionne la copie dans le depot git de la carte.
+
+Pour une page d'accueil ou d'information, le MCP stocke le fichier HTML dans le
+repertoire de la carte sous `help/<filename>.html`, puis renseigne l'attribut
+`application help` du XML avec ce chemin. C'est le meme principe que les
+templates et les fichiers de donnees : la page voyage avec la carte, elle est
+copiee lors de la publication et reste versionnee avec le brouillon. Le HTML
+envoye par le MCP doit rester statique ; les balises actives (`script`,
+`iframe`, `object`, etc.), les URLs `javascript:` et les attributs `on*` sont
+refuses.
 
 Les couches `geojson` ou `kml` peuvent techniquement utiliser une URL `data:`
 dans le XML pour de tres petits contenus. Pour eviter des XML lourds et peu
@@ -228,3 +321,11 @@ Le MCP refuse aussi les XML et fichiers spatiaux depassant
 `MVIEWERSTUDIO_MCP_SPATIAL_FILE_MAX_BYTES` avant l'appel HTTP. L'API
 mviewerstudio garde ses propres limites avec `MVIEWERSTUDIO_XML_MAX_BYTES` et
 `MVIEWERSTUDIO_SPATIAL_FILE_MAX_BYTES`.
+
+La validation de connectivite verifie aussi les fonds de plan
+`ApplicationSpec.baselayers`. Les fonds tuiles qui ne renvoient pas
+`Access-Control-Allow-Origin` sont signales comme non publiables depuis
+l'origine mviewer. Pour les couches operationnelles, le MCP active `useproxy`
+si le proxy fonctionne. Pour un fond de plan tuile, le MCP reecrit l'URL vers
+le proxy mviewerstudio uniquement si le proxy repond pour l'URL testee ;
+sinon il faut choisir un fond configure compatible CORS.

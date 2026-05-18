@@ -85,6 +85,14 @@ def spatial_file_response(
         "showintoc": True,
         "tiled": False,
     }
+    if extension in {"geojson", "json"}:
+        layer["style"] = "elsStyle"
+        result["warnings"].append(
+            "Pour GeoJSON, mviewer ignore les proprietes de symbologie dans "
+            "les features. Utiliser l'attribut de couche 'style' avec un style "
+            "mviewer.featureStyles, par exemple 'elsStyle', 'highlight' ou "
+            "'circle1'."
+        )
     result["layer_spec"] = layer
     return result
 

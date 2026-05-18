@@ -61,6 +61,38 @@ class TestClientAppManagement(unittest.TestCase):
         self.assertEqual(url, "http://studio/api/app/app-1/file/points.geojson")
         self.assertEqual(client.session.request.call_args.kwargs["data"], b"{}")
 
+    def test_store_extension_uses_backend_extension_route(self) -> None:
+        client = MviewerStudioClient(base_url="http://studio")
+        client.session.request = Mock(return_value=_Response())
+
+        client.store_extension(
+            "app-1",
+            "trackview",
+            config_override={"options": {"mviewer": {"parcours": []}}},
+        )
+
+        method, url = client.session.request.call_args.args[:2]
+        self.assertEqual(method, "POST")
+        self.assertEqual(url, "http://studio/api/app/app-1/extension/trackview")
+        self.assertEqual(
+            client.session.request.call_args.kwargs["json"]["config_override"],
+            {"options": {"mviewer": {"parcours": []}}},
+        )
+
+    def test_store_help_page_uses_backend_help_route(self) -> None:
+        client = MviewerStudioClient(base_url="http://studio")
+        client.session.request = Mock(return_value=_Response())
+
+        client.store_help_page("app-1", "help.html", b"<h1>Info</h1>")
+
+        method, url = client.session.request.call_args.args[:2]
+        self.assertEqual(method, "POST")
+        self.assertEqual(url, "http://studio/api/app/app-1/help/help.html")
+        self.assertEqual(
+            client.session.request.call_args.kwargs["data"],
+            b"<h1>Info</h1>",
+        )
+
     def test_store_spatial_file_rejects_payload_above_mcp_limit(self) -> None:
         client = MviewerStudioClient(base_url="http://studio")
         client.session.request = Mock(return_value=_Response())
@@ -74,6 +106,22 @@ class TestClientAppManagement(unittest.TestCase):
         ):
             with self.assertRaisesRegex(ValueError, "spatial file is too large"):
                 client.store_spatial_file("app-1", "points.geojson", b"{}{}")
+
+        client.session.request.assert_not_called()
+
+    def test_store_help_page_rejects_payload_above_mcp_limit(self) -> None:
+        client = MviewerStudioClient(base_url="http://studio")
+        client.session.request = Mock(return_value=_Response())
+
+        with patch.dict(
+            os.environ,
+            {
+                "MVIEWERSTUDIO_MCP_CONFIG": "/tmp/missing-mcp.conf",
+                "MVIEWERSTUDIO_MCP_HELP_FILE_MAX_BYTES": "8",
+            },
+        ):
+            with self.assertRaisesRegex(ValueError, "help page is too large"):
+                client.store_help_page("app-1", "help.html", b"<h1>Info</h1>")
 
         client.session.request.assert_not_called()
 

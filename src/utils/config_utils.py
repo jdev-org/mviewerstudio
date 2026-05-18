@@ -169,6 +169,32 @@ def replace_resource_url_prefix(target_xml, old_prefix, new_prefix):
     return
 
 
+def replace_extension_path_prefix(target_xml, old_prefix, new_prefix):
+    """Replace draft extension paths when copying an app to preview or public."""
+    file_to_replace = open(target_xml, "r")
+    xml_str = file_to_replace.read()
+    xml_parser = ET.fromstring(xml_str)
+    for extension in xml_parser.findall(".//extension"):
+        current_path = extension.get("path", "")
+        if current_path.startswith(old_prefix):
+            extension.set("path", current_path.replace(old_prefix, new_prefix, 1))
+    write_file(xml_parser, target_xml)
+    return
+
+
+def replace_help_url_prefix(target_xml, old_prefix, new_prefix):
+    """Replace draft application help URL when copying an app to public paths."""
+    file_to_replace = open(target_xml, "r")
+    xml_str = file_to_replace.read()
+    xml_parser = ET.fromstring(xml_str)
+    application = xml_parser.find(".//application")
+    current_help = application.get("help", "") if application is not None else ""
+    if current_help.startswith(old_prefix):
+        application.set("help", current_help.replace(old_prefix, new_prefix, 1))
+        write_file(xml_parser, target_xml)
+    return
+
+
 """
 This class ease git repo manipulations.
 A register from store/register.json is use as global configs metadata store.

@@ -9,6 +9,11 @@ from mcp.server.fastmcp import Context, FastMCP
 
 from ..capabilities import find_baselayer, load_capabilities
 from ..client import MviewerStudioClient
+from ..extensions import (
+    apply_mviewer_extensions,
+    list_mviewer_extensions,
+    suggest_mviewer_extensions,
+)
 from ..geo_tools import geocode_location
 from ..map_tools import (
     apply_mviewer_tool_recommendation,
@@ -48,6 +53,38 @@ def register_context_tools(mcp: FastMCP) -> None:
     def get_mviewerstudio_capabilities() -> dict[str, Any]:
         """Get configured mviewer versions, baselayers and OGC data providers."""
         return load_capabilities()
+
+    @mcp.tool()
+    def list_available_mviewer_extensions(
+        query: str = "",
+        include_advanced: bool = True,
+    ) -> dict[str, Any]:
+        """List installed mviewer addons that can be declared as extensions."""
+        return list_mviewer_extensions(
+            query=query,
+            include_advanced=include_advanced,
+        )
+
+    @mcp.tool()
+    def suggest_mviewer_extensions_for_intent(
+        intent: str,
+        audience: str = "grand_public",
+    ) -> dict[str, Any]:
+        """Recommend mviewer addons/extensions for a business need."""
+        return suggest_mviewer_extensions(intent=intent, audience=audience)
+
+    @mcp.tool()
+    def apply_mviewer_extensions_to_app_spec(
+        spec: dict[str, Any],
+        extension_ids: list[str],
+        path: str = "addons",
+    ) -> dict[str, Any]:
+        """Add selected mviewer component extensions to an ApplicationSpec copy."""
+        return apply_mviewer_extensions(
+            spec=spec,
+            extension_ids=extension_ids,
+            path=path,
+        )
 
     @mcp.tool()
     def get_application_spec_example() -> dict[str, Any]:

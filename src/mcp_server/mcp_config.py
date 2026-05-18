@@ -56,6 +56,7 @@ class McpSettings:
     mviewer_public_path: str = "apps/public"
     mviewer_instance_path: str = "/mviewer/"
     mviewer_apps_root: str = "apps"
+    mviewer_addons_path: str = ""
     mviewerstudio_config_path: str = ""
     default_username: str = "ai"
     default_org: str = "my_org"
@@ -66,6 +67,11 @@ class McpSettings:
     inline_data_max_bytes: int = 8192
     xml_max_bytes: int = 1048576
     spatial_file_max_bytes: int = 10485760
+    help_file_max_bytes: int = 262144
+    log_level: str = "INFO"
+    log_file: str = "logs/mcp_server.log"
+    log_max_bytes: int = 10485760
+    log_backup_count: int = 5
 
     @classmethod
     def from_env(
@@ -103,6 +109,7 @@ class McpSettings:
             ),
             mviewer_instance_path=env.get("MVIEWER_INSTANCE_PATH", "/mviewer/"),
             mviewer_apps_root=env.get("MVIEWER_APPS_ROOT", str(Path.cwd() / "apps")),
+            mviewer_addons_path=env.get("MVIEWER_ADDONS_PATH", ""),
             mviewerstudio_config_path=env.get("MVIEWERSTUDIO_CONFIG_PATH", ""),
             default_username=env.get("MCP_DEFAULT_USERNAME", "ai"),
             default_org=env.get("MCP_DEFAULT_ORG", "my_org"),
@@ -140,6 +147,27 @@ class McpSettings:
                     "10485760",
                 )
             ),
+            help_file_max_bytes=int(
+                _first_setting(
+                    env,
+                    (
+                        "MVIEWERSTUDIO_MCP_HELP_FILE_MAX_BYTES",
+                        "MVIEWERSTUDIO_HELP_FILE_MAX_BYTES",
+                    ),
+                    backend,
+                    ("limits", "help_file_max_bytes"),
+                    "262144",
+                )
+            ),
+            log_level=env.get(
+                "MVIEWERSTUDIO_MCP_LOG_LEVEL",
+                env.get("LOG_LEVEL", "INFO"),
+            ),
+            log_file=env.get("MVIEWERSTUDIO_MCP_LOG_FILE", "logs/mcp_server.log"),
+            log_max_bytes=int(
+                env.get("MVIEWERSTUDIO_MCP_LOG_MAX_BYTES", "10485760")
+            ),
+            log_backup_count=int(env.get("MVIEWERSTUDIO_MCP_LOG_BACKUP_COUNT", "5")),
         )
 
 
