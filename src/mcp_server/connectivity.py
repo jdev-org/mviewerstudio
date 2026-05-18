@@ -31,6 +31,17 @@ def validate_app_connectivity(
         )
         for layer in layers
     ]
+    baselayers = _baselayers(spec)
+    baselayer_reports = [
+        _validate_baselayer(
+            baselayer=baselayer,
+            spec=spec,
+            public_origin=origin,
+            timeout=timeout,
+            backend_headers=backend_headers or {},
+        )
+        for baselayer in baselayers
+    ]
     needs_proxy = [
         report for report in layer_reports if report.get("proxy_required")
     ]
@@ -39,18 +50,34 @@ def validate_app_connectivity(
         for report in needs_proxy
         if report.get("proxy", {}).get("ok")
     ]
+    baselayers_needing_proxy = [
+        report for report in baselayer_reports if report.get("proxy_required")
+    ]
+    fixable_baselayers = [
+        report
+        for report in baselayers_needing_proxy
+        if report.get("proxy", {}).get("ok")
+    ]
     return {
         "public_origin": origin,
         "proxy_url": spec.get("proxy_url", "proxy/?url="),
         "layer_count": len(layer_reports),
+        "baselayer_count": len(baselayer_reports),
         "ok": all(
             report.get("direct", {}).get("available")
             and (not report.get("proxy_required") or report.get("proxy", {}).get("ok"))
             for report in layer_reports
-        ),
+        )
+        and all(report.get("ok") for report in baselayer_reports),
         "proxy_required_count": len(needs_proxy),
         "proxy_fixable_count": len(fixable),
+        "baselayer_proxy_required_count": len(baselayers_needing_proxy),
+        "baselayer_proxy_fixable_count": len(fixable_baselayers),
+        "baselayer_issue_count": len(
+            [report for report in baselayer_reports if report.get("issue_reasons")]
+        ),
         "layers": layer_reports,
+        "baselayers": baselayer_reports,
     }
 
 
@@ -69,7 +96,9 @@ def fix_app_connectivity(
         backend_headers=backend_headers,
     )
     fixed_layers = _operational_layers(fixed_spec)
+    fixed_baselayers = _baselayers(fixed_spec)
     changed_layers: list[dict[str, str]] = []
+    changed_baselayers: list[dict[str, str]] = []
     reports_by_path = {
         layer_report["path"]: layer_report for layer_report in report["layers"]
     }
@@ -84,10 +113,32 @@ def fix_app_connectivity(
                     "reason": ",".join(layer_report.get("proxy_reasons", [])),
                 }
             )
+    baselayer_reports_by_path = {
+        layer_report["path"]: layer_report for layer_report in report["baselayers"]
+    }
+    for baselayer in fixed_baselayers:
+        baselayer_report = baselayer_reports_by_path.get(baselayer["path"], {})
+        if (
+            baselayer_report.get("proxy_required")
+            and baselayer_report.get("proxy", {}).get("ok")
+        ):
+            original_url = str(baselayer["data"].get("url", ""))
+            baselayer["data"]["url"] = _proxied_template_url(
+                str(fixed_spec.get("proxy_url", "proxy/?url=")),
+                original_url,
+            )
+            changed_baselayers.append(
+                {
+                    "path": baselayer["path"],
+                    "id": str(baselayer["data"].get("id", "")),
+                    "reason": ",".join(baselayer_report.get("proxy_reasons", [])),
+                }
+            )
     return {
         "spec": fixed_spec,
         "connectivity": report,
         "changed_layers": changed_layers,
+        "changed_baselayers": changed_baselayers,
     }
 
 
@@ -180,6 +231,121 @@ def _validate_layer(
     return report
 
 
+def _validate_baselayer(
+    baselayer: dict[str, Any],
+    spec: dict[str, Any],
+    public_origin: str,
+    timeout: float,
+    backend_headers: Mapping[str, str],
+) -> dict[str, Any]:
+    """Validate that a configured baselayer can be rendered by a browser."""
+    data = baselayer["data"]
+    url = str(data.get("url", ""))
+    test_url = _baselayer_test_url(data)
+    report: dict[str, Any] = {
+        "path": baselayer["path"],
+        "id": str(data.get("id", "")),
+        "label": data.get("label") or data.get("title") or data.get("id", ""),
+        "type": data.get("type", ""),
+        "url": url,
+        "tested_url": test_url,
+        "visible": _bool(data.get("visible")),
+        "ok": False,
+        "issue_reasons": [],
+        "direct": {},
+        "proxy_required": False,
+        "proxy_reasons": [],
+        "proxy": {},
+        "recommendations": [],
+    }
+    if not url:
+        report["direct"] = {"available": False, "error": "Missing baselayer URL"}
+        report["issue_reasons"].append("missing_url")
+        return report
+    if not test_url:
+        report["direct"] = {
+            "available": False,
+            "error": "Cannot build a test URL for this baselayer",
+        }
+        report["issue_reasons"].append("missing_test_url")
+        return report
+    if not _origin(test_url):
+        report["direct"] = {
+            "ok": True,
+            "available": True,
+            "cors_ok": True,
+            "same_origin": True,
+            "tested_url": test_url,
+            "note": "Relative baselayer URL; browser will resolve it from mviewer origin.",
+        }
+        report["ok"] = True
+        return report
+
+    try:
+        assert_allowed_url(test_url)
+    except ValueError as error:
+        report["direct"] = {"available": False, "error": str(error)}
+        report["issue_reasons"].append("host_not_allowed")
+        return report
+
+    direct = _request_url(
+        test_url,
+        public_origin=public_origin,
+        timeout=timeout,
+    )
+    direct["tested_url"] = test_url
+    direct["template_url"] = url if test_url != url else ""
+    direct["same_origin"] = _same_origin(public_origin, test_url)
+    direct["mixed_content"] = _is_mixed_content(public_origin, test_url)
+    report["direct"] = direct
+
+    if not direct["available"]:
+        report["issue_reasons"].append("unavailable")
+    if direct["mixed_content"]:
+        report["issue_reasons"].append("mixed_content")
+        report["proxy_required"] = True
+        report["proxy_reasons"].append("mixed_content")
+    if direct["available"] and not direct["cors_ok"]:
+        report["issue_reasons"].append("cors_missing")
+        report["proxy_required"] = True
+        report["proxy_reasons"].append("cors_missing")
+        report["recommendations"].append(
+            "Ce fond de plan ne fournit pas d'en-tete CORS utilisable depuis "
+            "l'origine publique mviewer. Choisir un fond configure compatible "
+            "CORS ou laisser le MCP le basculer vers le proxy si celui-ci est "
+            "autorise pour ce domaine."
+        )
+    if direct["mixed_content"]:
+        report["recommendations"].append(
+            "Eviter les fonds HTTP depuis une application servie en HTTPS."
+        )
+    if report["issue_reasons"] and not report["recommendations"]:
+        report["recommendations"].append(
+            "Remplacer ce fond par un fond deja configure et valide dans "
+            "mviewerstudio avant de publier la carte."
+        )
+    direct_ok = bool(
+        direct["available"] and direct["cors_ok"] and not direct["mixed_content"]
+    )
+    if report["proxy_required"]:
+        proxy_url = _proxied_url(
+            str(spec.get("proxy_url", "proxy/?url=")),
+            test_url,
+        )
+        if proxy_url:
+            report["proxy"] = _request_url(
+                proxy_url,
+                public_origin="",
+                timeout=timeout,
+                headers=backend_headers,
+            )
+            report["proxy"]["tested_url"] = proxy_url
+        else:
+            report["proxy"] = {"ok": False, "available": False, "error": "Missing proxy URL"}
+    report["ok"] = bool(direct_ok or report.get("proxy", {}).get("ok"))
+    return report
+
+
 def _request_url(
     url: str,
     public_origin: str = "",
@@ -245,6 +411,50 @@ def _operational_layers(spec: dict[str, Any]) -> list[dict[str, Any]]:
     return layers
 
 
+def _baselayers(spec: dict[str, Any]) -> list[dict[str, Any]]:
+    layers: list[dict[str, Any]] = []
+    for layer_index, layer in enumerate(spec.get("baselayers", [])):
+        layers.append(
+            {
+                "path": f"baselayers[{layer_index}]",
+                "data": layer,
+            }
+        )
+    return layers
+
+
+def _baselayer_test_url(layer: Mapping[str, Any]) -> str:
+    url = str(layer.get("url", ""))
+    if not url:
+        return ""
+    if _has_tile_placeholders(url):
+        return _tile_test_url(url)
+    if str(layer.get("type", "")).lower() == "wmts":
+        return _with_query(
+            url,
+            {
+                "SERVICE": "WMTS",
+                "REQUEST": "GetCapabilities",
+            },
+        )
+    return _tile_test_url(url)
+
+
+def _has_tile_placeholders(url: str) -> bool:
+    lowered = url.lower()
+    return "{z}" in lowered and "{x}" in lowered and "{y}" in lowered
+
+
+def _tile_test_url(url: str) -> str:
+    return (
+        url.replace("{a-c}", "a")
+        .replace("{s}", "a")
+        .replace("{z}", "6")
+        .replace("{x}", "31")
+        .replace("{y}", "22")
+    )
+
+
 def _wms_capabilities_url(url: str) -> str:
     return _with_query(
         url,
@@ -297,6 +507,13 @@ def _proxied_url(proxy_url: str, target_url: str) -> str:
         return ""
     absolute_proxy = _absolute_proxy_url(proxy_url)
     return f"{absolute_proxy}{quote(target_url, safe='')}"
+
+
+def _proxied_template_url(proxy_url: str, target_url: str) -> str:
+    if not proxy_url:
+        return ""
+    absolute_proxy = _absolute_proxy_url(proxy_url)
+    return f"{absolute_proxy}{quote(target_url, safe='/:{}')}"
 
 
 def _absolute_proxy_url(proxy_url: str) -> str:

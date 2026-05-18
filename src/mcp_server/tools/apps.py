@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from typing import Any
 
 from mcp.server.fastmcp import Context, FastMCP
@@ -14,6 +15,9 @@ from ..xml_builder import build_mviewer_xml
 from ..xml_parser import mviewer_xml_to_spec
 
 
+logger = logging.getLogger(__name__)
+
+
 def register_app_tools(mcp: FastMCP) -> None:
     """Register mutating application lifecycle tools."""
 
@@ -21,6 +25,7 @@ def register_app_tools(mcp: FastMCP) -> None:
     def build_mviewer_config_xml(spec: dict[str, Any]) -> dict[str, str]:
         """Build and validate mviewer XML from an ApplicationSpec without saving it."""
         app_spec = ApplicationSpec.from_dict(spec)
+        logger.debug("Building mviewer XML for app %s", app_spec.id)
         xml = build_mviewer_xml(app_spec)
         return {"app_id": app_spec.id, "xml": xml}
 
@@ -33,6 +38,7 @@ def register_app_tools(mcp: FastMCP) -> None:
     ) -> dict[str, Any]:
         """Check layer availability, browser CORS risk and proxy fallback."""
         client = mviewer_client(ctx)
+        logger.info("Validating mviewer app connectivity")
         return validate_app_connectivity(
             spec,
             public_origin=public_origin,
@@ -49,6 +55,7 @@ def register_app_tools(mcp: FastMCP) -> None:
     ) -> dict[str, Any]:
         """Return an ApplicationSpec copy with useproxy enabled only where required."""
         client = mviewer_client(ctx)
+        logger.info("Fixing mviewer app connectivity when needed")
         return fix_app_connectivity(
             spec,
             public_origin=public_origin,
@@ -75,6 +82,7 @@ def register_app_tools(mcp: FastMCP) -> None:
         )
         app_spec = ApplicationSpec.from_dict(spec)
         xml = build_mviewer_xml(app_spec)
+        logger.info("Creating/updating app %s through MCP", app_spec.id)
         response = client.create_or_update_app(app_spec.id, xml)
         filepath = response.get("filepath") or response.get("config", {}).get("url")
         return {
@@ -104,6 +112,7 @@ def register_app_tools(mcp: FastMCP) -> None:
         )
         app_spec = ApplicationSpec.from_dict(spec)
         xml = build_mviewer_xml(app_spec)
+        logger.info("Creating preview for app %s through MCP", app_spec.id)
         save_response = client.create_or_update_app(app_spec.id, xml)
         preview_response = client.preview_app(app_spec.id, xml)
         preview_file = preview_response.get("file", "")
@@ -136,6 +145,7 @@ def register_app_tools(mcp: FastMCP) -> None:
         )
         app_spec = ApplicationSpec.from_dict(spec)
         xml = build_mviewer_xml(app_spec)
+        logger.info("Publishing app %s through MCP", app_spec.id)
         client.create_or_update_app(app_spec.id, xml)
         name = publish_name or publish_name_from_title(app_spec.title)
         response = client.publish_app(app_spec.id, name, xml)
@@ -162,6 +172,7 @@ def register_app_tools(mcp: FastMCP) -> None:
         search: str = "",
     ) -> list[dict[str, Any]]:
         """List draft applications visible to the effective MCP identity."""
+        logger.debug("Listing mviewer apps search=%s", search)
         return mviewer_client(ctx).list_apps(search=search or None)
 
     @mcp.tool()
@@ -171,6 +182,7 @@ def register_app_tools(mcp: FastMCP) -> None:
     ) -> dict[str, Any]:
         """Load an existing visible mviewer app as an editable ApplicationSpec."""
         client = mviewer_client(ctx)
+        logger.info("Loading existing mviewer app %s", app_id)
         response = client.get_app(app_id)
         spec = mviewer_xml_to_spec(response["xml"])
         return {
@@ -205,6 +217,7 @@ def register_app_tools(mcp: FastMCP) -> None:
         if app_spec.id != app_id:
             raise ValueError("ApplicationSpec id must match app_id")
         xml = build_mviewer_xml(app_spec)
+        logger.info("Updating existing app %s through MCP", app_id)
         response = client.update_existing_app(
             app_id,
             xml,
@@ -225,6 +238,7 @@ def register_app_tools(mcp: FastMCP) -> None:
         ctx: Context,
     ) -> dict[str, Any]:
         """Delete an existing draft application visible to the effective identity."""
+        logger.info("Deleting mviewer app %s through MCP", app_id)
         return mviewer_client(ctx).delete_app(app_id)
 
     @mcp.tool()
@@ -234,6 +248,7 @@ def register_app_tools(mcp: FastMCP) -> None:
         ctx: Context,
     ) -> dict[str, Any]:
         """Remove a published application while keeping the draft workspace."""
+        logger.info("Unpublishing mviewer app %s publication=%s", app_id, publish_name)
         return mviewer_client(ctx).unpublish_app(app_id, publish_name)
 
     @mcp.tool()
@@ -330,6 +345,7 @@ def register_app_tools(mcp: FastMCP) -> None:
             }
         app_spec = ApplicationSpec.from_dict(spec)
         xml = build_mviewer_xml(app_spec)
+        logger.info("Creating app from intent app=%s publish=%s", app_spec.id, publish)
         save_response = client.create_or_update_app(app_spec.id, xml)
         preview_response = client.preview_app(app_spec.id, xml)
         preview_file = preview_response.get("file", "")

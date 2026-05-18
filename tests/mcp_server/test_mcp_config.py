@@ -57,6 +57,11 @@ class TestMcpConfig(unittest.TestCase):
                 "MVIEWERSTUDIO_MCP_INLINE_DATA_MAX_BYTES": "2048",
                 "MVIEWERSTUDIO_MCP_XML_MAX_BYTES": "4096",
                 "MVIEWERSTUDIO_MCP_SPATIAL_FILE_MAX_BYTES": "8192",
+                "MVIEWERSTUDIO_MCP_HELP_FILE_MAX_BYTES": "16384",
+                "MVIEWERSTUDIO_MCP_LOG_LEVEL": "DEBUG",
+                "MVIEWERSTUDIO_MCP_LOG_FILE": "/tmp/mcp.log",
+                "MVIEWERSTUDIO_MCP_LOG_MAX_BYTES": "1024",
+                "MVIEWERSTUDIO_MCP_LOG_BACKUP_COUNT": "2",
             }
         )
 
@@ -67,6 +72,11 @@ class TestMcpConfig(unittest.TestCase):
         self.assertEqual(settings.inline_data_max_bytes, 2048)
         self.assertEqual(settings.xml_max_bytes, 4096)
         self.assertEqual(settings.spatial_file_max_bytes, 8192)
+        self.assertEqual(settings.help_file_max_bytes, 16384)
+        self.assertEqual(settings.log_level, "DEBUG")
+        self.assertEqual(settings.log_file, "/tmp/mcp.log")
+        self.assertEqual(settings.log_max_bytes, 1024)
+        self.assertEqual(settings.log_backup_count, 2)
 
     def test_settings_reuse_backend_defaults_when_env_is_absent(self) -> None:
         settings = McpSettings.from_env(
@@ -81,6 +91,7 @@ class TestMcpConfig(unittest.TestCase):
                 "limits": {
                     "xml_max_bytes": 1234,
                     "spatial_file_max_bytes": 5678,
+                    "help_file_max_bytes": 9012,
                 },
             },
         )
@@ -89,6 +100,7 @@ class TestMcpConfig(unittest.TestCase):
         self.assertEqual(settings.mviewer_public_path, "apps/backend-public")
         self.assertEqual(settings.xml_max_bytes, 1234)
         self.assertEqual(settings.spatial_file_max_bytes, 5678)
+        self.assertEqual(settings.help_file_max_bytes, 9012)
 
     def test_settings_env_keeps_priority_over_backend_defaults(self) -> None:
         settings = McpSettings.from_env(

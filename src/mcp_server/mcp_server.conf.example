@@ -24,6 +24,25 @@ MVIEWERSTUDIO_MCP_STATELESS_HTTP=true
 
 
 ###############################################################################
+# Logs MCP
+###############################################################################
+
+# Niveau de logs du processus MCP. Si non renseigne, LOG_LEVEL est utilise,
+# puis INFO par defaut.
+MVIEWERSTUDIO_MCP_LOG_LEVEL=INFO
+
+# Fichier de logs rotatif du serveur MCP. Laisser vide pour desactiver le log
+# fichier et garder uniquement la sortie console/systemd.
+# En production, utiliser plutot un chemin systeme, par exemple :
+# MVIEWERSTUDIO_MCP_LOG_FILE=/var/log/mviewerstudio/mcp_server.log
+MVIEWERSTUDIO_MCP_LOG_FILE=logs/mcp_server.log
+
+# Rotation du fichier de logs MCP.
+MVIEWERSTUDIO_MCP_LOG_MAX_BYTES=10485760
+MVIEWERSTUDIO_MCP_LOG_BACKUP_COUNT=5
+
+
+###############################################################################
 # URLs publiques et chemins mviewer
 ###############################################################################
 
@@ -58,6 +77,12 @@ MVIEWER_INSTANCE_PATH=/mviewer/
 
 # Racine locale analysee par les outils de statistiques d'usage.
 MVIEWER_APPS_ROOT=apps
+
+# Repertoire local des addons mviewer. En developpement, le MCP tente de le
+# retrouver automatiquement via le depot mviewer voisin. En production, le
+# renseigner explicitement si les addons sont installes ailleurs.
+# Exemple : /var/www/mviewer/addons
+MVIEWER_ADDONS_PATH=
 
 # Configuration frontend lue pour les fonds, fournisseurs OGC et valeurs par defaut.
 MVIEWERSTUDIO_CONFIG_PATH=src/static/config.json
@@ -110,3 +135,8 @@ MVIEWERSTUDIO_MCP_INLINE_DATA_MAX_BYTES=8192
 # exposee par le backend. Decommenter uniquement pour une surcharge MCP locale.
 # Une valeur negative desactive cette limite cote MCP, mais pas celle de l'API.
 # MVIEWERSTUDIO_MCP_SPATIAL_FILE_MAX_BYTES=10485760
+
+# Taille maximale, en octets, d'une page HTML d'aide/accueil envoyee par le MCP.
+# Par defaut, la valeur est reprise depuis MVIEWERSTUDIO_HELP_FILE_MAX_BYTES
+# exposee par le backend. Decommenter uniquement pour une surcharge MCP locale.
+# MVIEWERSTUDIO_MCP_HELP_FILE_MAX_BYTES=262144

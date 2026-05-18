@@ -67,16 +67,59 @@ def host_from_url(url: str) -> str:
 
 
 def _allowed_hosts() -> set[str]:
-    return _configured_provider_hosts() | _env_allowed_hosts()
+    return (
+        _configured_provider_hosts()
+        | _configured_baselayer_hosts()
+        | _env_allowed_hosts()
+    )
 
 
 def _configured_provider_hosts() -> set[str]:
     hosts: set[str] = set()
     for provider_type in ("wms", "csw"):
         for provider in configured_providers(provider_type):
-            host = host_from_url(provider.get("url", ""))
-            if host:
-                hosts.add(host)
+            hosts.update(_hosts_from_url(provider.get("url", "")))
+    return hosts
+
+
+def _configured_baselayer_hosts() -> set[str]:
+    hosts: set[str] = set()
+    baselayers = _configured_baselayers()
+    if isinstance(baselayers, dict):
+        candidates = baselayers.values()
+    elif isinstance(baselayers, list):
+        candidates = baselayers
+    else:
+        candidates = []
+    for baselayer in candidates:
+        if isinstance(baselayer, dict):
+            hosts.update(_hosts_from_url(baselayer.get("url", "")))
+    return hosts
+
+
+def _configured_baselayers() -> Any:
+    settings = current_settings()
+    config_path = Path(
+        settings.mviewerstudio_config_path
+        or Path(__file__).resolve().parents[1] / "static" / "config.json"
+    )
+    try:
+        with config_path.open(encoding="utf-8") as config_file:
+            data = json.load(config_file)
+    except (OSError, json.JSONDecodeError):
+        return {}
+    return data.get("app_conf", {}).get("baselayers", {})
+
+
+def _hosts_from_url(url: str) -> set[str]:
+    host = host_from_url(url)
+    if not host:
+        return set()
+    hosts = {host}
+    if "{a-c}" in host:
+        hosts.update(host.replace("{a-c}", value) for value in ("a", "b", "c"))
+    if "{abc}" in host:
+        hosts.update(host.replace("{abc}", value) for value in ("a", "b", "c"))
     return hosts
 
 

@@ -15,6 +15,9 @@ class TestXmlParser(unittest.TestCase):
         original = example_application_spec()
         original["id"] = "existing_app"
         original["baselayers"][0]["visible"] = True
+        original["extensions"] = [
+            {"type": "component", "id": "fullscreen", "path": "addons"}
+        ]
         xml = build_mviewer_xml(ApplicationSpec.from_dict(original))
 
         parsed = mviewer_xml_to_spec(xml)
@@ -24,6 +27,8 @@ class TestXmlParser(unittest.TestCase):
         self.assertEqual(parsed["center"], original["center"])
         self.assertEqual(parsed["baselayers"][0]["id"], "osm")
         self.assertEqual(parsed["themes"][0]["layers"][0]["id"], "sample_layer")
+        self.assertEqual(parsed["extensions"][0]["id"], "fullscreen")
+        self.assertEqual(parsed["extensions"][0]["path"], "addons")
 
 
 if __name__ == "__main__":

@@ -11,7 +11,14 @@ from typing import Any
 import xml.etree.ElementTree as ET
 
 from .mcp_config import current_settings
-from .schemas import ApplicationSpec, BaseLayerSpec, GroupSpec, LayerSpec, ThemeSpec
+from .schemas import (
+    ApplicationSpec,
+    BaseLayerSpec,
+    ExtensionSpec,
+    GroupSpec,
+    LayerSpec,
+    ThemeSpec,
+)
 from .spatial_files import data_uri_payload_size, is_data_uri
 
 
@@ -56,6 +63,7 @@ def build_mviewer_xml(spec: ApplicationSpec) -> str:
     ET.SubElement(root, "searchparameters", _search_attrs(spec))
     _append_baselayers(root, spec)
     _append_themes(root, spec)
+    _append_extensions(root, spec)
     xml = ET.tostring(root, encoding="utf-8", xml_declaration=True)
     _validate_xml_size(len(xml))
     return xml.decode("utf-8")
@@ -177,6 +185,26 @@ def _append_themes(root: ET.Element, spec: ApplicationSpec) -> None:
                 _append_layer(group_node, layer)
         for layer in theme.layers:
             _append_layer(theme_node, layer)
+
+
+def _append_extensions(root: ET.Element, spec: ApplicationSpec) -> None:
+    """Append mviewer extension declarations when the app needs addons."""
+    if not spec.extensions:
+        return
+    extensions = ET.SubElement(root, "extensions")
+    for extension in spec.extensions:
+        ET.SubElement(extensions, "extension", _extension_attrs(extension))
+
+
+def _extension_attrs(extension: ExtensionSpec) -> dict[str, str]:
+    attrs: dict[str, Any] = {
+        "type": extension.type,
+        "id": extension.id,
+        "path": extension.path,
+        "src": extension.src,
+        **extension.extra,
+    }
+    return _clean_attrs(attrs)
 
 
 def _theme_attrs(theme: ThemeSpec) -> dict[str, str]:

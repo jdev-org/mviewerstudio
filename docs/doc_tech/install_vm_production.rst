@@ -107,6 +107,7 @@ Créez un fichier d'environnement pour mviewerstudio :
    # Depot de fichiers spatiaux via le MCP et l'API mviewerstudio.
    MVIEWERSTUDIO_SPATIAL_FILE_ALLOWED_EXTENSIONS=geojson,json,kml,gpx,csv,zip,shp,shx,dbf,prj,cpg
    MVIEWERSTUDIO_SPATIAL_FILE_MAX_BYTES=10485760
+   MVIEWERSTUDIO_HELP_FILE_MAX_BYTES=262144
    MVIEWERSTUDIO_XML_MAX_BYTES=1048576
 
    # Si mviewerstudio est publié sous /mviewerstudio/.
@@ -168,6 +169,10 @@ Exemple minimal pour une instance publique ``https://cartes.example.org`` :
    FASTMCP_HOST=127.0.0.1
    FASTMCP_PORT=8030
    MVIEWERSTUDIO_MCP_STATELESS_HTTP=true
+   MVIEWERSTUDIO_MCP_LOG_LEVEL=INFO
+   MVIEWERSTUDIO_MCP_LOG_FILE=/var/log/mviewerstudio/mcp_server.log
+   MVIEWERSTUDIO_MCP_LOG_MAX_BYTES=10485760
+   MVIEWERSTUDIO_MCP_LOG_BACKUP_COUNT=5
 
    MVIEWERSTUDIO_BASE_URL=http://127.0.0.1:5007/mviewerstudio
    MVIEWERSTUDIO_MCP_USE_BACKEND_CONFIG=true
@@ -199,8 +204,16 @@ Avec ``MVIEWERSTUDIO_MCP_USE_BACKEND_CONFIG=true``, les chemins mviewer et les
 limites d'upload sont repris depuis l'API backend ``/api/config/mcp``. Les
 variables ``MVIEWER_CONF_PATH``, ``MVIEWER_PUBLIC_PATH``,
 ``MVIEWERSTUDIO_MCP_XML_MAX_BYTES`` et
-``MVIEWERSTUDIO_MCP_SPATIAL_FILE_MAX_BYTES`` ne sont donc nécessaires que pour
-forcer une valeur différente côté MCP.
+``MVIEWERSTUDIO_MCP_SPATIAL_FILE_MAX_BYTES`` et
+``MVIEWERSTUDIO_MCP_HELP_FILE_MAX_BYTES`` ne sont donc nécessaires que pour
+forcer une valeur différente côté MCP. Les pages HTML d'aide/accueil envoyées
+par le MCP sont stockées dans le dossier de la carte sous ``help/`` et doivent
+rester statiques.
+
+Le niveau ``DEBUG`` peut être activé temporairement avec
+``MVIEWERSTUDIO_MCP_LOG_LEVEL=DEBUG`` pour diagnostiquer les appels outils, les
+requêtes HTTP vers l'API mviewerstudio et les corrections CORS/proxy. Le MCP ne
+journalise pas le contenu XML complet ni les en-têtes d'authentification.
 
 Installez le service MCP :
 
@@ -337,6 +350,7 @@ Contrôlez l'état :
    sudo systemctl status mviewerstudio-mcp.service
    sudo journalctl -u mviewerstudio.service -f
    sudo journalctl -u mviewerstudio-mcp.service -f
+   sudo tail -f /var/log/mviewerstudio/mcp_server.log
 
 Tests rapides :
 
