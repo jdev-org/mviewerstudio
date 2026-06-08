@@ -244,7 +244,7 @@ spring:
 
 - dans gateway.yaml (à intégrer dans `georchestra.gateway.services`) :
 
-
+```
       mviewerstudio:
         target: http://mviewer:80/
         headers:
@@ -269,3 +269,17 @@ spring:
         access-rules:
           - intercept-url: /ogc/**
             anonymous: true
+```
+
+### Droits sur les répertoires
+
+Assurez-vous que docker puisse lire les répertoires / volumes.
+
+Vous pouvez aussi utiliser le système [ACL](https://doc.ubuntu-fr.org/acl) pour assurer les droits aux autres utilisateurs, dans le cas où la gestion des droits avec les outils Linux de base ne suffisent pas.
+
+**Exemple:**
+
+```
+setfacl -R -m o:rX /home/user/git/georchestra/docker/mviewerstudio/apps
+setfacl -R -d -m u:101:rX /home/user/git/georchestra/docker/mviewerstudio/apps
+```
