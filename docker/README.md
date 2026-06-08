@@ -190,7 +190,7 @@ Pour revenir au mode build local :
 
 # Configuration georchestra
 
-### Caddyfile
+### Caddyfile
 
 Il faut modifier le fichier Caddy dans resources/caddy/etc/Caddyfile et rajouter (sous la section FQDN) : 
 
@@ -212,7 +212,7 @@ Il faut modifier le fichier Caddy dans resources/caddy/etc/Caddyfile et rajouter
     # suite ...
 ```
 
-### datadir - Gateway
+### datadir - Gateway
 
 - Dans routes.yaml (à intégrer et adapter): 
 
