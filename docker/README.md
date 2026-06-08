@@ -186,3 +186,86 @@ Pour revenir au mode build local :
 - Le service `qgis-server` est optionnel. Sans le profil `qgis`, les routes Studio qui dépendent de QGIS Server ne fonctionneront pas.
 - La configuration front par défaut est portée par `src/static/config.json`.
 - Le reverse-proxy Nginx est défini dans `docker/nginx/default.conf.template`.
+
+
+# Configuration georchestra
+
+### Caddyfile
+
+Il faut modifier le fichier Caddy dans resources/caddy/etc/Caddyfile et rajouter (sous la section FQDN) : 
+
+```
+{$FQDN} {
+    #tls internal
+    # For using a custom certificate:
+    # tls /etc/certs/ca.pem /etc/certs/key.pem
+
+    # Rajouter cette section 
+    # ====================
+    redir /mviewer /mviewer/ 308
+
+    handle /mviewer/* {
+        uri strip_prefix /mviewer
+        reverse_proxy mviewer:8080
+    }
+    # ====================
+    # suite ...
+```
+
+### datadir - Gateway
+
+- Dans routes.yaml (à intégrer et adapter): 
+
+``` 
+georchestra.gateway.services:
+  mviewerstudio.target: http://mviewerstudio:8000/mviewerstudio/
+  mviewer.target: http://mviewer:80/
+  qgis-server.target: http://qgis-server:80/ogc/
+
+spring:
+  cloud:
+    gateway:
+      routes:
+      - id: mviewerstudio
+        uri: ${georchestra.gateway.services.mviewerstudio.target}
+        predicates:
+        - Path=/mviewerstudio,/mviewerstudio/**
+      - id: mviewer
+        uri: ${georchestra.gateway.services.mviewer.target}
+        predicates:
+        - Path=/mviewer,/mviewer/**
+        filters:
+        - StripPrefix=1
+      - id: qgis-server
+        uri: ${georchestra.gateway.services.qgis-server.target}
+        predicates:
+        - Path=/ogc,/ogc/**
+```
+
+- dans gateway.yaml (à intégrer dans `georchestra.gateway.services`) :
+
+
+      mviewerstudio:
+        target: http://mviewer:80/
+        headers:
+          proxy: true
+          username: true
+          roles: true
+          org: true
+          orgname: true
+          email: true
+          firstName: true
+          lastName: true
+        access-rules:
+          - intercept-url: /mviewerstudio/**
+            anonymous: false
+      mviewer:
+        target: ${georchestra.gateway.services.mviewer.target}
+        access-rules:
+          - intercept-url: /mviewer/**
+            anonymous: true
+      qgis-server:
+        target: ${georchestra.gateway.services.qgis-server.target}
+        access-rules:
+          - intercept-url: /ogc/**
+            anonymous: true
