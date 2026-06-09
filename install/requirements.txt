@@ -4,4 +4,4 @@ lxml>=4.9.2
 GitPython>=3
 requests
 Unidecode
-pymviewer==1.0.4
+pymviewer>=1.0.4
