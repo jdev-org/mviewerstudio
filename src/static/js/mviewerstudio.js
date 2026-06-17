@@ -3,6 +3,37 @@ var API = {};
 
 var mviewer = {};
 
+function _getAppRootPath() {
+  const pathname = window.location.pathname || "/";
+  if (pathname.endsWith("/index.html")) {
+    return pathname.slice(0, -"/index.html".length) || "/";
+  }
+  return pathname.endsWith("/") ? pathname : `${pathname}/`;
+}
+
+function _buildKeycloakLogoutUrl(conf) {
+  if (conf.auth_type !== "keycloak" || !conf.oidc_issuer_url || !conf.oauth2_client_id) {
+    return null;
+  }
+
+  const issuerUrl = conf.oidc_issuer_url.endsWith("/")
+    ? conf.oidc_issuer_url
+    : `${conf.oidc_issuer_url}/`;
+  const oauth2StartUrl = new URL("/oauth2/start", window.location.origin);
+  oauth2StartUrl.searchParams.set("rd", conf.logout_redirect_path || _getAppRootPath());
+
+  const keycloakLogoutUrl = new URL("protocol/openid-connect/logout", issuerUrl);
+  keycloakLogoutUrl.searchParams.set("client_id", conf.oauth2_client_id);
+  keycloakLogoutUrl.searchParams.set(
+    "post_logout_redirect_uri",
+    oauth2StartUrl.toString()
+  );
+
+  const proxyLogoutUrl = new URL("/oauth2/sign_out", window.location.origin);
+  proxyLogoutUrl.searchParams.set("rd", keycloakLogoutUrl.toString());
+  return proxyLogoutUrl.toString();
+}
+
 $(document).ready(function () {
   //Get URL Parameters
   if (window.location.search) {
@@ -34,8 +65,9 @@ $(document).ready(function () {
       let mvCompliantInfo = document.querySelector("#mviewerCompliantInfo");
       mvCompliantInfo.innerHTML = `${mvCompliantInfo.innerHTML} ${_conf.mviewer_version}`;
 
-      if (_conf.logout_url) {
-        $("#menu_user_logout a").attr("href", _conf.logout_url);
+      const logoutUrl = _conf.logout_url || _buildKeycloakLogoutUrl(_conf);
+      if (logoutUrl) {
+        $("#menu_user_logout a").attr("href", logoutUrl);
       }
 
       // Update web page title and title in the brand navbar

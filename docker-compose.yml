@@ -23,6 +23,7 @@ services:
       - MVIEWERSTUDIO_AUTH_TYPE=georchestra
     volumes:
       - "./apps:/home/mvuser/apps"
+      - "./src:/home/mvuser/src"
       - "./src/static/config.json:/home/mvuser/src/static/config.json"
   # Served under /mviewer/ see docker/nginx/default.conf.template
   mviewer:
