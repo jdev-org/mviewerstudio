@@ -2,6 +2,7 @@ from flask import Flask
 from os import path, mkdir
 import logging
 from .error_handlers import ERROR_HANDLERS
+from .auth_routes import auth_routes
 from .route import basic_store
 from .settings import Config
 
@@ -32,6 +33,7 @@ def load_blueprint(app: Flask) -> None:
         # Handle possible missing or excess / chars: needs to start with one but not end with one
         app_prefix = "/" + app_prefix.strip("/")
     app.register_blueprint(basic_store, url_prefix=app_prefix)
+    app.register_blueprint(auth_routes, url_prefix=app_prefix)
 
 
 def init_publish_directory(app: Flask) -> None:

@@ -24,3 +24,5 @@ class Config:
     MVIEWERSTUDIO_AUTH_TYPE = os.getenv(
         "MVIEWERSTUDIO_AUTH_TYPE", "georchestra"
     ).lower()
+    OAUTH2_PROXY_OIDC_ISSUER_URL = os.getenv("OAUTH2_PROXY_OIDC_ISSUER_URL", "")
+    OAUTH2_PROXY_CLIENT_ID = os.getenv("OAUTH2_PROXY_CLIENT_ID", "")

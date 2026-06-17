@@ -1,6 +1,5 @@
 from flask import (
     Blueprint,
-    jsonify,
     Response,
     request,
     current_app,
@@ -13,6 +12,8 @@ from .utils.login_utils import (
     is_authenticated_user,
     is_keycloak_auth_enabled,
 )
+from .utils.login_utils import current_user
+from .auth_routes import require_keycloak_authentication
 from .utils.config_utils import (
     Config,
     write_file,
@@ -34,7 +35,6 @@ from .utils.register_utils import from_xml_path
 from os import path, mkdir, remove
 from shutil import rmtree, copyfile, copytree
 from flask.blueprints import BlueprintSetupState
-from urllib.parse import urlparse
 import requests
 from .utils.git_utils import Git_manager
 from datetime import datetime
@@ -43,7 +43,6 @@ from werkzeug.exceptions import (
     BadRequest,
     MethodNotAllowed,
     Conflict,
-    Unauthorized,
 )
 
 import logging
@@ -72,10 +71,7 @@ def basic_store_init(state: BlueprintSetupState):
 
 @basic_store.before_request
 def protect_keycloak_access() -> None:
-    if not is_keycloak_auth_enabled():
-        return
-    if not is_authenticated_user(current_user):
-        raise Unauthorized("Authentication required.")
+    require_keycloak_authentication()
 
 
 @basic_store.route("/")
