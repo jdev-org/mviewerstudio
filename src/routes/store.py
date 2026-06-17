@@ -1,15 +1,18 @@
 from flask import (
     Blueprint,
     Response,
+    jsonify,
     request,
     current_app,
     redirect,
     render_template_string,
     send_from_directory,
 )
-from .utils.login_utils import current_user
-from .auth_routes import require_keycloak_authentication
-from .utils.config_utils import (
+from pathlib import Path
+
+from ..services.auth import require_authenticated_user
+from ..utils.login_utils import current_user
+from ..utils.config_utils import (
     Config,
     write_file,
     edit_xml_string,
@@ -17,14 +20,14 @@ from .utils.config_utils import (
     replace_templates_url,
     read_xml_file_content,
 )
-from .utils.commons import clean_preview, init_preview, create_zip, make_archive
+from ..utils.commons import clean_preview, init_preview, create_zip, make_archive
 import hashlib, uuid
-from .utils.register_utils import from_xml_path
+from ..utils.register_utils import from_xml_path
 from os import path, mkdir, remove
 from shutil import rmtree, copyfile, copytree
 from flask.blueprints import BlueprintSetupState
 import requests
-from .utils.git_utils import Git_manager
+from ..utils.git_utils import Git_manager
 from datetime import datetime
 
 from werkzeug.exceptions import (
@@ -36,7 +39,10 @@ from werkzeug.exceptions import (
 import logging
 
 basic_store = Blueprint(
-    "basic-store", __name__, static_folder="static", static_url_path="/"
+    "basic-store",
+    __name__,
+    static_folder=str(Path(__file__).resolve().parents[1] / "static"),
+    static_url_path="/",
 )
 
 logger = logging.getLogger(__name__)
@@ -53,8 +59,8 @@ def basic_store_init(state: BlueprintSetupState):
 
 
 @basic_store.before_request
-def protect_keycloak_access() -> None:
-    require_keycloak_authentication()
+def protect_authenticated_access() -> None:
+    require_authenticated_user()
 
 
 @basic_store.route("/")
@@ -99,7 +105,7 @@ def swagger_spec() -> Response:
     """
     Serve OpenAPI specification file.
     """
-    return send_from_directory(path.dirname(__file__), "swagger.yaml")
+    return send_from_directory(Path(__file__).resolve().parents[1], "swagger.yaml")
 
 
 @basic_store.route("/api/app", methods=["POST"])
