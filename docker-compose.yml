@@ -5,10 +5,16 @@ services:
     build:
       context: .
       dockerfile: docker/Dockerfile
+      # network: host
+      args:
+        UID: "${UID:-1000}"
+        GID: "${GID:-1000}"
     pull_policy: build
     image: mviewer/mviewerstudio:latest
-#    ports:
-#      - "8000:8000"
+    user: "${UID:-1000}:${GID:-1000}"
+    # ports:
+    #   - "8000:8000"
+    #   - "5678:5678"
     environment:
       - CONF_PATH_FROM_MVIEWER=apps/store
       - CONF_PUBLISH_PATH_FROM_MVIEWER=apps/public
@@ -19,6 +25,7 @@ services:
       - MVIEWERSTUDIO_AUTH_TYPE=georchestra
     volumes:
       - "./apps:/home/mvuser/apps"
+      - "./src:/home/mvuser/src"
       - "./src/static/config.json:/home/mvuser/src/static/config.json"
   # Served under /mviewer/ see docker/nginx/default.conf.template
   mviewer:

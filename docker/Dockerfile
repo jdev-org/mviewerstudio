@@ -1,4 +1,4 @@
-FROM python:3.11-slim
+FROM python:3.12-slim-bookworm
 
 ARG UID=1000
 ARG GID=1000

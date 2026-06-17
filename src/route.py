@@ -1,19 +1,14 @@
 from flask import (
     Blueprint,
-    jsonify,
     Response,
     request,
     current_app,
     redirect,
     render_template_string,
     send_from_directory,
-    url_for,
 )
-from .utils.login_utils import (
-    current_user,
-    is_authenticated_user,
-    is_keycloak_auth_enabled,
-)
+from .utils.login_utils import current_user
+from .auth_routes import require_keycloak_authentication
 from .utils.config_utils import (
     Config,
     write_file,
@@ -28,7 +23,6 @@ from .utils.register_utils import from_xml_path
 from os import path, mkdir, remove
 from shutil import rmtree, copyfile, copytree
 from flask.blueprints import BlueprintSetupState
-from urllib.parse import urlparse
 import requests
 from .utils.git_utils import Git_manager
 from datetime import datetime
@@ -37,7 +31,6 @@ from werkzeug.exceptions import (
     BadRequest,
     MethodNotAllowed,
     Conflict,
-    Unauthorized,
 )
 
 import logging
@@ -61,10 +54,7 @@ def basic_store_init(state: BlueprintSetupState):
 
 @basic_store.before_request
 def protect_keycloak_access() -> None:
-    if not is_keycloak_auth_enabled():
-        return
-    if not is_authenticated_user(current_user):
-        raise Unauthorized("Authentication required.")
+    require_keycloak_authentication()
 
 
 @basic_store.route("/")
@@ -110,15 +100,6 @@ def swagger_spec() -> Response:
     Serve OpenAPI specification file.
     """
     return send_from_directory(path.dirname(__file__), "swagger.yaml")
-
-
-@basic_store.route("/api/user", methods=["GET"])
-def user() -> Response:
-    """
-    Return current authentified user.
-    Actually works with sec-proxy only.
-    """
-    return jsonify(current_user.as_dict())
 
 
 @basic_store.route("/api/app", methods=["POST"])
