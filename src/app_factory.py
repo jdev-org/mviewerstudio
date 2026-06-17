@@ -2,8 +2,8 @@ from flask import Flask
 from os import path, mkdir
 import logging
 from .error_handlers import ERROR_HANDLERS
-from .auth_routes import auth_routes
-from .route import basic_store
+from .routes import basic_store
+from .routes import auth_routes
 from .settings import Config
 
 logger = logging.getLogger(__name__)
