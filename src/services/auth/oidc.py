@@ -5,6 +5,9 @@ from urllib.parse import urlencode, urlparse
 OIDC_LOGOUT_COOKIES = (
     "_oauth2_proxy",
     "_oauth2_proxy_csrf",
+)
+
+KEYCLOAK_LOGOUT_COOKIES = (
     "AUTH_SESSION_ID",
     "AUTH_SESSION_ID_LEGACY",
     "KC_AUTH_SESSION_HASH",
@@ -31,16 +34,16 @@ def expire_cookie(response: Response, key: str, path_value: str) -> None:
     response.set_cookie(key, "", max_age=0, expires=0, path=path_value)
 
 
-def cookie_paths() -> list[str]:
+def keycloak_cookie_paths() -> list[str]:
     issuer_url = current_app.config.get("OAUTH2_PROXY_OIDC_ISSUER_URL", "").strip()
     issuer_path = urlparse(issuer_url).path.rstrip("/")
-    paths = {"/", "/keycloak/"}
-    if issuer_path:
-        paths.add(f"{issuer_path}/")
-        realm_parent = issuer_path.rsplit("/", 1)[0]
-        if realm_parent:
-            paths.add(f"{realm_parent}/")
-    return sorted(paths)
+    if not issuer_path:
+        return ["/keycloak/"]
+    realm_parent = issuer_path.rsplit("/", 1)[0]
+    paths = [f"{issuer_path}/"]
+    if realm_parent:
+        paths.append(f"{realm_parent}/")
+    return paths
 
 
 def build_logout_redirect() -> str:
@@ -68,5 +71,7 @@ def build_logout_redirect() -> str:
 
 def apply_logout_cookies(response: Response) -> None:
     for cookie_name in OIDC_LOGOUT_COOKIES:
-        for cookie_path in cookie_paths():
+        expire_cookie(response, cookie_name, "/")
+    for cookie_name in KEYCLOAK_LOGOUT_COOKIES:
+        for cookie_path in keycloak_cookie_paths():
             expire_cookie(response, cookie_name, cookie_path)

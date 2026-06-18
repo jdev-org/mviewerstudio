@@ -5,6 +5,7 @@ from .common import build_user, split_roles
 
 
 def get_user() -> User:
+    """Build the authenticated user from GeOrchestra proxy headers."""
     return build_user(
         request.headers.get("sec-username"),
         request.headers.get("sec-firstname"),
