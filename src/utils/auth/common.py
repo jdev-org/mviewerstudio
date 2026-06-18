@@ -7,6 +7,7 @@ from ..commons import replace_special_chars
 
 
 def first_header(*names: str) -> Optional[str]:
+    """Return the first non-empty value found in the given request headers."""
     for name in names:
         value = request.headers.get(name)
         if value:
@@ -15,6 +16,7 @@ def first_header(*names: str) -> Optional[str]:
 
 
 def split_roles(value: Optional[str]) -> list[str]:
+    """Normalize a role header into a non-empty list of role strings."""
     if value is None:
         return [""]
     normalized_value = value.replace(",", ";").replace(" ", ";")
@@ -29,6 +31,7 @@ def build_user(
     orgname: Optional[str],
     roles: list[str],
 ) -> User:
+    """Create a user object with default values and normalized organization."""
     if not orgname:
         orgname = current_app.config["DEFAULT_ORG"]
     normalize_orgname = replace_special_chars(orgname)

@@ -21,6 +21,7 @@ def user() -> Response:
     return jsonify(current_user.as_dict())
 
 
+@auth_routes.route("/logout", methods=["GET"])
 @auth_routes.route("/api/logout", methods=["GET"])
 def logout() -> Response:
     response = redirect(build_logout_redirect(), code=302)
