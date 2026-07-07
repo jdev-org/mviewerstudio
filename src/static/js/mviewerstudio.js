@@ -11,26 +11,27 @@ function _getAppRootPath() {
   return pathname.endsWith("/") ? pathname : `${pathname}/`;
 }
 
-function _buildKeycloakLogoutUrl(conf) {
-  if (conf.auth_type !== "keycloak" || !conf.oidc_issuer_url || !conf.oauth2_client_id) {
+function _buildOidcProxyLogoutUrl(conf) {
+  if (
+    !["oidc", "keycloak"].includes(conf.auth_type) ||
+    !conf.oidc_end_session_endpoint ||
+    !conf.oauth2_client_id
+  ) {
     return null;
   }
 
-  const issuerUrl = conf.oidc_issuer_url.endsWith("/")
-    ? conf.oidc_issuer_url
-    : `${conf.oidc_issuer_url}/`;
   const oauth2StartUrl = new URL("/oauth2/start", window.location.origin);
   oauth2StartUrl.searchParams.set("rd", conf.logout_redirect_path || _getAppRootPath());
 
-  const keycloakLogoutUrl = new URL("protocol/openid-connect/logout", issuerUrl);
-  keycloakLogoutUrl.searchParams.set("client_id", conf.oauth2_client_id);
-  keycloakLogoutUrl.searchParams.set(
+  const providerLogoutUrl = new URL(conf.oidc_end_session_endpoint);
+  providerLogoutUrl.searchParams.set("client_id", conf.oauth2_client_id);
+  providerLogoutUrl.searchParams.set(
     "post_logout_redirect_uri",
     oauth2StartUrl.toString()
   );
 
   const proxyLogoutUrl = new URL("/oauth2/sign_out", window.location.origin);
-  proxyLogoutUrl.searchParams.set("rd", keycloakLogoutUrl.toString());
+  proxyLogoutUrl.searchParams.set("rd", providerLogoutUrl.toString());
   return proxyLogoutUrl.toString();
 }
 
@@ -65,7 +66,7 @@ $(document).ready(function () {
       let mvCompliantInfo = document.querySelector("#mviewerCompliantInfo");
       mvCompliantInfo.innerHTML = `${mvCompliantInfo.innerHTML} ${_conf.mviewer_version}`;
 
-      const logoutUrl = _conf.logout_url || _buildKeycloakLogoutUrl(_conf);
+      const logoutUrl = _conf.logout_url || _buildOidcProxyLogoutUrl(_conf);
       if (logoutUrl) {
         $("#menu_user_logout a").attr("href", logoutUrl);
       }
