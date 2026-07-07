@@ -1,3 +1,9 @@
+"""User adapter for OIDC identities forwarded by a reverse proxy or gateway.
+
+This adapter reads standard forwarded user headers first and optionally uses a
+forwarded bearer/access token as a fallback source for claims.
+"""
+
 import base64
 import json
 import logging
@@ -11,7 +17,7 @@ logger = logging.getLogger(__name__)
 
 
 def _normalize_group_entries(entries: list[str]) -> tuple[object | None, list[str]]:
-    """Split mixed group entries into an organization and normalized roles."""
+    """Split mixed group values into a primary organization and extra roles."""
     organization = None
     roles: list[str] = []
     for entry in entries:
@@ -29,16 +35,20 @@ def _normalize_group_entries(entries: list[str]) -> tuple[object | None, list[st
 
 def _extract_header_claims() -> dict[str, object]:
     """Read user claims from forwarded authentication headers."""
+    explicit_roles = split_roles(
+        first_header("X-Forwarded-Roles", "X-Auth-Request-Roles")
+    )
     group_entries = split_roles(
         first_header(
-            "X-Forwarded-Roles",
-            "X-Auth-Request-Roles",
             "X-Forwarded-Groups",
             "X-Auth-Request-Groups",
             "X-Organizations",
         )
     )
     derived_organization, normalized_roles = _normalize_group_entries(group_entries)
+    organization = (
+        first_header("X-Forwarded-Org", "X-Auth-Request-Org") or derived_organization
+    )
     return {
         "preferred_username": first_header(
             "X-Forwarded-Preferred-Username",
@@ -53,14 +63,17 @@ def _extract_header_claims() -> dict[str, object]:
         "family_name": first_header(
             "X-Forwarded-Family-Name", "X-Auth-Request-Family-Name"
         ),
-        "organization": first_header("X-Forwarded-Org", "X-Auth-Request-Org")
-        or derived_organization,
-        "roles": normalized_roles,
+        "organization": organization,
+        "roles": explicit_roles if explicit_roles != [""] else normalized_roles,
     }
 
 
 def _decode_jwt_payload(token: str) -> dict[str, object]:
-    """Decode the payload section of a JWT without validating its signature."""
+    """Decode a JWT payload without validating its signature.
+
+    This is only used as a convenience fallback when a gateway forwards an
+    access token but not all expected identity headers.
+    """
     try:
         parts = token.split(".")
         if len(parts) != 3:
@@ -76,7 +89,7 @@ def _decode_jwt_payload(token: str) -> dict[str, object]:
 
 
 def _extract_token_claims() -> dict[str, object]:
-    """Read user claims from a forwarded or bearer access token."""
+    """Read fallback user claims from a forwarded or bearer access token."""
     authorization = request.headers.get("Authorization", "")
     token = request.headers.get("X-Forwarded-Access-Token") or request.headers.get(
         "X-Auth-Request-Access-Token"
@@ -161,7 +174,7 @@ def _extract_claims() -> dict[str, object]:
 
 
 def get_user() -> User:
-    """Build the authenticated user from OIDC headers and token claims."""
+    """Build the authenticated user from OIDC headers and token-derived claims."""
     claims = _extract_claims()
     logger.info("OIDC claims: %s", json.dumps(claims, ensure_ascii=True))
     return build_user(

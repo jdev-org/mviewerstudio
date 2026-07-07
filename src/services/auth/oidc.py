@@ -1,3 +1,10 @@
+"""Helpers for reverse-proxy OIDC mode.
+
+This layer assumes authentication has already been done upstream by a gateway
+or by ``oauth2-proxy`` and only handles logout URL composition and cookie
+cleanup on the Flask side.
+"""
+
 from flask import Response, current_app, request
 from urllib.parse import urlencode, urlparse
 
@@ -20,10 +27,12 @@ KEYCLOAK_LOGOUT_COOKIES = (
 
 
 def is_oidc_auth_enabled() -> bool:
-    return current_app.config["MVIEWERSTUDIO_AUTH_TYPE"] == "keycloak"
+    """Return whether the legacy reverse-proxy OIDC mode is enabled."""
+    return current_app.config["MVIEWERSTUDIO_AUTH_TYPE"] in {"keycloak", "oidc"}
 
 
 def app_root_path() -> str:
+    """Return the studio root path, including the optional URL prefix."""
     app_prefix = current_app.config.get("MVIEWERSTUDIO_URL_PATH_PREFIX", "").strip("/")
     if not app_prefix:
         return "/"
@@ -31,10 +40,12 @@ def app_root_path() -> str:
 
 
 def expire_cookie(response: Response, key: str, path_value: str) -> None:
+    """Expire a cookie on the given path."""
     response.set_cookie(key, "", max_age=0, expires=0, path=path_value)
 
 
-def keycloak_cookie_paths() -> list[str]:
+def provider_cookie_paths() -> list[str]:
+    """Return likely IdP cookie paths derived from the configured issuer URL."""
     issuer_url = current_app.config.get("OAUTH2_PROXY_OIDC_ISSUER_URL", "").strip()
     issuer_path = urlparse(issuer_url).path.rstrip("/")
     if not issuer_path:
@@ -47,31 +58,37 @@ def keycloak_cookie_paths() -> list[str]:
 
 
 def build_logout_redirect() -> str:
+    """Build the upstream logout redirect used in proxy-based OIDC mode."""
+    end_session_endpoint = current_app.config.get("OIDC_END_SESSION_ENDPOINT", "").strip()
     issuer_url = current_app.config.get("OAUTH2_PROXY_OIDC_ISSUER_URL", "").strip()
     client_id = current_app.config.get("OAUTH2_PROXY_CLIENT_ID", "").strip()
-    if not issuer_url or not client_id:
+    if not end_session_endpoint and issuer_url:
+        issuer_parts = urlparse(issuer_url)
+        issuer_base_path = issuer_parts.path.rstrip("/")
+        logout_path = f"{issuer_base_path}/protocol/openid-connect/logout"
+        end_session_endpoint = (
+            f"{issuer_parts.scheme}://{issuer_parts.netloc}{logout_path}"
+        )
+
+    if not end_session_endpoint:
         return "/oauth2/sign_out"
 
     redirect_target = f"/oauth2/start?{urlencode({'rd': app_root_path()})}"
-    issuer_parts = urlparse(issuer_url)
-    issuer_base_path = issuer_parts.path.rstrip("/")
-    logout_path = f"{issuer_base_path}/protocol/openid-connect/logout"
-    post_logout_redirect_uri = f"{request.host_url.rstrip('/')}{redirect_target}"
-    logout_query = urlencode(
-        {
-            "client_id": client_id,
-            "post_logout_redirect_uri": post_logout_redirect_uri,
-        }
-    )
-    oidc_logout_url = (
-        f"{issuer_parts.scheme}://{issuer_parts.netloc}{logout_path}?{logout_query}"
-    )
+    post_logout_redirect_uri = current_app.config.get(
+        "OIDC_POST_LOGOUT_REDIRECT_URI", ""
+    ).strip() or f"{request.host_url.rstrip('/')}{redirect_target}"
+
+    logout_params = {"post_logout_redirect_uri": post_logout_redirect_uri}
+    if client_id:
+        logout_params["client_id"] = client_id
+    oidc_logout_url = f"{end_session_endpoint}?{urlencode(logout_params)}"
     return f"/oauth2/sign_out?{urlencode({'rd': oidc_logout_url})}"
 
 
 def apply_logout_cookies(response: Response) -> None:
+    """Expire proxy and common Keycloak cookies on the response."""
     for cookie_name in OIDC_LOGOUT_COOKIES:
         expire_cookie(response, cookie_name, "/")
     for cookie_name in KEYCLOAK_LOGOUT_COOKIES:
-        for cookie_path in keycloak_cookie_paths():
+        for cookie_path in provider_cookie_paths():
             expire_cookie(response, cookie_name, cookie_path)

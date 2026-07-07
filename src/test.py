@@ -184,6 +184,52 @@ class TestKeycloakAccessProtection:
             assert r.status_code == 200
             assert r.json["user_name"] == "foo"
 
+    def test_oidc_alias_requires_authenticated_user(self):
+        app = create_app()
+        app.testing = True
+        app.config["MVIEWERSTUDIO_AUTH_TYPE"] = "oidc"
+        with app.test_client() as client:
+            r = client.get("/api/user")
+            assert r.status_code == 401
+
+
+class TestAuthenticationModes:
+    def test_public_mode_keeps_api_user_public(self):
+        app = create_app()
+        app.testing = True
+        app.config["MVIEWERSTUDIO_AUTH_MODE"] = "public"
+        with app.test_client() as client:
+            response = client.get("/api/user")
+            assert response.status_code == 200
+            assert response.json["user_name"] == "anonymous"
+
+    def test_proxy_mode_requires_forwarded_identity(self):
+        app = create_app()
+        app.testing = True
+        app.config["MVIEWERSTUDIO_AUTH_MODE"] = "proxy"
+        with app.test_client() as client:
+            response = client.get("/api/user")
+            assert response.status_code == 401
+
+    def test_authlib_mode_uses_session_claims(self):
+        app = create_app()
+        app.testing = True
+        app.config["MVIEWERSTUDIO_AUTH_MODE"] = "authlib"
+        with app.test_client() as client:
+            with client.session_transaction() as flask_session:
+                flask_session["mviewerstudio.auth.claims"] = {
+                    "preferred_username": "alice",
+                    "given_name": "Alice",
+                    "family_name": "Martin",
+                    "organization": "acme",
+                    "roles": ["EDITOR"],
+                }
+
+            response = client.get("/api/user")
+            assert response.status_code == 200
+            assert response.json["user_name"] == "alice"
+            assert response.json["roles"] == ["EDITOR"]
+
 
 @pytest.mark.usefixtures("cleandir")
 class TestStoreMviewerConfig:
