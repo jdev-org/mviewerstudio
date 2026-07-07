@@ -1,9 +1,11 @@
 from flask import Flask
-from os import path, mkdir
+from os import path, mkdir, makedirs
 import logging
+from .extensions import oauth, session_manager
 from .error_handlers import ERROR_HANDLERS
 from .routes import basic_store
 from .routes import auth_routes
+from .services.auth import init_authlib_client
 from .settings import Config
 
 logger = logging.getLogger(__name__)
@@ -36,6 +38,16 @@ def load_blueprint(app: Flask) -> None:
     app.register_blueprint(auth_routes, url_prefix=app_prefix)
 
 
+def init_extensions(app: Flask) -> None:
+    session_dir = app.config.get("SESSION_FILE_DIR")
+    if session_dir:
+        makedirs(session_dir, exist_ok=True)
+    session_manager.init_app(app)
+    oauth.init_app(app)
+    with app.app_context():
+        init_authlib_client(app)
+
+
 def init_publish_directory(app: Flask) -> None:
     if "MVIEWERSTUDIO_PUBLISH_PATH" not in app.config:
         return
@@ -50,6 +62,7 @@ def init_publish_directory(app: Flask) -> None:
 def create_app() -> Flask:
     app = Flask("mviewerstudio")
     load_config(app)
+    init_extensions(app)
     load_error_handlers(app)
     load_blueprint(app)
     setup_logging(app)

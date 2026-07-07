@@ -1,3 +1,5 @@
+"""User adapter for geOrchestra-style reverse proxy headers."""
+
 from flask import request
 
 from ...models.user import User

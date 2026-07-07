@@ -1,3 +1,5 @@
+"""Shared user-building helpers for all authentication adapters."""
+
 from typing import Optional
 
 from flask import current_app, request
@@ -31,7 +33,7 @@ def build_user(
     orgname: Optional[str],
     roles: list[str],
 ) -> User:
-    """Create a user object with default values and normalized organization."""
+    """Create the internal ``User`` model with application defaults applied."""
     if not orgname:
         orgname = current_app.config["DEFAULT_ORG"]
     normalize_orgname = replace_special_chars(orgname)
