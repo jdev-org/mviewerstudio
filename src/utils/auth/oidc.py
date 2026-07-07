@@ -90,10 +90,36 @@ def _extract_token_claims() -> dict[str, object]:
 
     payload = _decode_jwt_payload(token)
     roles = payload.get("roles")
+    realm_access = payload.get("realm_access", {})
     if not isinstance(roles, list):
-        realm_access = payload.get("realm_access", {})
         if isinstance(realm_access, dict):
             roles = realm_access.get("roles", [])
+    resource_access = payload.get("resource_access", {})
+    if isinstance(resource_access, dict):
+        mviewerstudio_access = resource_access.get("mviewerstudio", {})
+    else:
+        mviewerstudio_access = {}
+    logger.info(
+        "OIDC token payload summary: %s",
+        json.dumps(
+            {
+                "preferred_username": payload.get("preferred_username"),
+                "email": payload.get("email"),
+                "organization": payload.get("organization"),
+                "roles": roles,
+                "realm_roles": realm_access.get("roles", [])
+                if isinstance(realm_access, dict)
+                else [],
+                "mviewerstudio_roles": mviewerstudio_access.get("roles", [])
+                if isinstance(mviewerstudio_access, dict)
+                else [],
+                "aud": payload.get("aud"),
+                "azp": payload.get("azp"),
+                "iss": payload.get("iss"),
+            },
+            ensure_ascii=True,
+        ),
+    )
 
     given_name = payload.get("given_name")
     family_name = payload.get("family_name")
