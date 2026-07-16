@@ -247,16 +247,68 @@ class TestAuthenticationModes:
                 == "/auth/login?next=https://example.test/mviewerstudio/index.html"
             )
 
-    def test_authlib_mode_root_redirects_anonymous_user_outside_studio(self):
+    def test_authlib_mode_prefixed_api_user_returns_login_url_when_anonymous(self):
         app = create_app()
         app.testing = True
         app.config["MVIEWERSTUDIO_AUTH_MODE"] = "authlib"
         app.config["MVIEWERSTUDIO_URL_PATH_PREFIX"] = "mviewerstudio"
-        app.config["MVIEWERSTUDIO_AUTHLIB_ANONYMOUS_REDIRECT_URL"] = "https://example.test/"
+        with app.test_client() as client:
+            response = client.get(
+                "/mviewerstudio/api/user",
+                headers={"X-Auth-Return-To": "https://example.test/mviewerstudio/index.html"},
+            )
+            assert response.status_code == 401
+            assert response.json["error"] == "authentication_required"
+            assert response.json["redirect_url"] == "http://localhost/"
+            assert (
+                response.json["login_url"]
+                == "/mviewerstudio/auth/login?next=https://example.test/mviewerstudio/index.html"
+            )
+
+    def test_authlib_mode_root_redirects_anonymous_user_to_login(self):
+        app = create_app()
+        app.testing = True
+        app.config["MVIEWERSTUDIO_AUTH_MODE"] = "authlib"
+        app.config["MVIEWERSTUDIO_URL_PATH_PREFIX"] = "mviewerstudio"
         with app.test_client() as client:
             response = client.get("/mviewerstudio")
             assert response.status_code == 302
-            assert response.headers["Location"] == "https://example.test/"
+            assert (
+                response.headers["Location"]
+                == "/mviewerstudio/auth/login?next=http://localhost/mviewerstudio"
+            )
+
+    def test_authlib_mode_index_redirects_anonymous_user_to_login(self):
+        app = create_app()
+        app.testing = True
+        app.config["MVIEWERSTUDIO_AUTH_MODE"] = "authlib"
+        app.config["MVIEWERSTUDIO_URL_PATH_PREFIX"] = "mviewerstudio"
+        with app.test_client() as client:
+            response = client.get("/mviewerstudio/index.html")
+            assert response.status_code == 302
+            assert (
+                response.headers["Location"]
+                == "/mviewerstudio/auth/login?next=http://localhost/mviewerstudio/index.html"
+            )
+
+    def test_authlib_mode_index_serves_html_for_authenticated_user(self):
+        app = create_app()
+        app.testing = True
+        app.config["MVIEWERSTUDIO_AUTH_MODE"] = "authlib"
+        app.config["MVIEWERSTUDIO_URL_PATH_PREFIX"] = "mviewerstudio"
+        with app.test_client() as client:
+            with client.session_transaction() as flask_session:
+                flask_session["mviewerstudio.auth.claims"] = {
+                    "preferred_username": "alice",
+                    "given_name": "Alice",
+                    "family_name": "Martin",
+                    "organization": "acme",
+                    "roles": ["EDITOR"],
+                }
+
+            response = client.get("/mviewerstudio/index.html")
+            assert response.status_code == 200
+            assert "text/html" in response.content_type
 
 
 @pytest.mark.usefixtures("cleandir")
