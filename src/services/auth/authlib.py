@@ -153,7 +153,9 @@ def clear_authlib_session() -> None:
 
 def start_authlib_login():
     """Start the OIDC authorization code flow and remember the return URL."""
-    next_url = request.args.get("next") or request.referrer or app_root_path()
+    # Prefer explicit 'next', then referrer, otherwise send to the studio index page
+    app_index = app_root_path().rstrip("/") + "/index.html"
+    next_url = request.args.get("next") or request.referrer or app_index
     session["mviewerstudio.auth.next_url"] = next_url
     callback_url = url_for("auth-routes.authlib_callback", _external=True, _scheme="https")
     try:
@@ -218,7 +220,9 @@ def complete_authlib_login():
     current_app.logger.info("Authlib claims: %s", raw_claims)
     claims = normalize_claims(raw_claims)
     store_authlib_session(token, claims)
-    redirect_target = session.pop("mviewerstudio.auth.next_url", None) or app_root_path()
+    # Pop the saved next URL (if any). If none, redirect to the studio index page.
+    app_index = app_root_path().rstrip("/") + "/index.html"
+    redirect_target = session.pop("mviewerstudio.auth.next_url", None) or app_index
     return redirect(redirect_target, code=302)
 
 
