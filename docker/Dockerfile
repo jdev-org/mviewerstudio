@@ -38,4 +38,4 @@ ENV EXPORT_CONF_FOLDER=/home/mvuser/apps/store \
     MVIEWERSTUDIO_URL_PATH_PREFIX=mviewerstudio \
     MVIEWERSTUDIO_AUTH_TYPE=georchestra
 
-CMD ["gunicorn", "-w 1", "-b 0.0.0.0:8000", "src.app:app"]
+CMD ["gunicorn","--workers", "1","--bind", "0.0.0.0:8000","--log-level", "info","--access-logfile", "-","--error-logfile", "-","--capture-output","src.app:app"]

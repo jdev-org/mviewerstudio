@@ -233,10 +233,30 @@ const getUser = () => {
     method: "GET",
     headers: {
       "Content-Type": "application/json",
+      "X-Auth-Return-To": window.location.href,
     },
   })
-    .then((r) => (r.ok ? r.json() : Promise.reject(r)))
+    .then(async (r) => {
+      if (r.ok) {
+        return r.json();
+      }
+      if (r.status === 401) {
+        const payload = await r.json().catch(() => null);
+        if (payload && payload.redirect_url) {
+          window.location.assign(payload.redirect_url);
+          return null;
+        }
+        if (payload && payload.login_url) {
+          window.location.assign(payload.login_url);
+          return null;
+        }
+      }
+      return Promise.reject(r);
+    })
     .then((data) => {
+      if (!data) {
+        return;
+      }
       var userGroupFullName = "";
       var userGroupSlugName = "";
       var selectGroupPopup = false;

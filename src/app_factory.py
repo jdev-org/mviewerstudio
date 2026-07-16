@@ -1,6 +1,7 @@
 from flask import Flask
 from os import path, mkdir, makedirs
 import logging
+from werkzeug.middleware.proxy_fix import ProxyFix
 from .extensions import oauth, session_manager
 from .error_handlers import ERROR_HANDLERS
 from .routes import basic_store
@@ -12,11 +13,23 @@ logger = logging.getLogger(__name__)
 
 
 def setup_logging(app: Flask) -> None:
+    log_level = app.config["LOG_LEVEL"]
     logging.basicConfig(
-        level=app.config["LOG_LEVEL"],
+        level=log_level,
         format="[%(asctime)s] %(levelname)s (%(module)s): %(message)s",
         datefmt="%Y-%m-%d %H:%M:%S",
+        force=True,
     )
+
+    # Under Gunicorn, reuse the worker error handlers so Flask app logs end up in
+    # the container stdout/stderr stream that `docker logs` reads.
+    gunicorn_logger = logging.getLogger("gunicorn.error")
+    if gunicorn_logger.handlers:
+        app.logger.handlers = gunicorn_logger.handlers
+        app.logger.propagate = False
+
+    app.logger.setLevel(log_level)
+    logging.getLogger().setLevel(log_level)
 
 
 def load_config(app: Flask) -> None:
@@ -61,11 +74,12 @@ def init_publish_directory(app: Flask) -> None:
 
 def create_app() -> Flask:
     app = Flask("mviewerstudio")
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
     load_config(app)
+    setup_logging(app)
     init_extensions(app)
     load_error_handlers(app)
     load_blueprint(app)
-    setup_logging(app)
     init_publish_directory(app)
     logger.info(f"CREATE FLASK APP : SUCESS")
     return app
