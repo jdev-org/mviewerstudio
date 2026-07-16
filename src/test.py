@@ -230,6 +230,34 @@ class TestAuthenticationModes:
             assert response.json["user_name"] == "alice"
             assert response.json["roles"] == ["EDITOR"]
 
+    def test_authlib_mode_api_user_returns_login_url_when_anonymous(self):
+        app = create_app()
+        app.testing = True
+        app.config["MVIEWERSTUDIO_AUTH_MODE"] = "authlib"
+        with app.test_client() as client:
+            response = client.get(
+                "/api/user",
+                headers={"X-Auth-Return-To": "https://example.test/mviewerstudio/index.html"},
+            )
+            assert response.status_code == 401
+            assert response.json["error"] == "authentication_required"
+            assert response.json["redirect_url"] == "http://localhost/"
+            assert (
+                response.json["login_url"]
+                == "/auth/login?next=https://example.test/mviewerstudio/index.html"
+            )
+
+    def test_authlib_mode_root_redirects_anonymous_user_outside_studio(self):
+        app = create_app()
+        app.testing = True
+        app.config["MVIEWERSTUDIO_AUTH_MODE"] = "authlib"
+        app.config["MVIEWERSTUDIO_URL_PATH_PREFIX"] = "mviewerstudio"
+        app.config["MVIEWERSTUDIO_AUTHLIB_ANONYMOUS_REDIRECT_URL"] = "https://example.test/"
+        with app.test_client() as client:
+            response = client.get("/mviewerstudio")
+            assert response.status_code == 302
+            assert response.headers["Location"] == "https://example.test/"
+
 
 @pytest.mark.usefixtures("cleandir")
 class TestStoreMviewerConfig:
