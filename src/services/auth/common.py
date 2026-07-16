@@ -22,6 +22,13 @@ def _is_studio_entry_request() -> bool:
     return path.endswith("/index.html") or path in {"", prefixed_root}
 
 
+def _is_api_request() -> bool:
+    path = request.path
+    app_prefix = current_app.config.get("MVIEWERSTUDIO_URL_PATH_PREFIX", "").strip("/")
+    prefixed_api_root = f"/{app_prefix}/api/" if app_prefix else "/api/"
+    return path.startswith("/api/") or path.startswith(prefixed_api_root)
+
+
 def require_authenticated_user() -> None:
     """Allow public mode, otherwise enforce an authenticated application user.
 
@@ -38,7 +45,7 @@ def require_authenticated_user() -> None:
             )
             if _is_studio_entry_request():
                 return redirect(login_url, code=302)
-            if request.path.startswith("/api/"):
+            if _is_api_request():
                 return (
                     jsonify(
                         {
