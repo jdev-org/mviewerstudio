@@ -71,6 +71,14 @@ def default_doc():
     return redirect("index.html")
 
 
+@basic_store.route("/index.html", methods=["GET"])
+def index_doc() -> Response:
+    """
+    Serve the studio entry page only after auth checks have passed.
+    """
+    return send_from_directory(basic_store.static_folder, "index.html")
+
+
 @basic_store.route("/swagger", methods=["GET"])
 @basic_store.route("/swagger/", methods=["GET"])
 def swagger_ui() -> Response:
