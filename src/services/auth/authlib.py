@@ -79,30 +79,61 @@ def _coerce_claims(payload: object) -> dict[str, object]:
     return payload if isinstance(payload, dict) else {}
 
 
+def _first_claim(claims: dict[str, object], *names: str) -> object | None:
+    """Return the first non-empty claim value found among aliases."""
+    for name in names:
+        value = claims.get(name)
+        if value is None:
+            continue
+        if isinstance(value, str) and not value.strip():
+            continue
+        return value
+    return None
+
+
+def _string_claim(claims: dict[str, object], *names: str) -> str:
+    """Return the first matching claim coerced to a stripped string."""
+    value = _first_claim(claims, *names)
+    if value is None:
+        return ""
+    return str(value).strip()
+
+
+def _roles_from_value(value: object) -> list[str]:
+    """Normalize role/group claims from list or string values."""
+    if isinstance(value, list):
+        return [str(role).strip() for role in value if str(role).strip()]
+    if isinstance(value, str):
+        normalized_value = value.replace(",", ";").replace(" ", ";")
+        return [role for role in normalized_value.split(";") if role]
+    return []
+
+
 def _roles_from_claims(claims: dict[str, object]) -> list[str]:
     """Extract application roles from common OIDC claim conventions."""
-    roles = claims.get("roles")
-    if isinstance(roles, list) and roles:
-        return [str(role) for role in roles]
+    roles = _roles_from_value(claims.get("roles"))
+    if roles:
+        return roles
 
     realm_access = claims.get("realm_access")
     if isinstance(realm_access, dict):
-        realm_roles = realm_access.get("roles")
-        if isinstance(realm_roles, list) and realm_roles:
-            return [str(role) for role in realm_roles]
+        realm_roles = _roles_from_value(realm_access.get("roles"))
+        if realm_roles:
+            return realm_roles
 
-    groups = claims.get("groups")
-    if isinstance(groups, list) and groups:
-        return [str(group) for group in groups]
-    return [""]
+    for key in ("groups", "group_list_all", "group_list"):
+        group_roles = _roles_from_value(claims.get(key))
+        if group_roles:
+            return group_roles
+    return []
 
 
 def normalize_claims(claims: object) -> dict[str, object]:
     """Map provider-specific claim names to the application's user shape."""
     raw_claims = _coerce_claims(claims)
-    full_name = str(raw_claims.get("name") or "").strip()
-    given_name = str(raw_claims.get("given_name") or "").strip()
-    family_name = str(raw_claims.get("family_name") or "").strip()
+    full_name = _string_claim(raw_claims, "name", "full_name")
+    given_name = _string_claim(raw_claims, "given_name", "first_name")
+    family_name = _string_claim(raw_claims, "family_name", "last_name")
     if full_name and (not given_name or not family_name):
         name_parts = full_name.split(" ", 1)
         if not given_name and name_parts:
@@ -110,17 +141,39 @@ def normalize_claims(claims: object) -> dict[str, object]:
         if not family_name and len(name_parts) > 1:
             family_name = name_parts[1]
 
-    organization = raw_claims.get("organization") or raw_claims.get("org")
-    return {
-        "preferred_username": raw_claims.get("preferred_username")
-        or raw_claims.get("nickname")
-        or raw_claims.get("email")
-        or raw_claims.get("sub"),
+    organization = _first_claim(
+        raw_claims,
+        "organization",
+        "organisation",
+        "org",
+        "company",
+        "legal_name",
+    )
+    username = _string_claim(raw_claims, "username", "user_name", "login")
+    preferred_username = _string_claim(raw_claims, "preferred_username")
+    if username and (not preferred_username or preferred_username.isdigit()):
+        preferred = username
+    else:
+        preferred = (
+            preferred_username
+            or username
+            or _string_claim(raw_claims, "nickname", "email", "sub")
+        )
+    normalized = {
+        "preferred_username": preferred or None,
+        "email": _first_claim(raw_claims, "email"),
+        "name": full_name or None,
         "given_name": given_name or None,
         "family_name": family_name or None,
         "organization": organization,
         "roles": _roles_from_claims(raw_claims),
+        "sub": _first_claim(raw_claims, "sub"),
     }
+    try:
+        current_app.logger.info("Authlib normalized claims: %s", normalized)
+    except Exception:
+        pass
+    return normalized
 
 
 def store_authlib_session(token: dict[str, object], claims: dict[str, object]) -> None:
