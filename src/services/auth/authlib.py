@@ -158,22 +158,26 @@ def start_authlib_login():
     next_url = request.args.get("next") or request.referrer or app_index
     session["mviewerstudio.auth.next_url"] = next_url
     callback_url = url_for("auth-routes.authlib_callback", _external=True, _scheme="https")
+    client = authlib_client()
+    metadata = getattr(client, "server_metadata", {}) or {}
     try:
         current_app.logger.info(
-            "Start auth login: next=%s, callback=%s, scope=%s",
+            "Start auth login: next=%s, callback=%s, configured_scope=%s, provider_scopes_supported=%s",
             next_url,
             callback_url,
             current_app.config.get("MVIEWERSTUDIO_AUTHLIB_SCOPE"),
+            metadata.get("scopes_supported"),
         )
     except Exception:
         pass
-    return authlib_client().authorize_redirect(callback_url)
+    return client.authorize_redirect(callback_url)
 
 
 def _user_claims_from_token(token: dict[str, object]) -> dict[str, object]:
     """Extract claims from the token payload or fetch them from ``userinfo``."""
     token_claims = _coerce_claims(token.get("userinfo"))
     if token_claims:
+        current_app.logger.info("Using token userinfo claims: %s", token_claims)
         return token_claims
     client = authlib_client()
     metadata = getattr(client, "server_metadata", {}) or {}
@@ -188,7 +192,11 @@ def _user_claims_from_token(token: dict[str, object]) -> dict[str, object]:
             else:
                 claims = _coerce_claims(response)
             try:
-                current_app.logger.info("Userinfo fetched: keys=%s", list(claims.keys()))
+                current_app.logger.info(
+                    "Userinfo fetched: claims=%s, keys=%s",
+                    claims,
+                    list(claims.keys()),
+                )
             except Exception:
                 pass
             return claims
@@ -208,17 +216,23 @@ def complete_authlib_login():
             request.args.get("error_description", ""),
             current_app.config.get("MVIEWERSTUDIO_AUTHLIB_SCOPE"),
         )
-    token = authlib_client().authorize_access_token()
+    client = authlib_client()
+    metadata = getattr(client, "server_metadata", {}) or {}
+    token = client.authorize_access_token()
     try:
         current_app.logger.info(
-            "Token exchange completed: token_keys=%s",
+            "Token exchange completed: token_keys=%s, token_scope=%s, configured_scope=%s, provider_scopes_supported=%s",
             list(token.keys()) if isinstance(token, dict) else str(type(token)),
+            token.get("scope") if isinstance(token, dict) else None,
+            current_app.config.get("MVIEWERSTUDIO_AUTHLIB_SCOPE"),
+            metadata.get("scopes_supported"),
         )
     except Exception:
         pass
     raw_claims = _user_claims_from_token(token)
-    current_app.logger.info("Authlib claims: %s", raw_claims)
+    current_app.logger.info("Authlib raw claims returned by provider: %s", raw_claims)
     claims = normalize_claims(raw_claims)
+    current_app.logger.info("Authlib normalized claims: %s", claims)
     store_authlib_session(token, claims)
     # Pop the saved next URL (if any). If none, redirect to the studio index page.
     app_index = app_root_path().rstrip("/") + "/index.html"
