@@ -2,6 +2,7 @@
 from .utils.login_utils import _get_current_user, User
 import pytest
 from .app_factory import create_app
+from .services.auth.authlib import normalize_claims
 import hashlib
 import os
 from pathlib import Path
@@ -247,6 +248,47 @@ class TestAuthenticationModes:
                 == "/auth/login?next=https://example.test/mviewerstudio/index.html"
             )
 
+
+class TestAuthlibClaimNormalization:
+    def test_normalize_claims_accepts_django_aliases(self):
+        claims = normalize_claims(
+            {
+                "sub": "1049",
+                "username": "alice",
+                "first_name": "Alice",
+                "last_name": "Martin",
+                "organisation": "acme",
+                "groups": ["EDITOR", "CATALOG"],
+            }
+        )
+
+        assert claims == {
+            "preferred_username": "alice",
+            "email": None,
+            "name": None,
+            "given_name": "Alice",
+            "family_name": "Martin",
+            "organization": "acme",
+            "roles": ["EDITOR", "CATALOG"],
+            "sub": "1049",
+        }
+
+    def test_normalize_claims_accepts_string_group_lists(self):
+        claims = normalize_claims(
+            {
+                "preferred_username": "1049",
+                "username": "alice",
+                "first_name": "Alice",
+                "last_name": "Martin",
+                "group_list_all": "EDITOR,CATALOG",
+            }
+        )
+
+        assert claims["preferred_username"] == "alice"
+        assert claims["given_name"] == "Alice"
+        assert claims["family_name"] == "Martin"
+        assert claims["roles"] == ["EDITOR", "CATALOG"]
+
     def test_authlib_mode_prefixed_api_user_returns_login_url_when_anonymous(self):
         app = create_app()
         app.testing = True
@@ -285,6 +327,22 @@ class TestAuthenticationModes:
         app.config["MVIEWERSTUDIO_URL_PATH_PREFIX"] = "mviewerstudio"
         with app.test_client() as client:
             response = client.get("/mviewerstudio/index.html")
+            assert response.status_code == 302
+            assert (
+                response.headers["Location"]
+                == "/mviewerstudio/auth/login?next=http://localhost/mviewerstudio/index.html"
+            )
+
+    def test_authlib_mode_global_guard_redirects_anonymous_index_to_login(self):
+        app = create_app()
+        app.testing = True
+        app.config["MVIEWERSTUDIO_AUTH_MODE"] = "authlib"
+        app.config["MVIEWERSTUDIO_URL_PATH_PREFIX"] = "mviewerstudio"
+        with app.test_client() as client:
+            response = client.get(
+                "/mviewerstudio/index.html",
+                follow_redirects=False,
+            )
             assert response.status_code == 302
             assert (
                 response.headers["Location"]
