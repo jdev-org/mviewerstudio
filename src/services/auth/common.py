@@ -32,12 +32,12 @@ def require_authenticated_user() -> None:
         return
     if not is_authenticated_user(current_user):
         if is_authlib_mode():
-            if _is_studio_entry_request():
-                return redirect(_anonymous_redirect_url(), code=302)
             login_url = url_for(
                 "auth-routes.login",
                 next=request.headers.get("X-Auth-Return-To") or request.referrer or request.url,
             )
+            if _is_studio_entry_request():
+                return redirect(login_url, code=302)
             if request.path.startswith("/api/"):
                 return (
                     jsonify(
