@@ -7,6 +7,7 @@ from .error_handlers import ERROR_HANDLERS
 from .routes import basic_store
 from .routes import auth_routes
 from .services.auth import init_authlib_client
+from .services.auth.common import require_authenticated_studio_entry
 from .settings import Config
 
 logger = logging.getLogger(__name__)
@@ -72,6 +73,12 @@ def init_publish_directory(app: Flask) -> None:
     logger.info(f"PUBLISH PATH READY TO USE : {publish_path}")
 
 
+def load_request_guards(app: Flask) -> None:
+    @app.before_request
+    def protect_studio_entry():
+        return require_authenticated_studio_entry()
+
+
 def create_app() -> Flask:
     app = Flask("mviewerstudio")
     app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
@@ -79,6 +86,7 @@ def create_app() -> Flask:
     setup_logging(app)
     init_extensions(app)
     load_error_handlers(app)
+    load_request_guards(app)
     load_blueprint(app)
     init_publish_directory(app)
     logger.info(f"CREATE FLASK APP : SUCESS")

@@ -58,3 +58,9 @@ def require_authenticated_user() -> None:
                 )
             return redirect(login_url, code=302)
         raise Unauthorized("Authentication required.")
+
+
+def require_authenticated_studio_entry() -> None:
+    """Protect the studio entry page before any HTML is served."""
+    if _is_studio_entry_request():
+        return require_authenticated_user()
