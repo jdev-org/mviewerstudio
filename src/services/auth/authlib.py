@@ -19,6 +19,23 @@ AUTHLIB_SESSION_CLAIMS_KEY = "mviewerstudio.auth.claims"
 AUTHLIB_SESSION_TOKEN_KEY = "mviewerstudio.auth.token"
 
 
+def _configured_groups_claim_names() -> list[str]:
+    """Return configured claim aliases that may contain groups/roles."""
+    configured = current_app.config.get("MVIEWERSTUDIO_AUTHLIB_GROUPS_CLAIM", "")
+    if not isinstance(configured, str):
+        return []
+    return [name.strip() for name in configured.split(",") if name.strip()]
+
+
+def allowed_authlib_groups() -> list[str]:
+    """Return the configured allow-list of Authlib groups/roles."""
+    configured = current_app.config.get("MVIEWERSTUDIO_AUTHLIB_ALLOWED_GROUPS", "")
+    if not isinstance(configured, str):
+        return []
+    normalized = configured.replace(";", ",")
+    return [group.strip() for group in normalized.split(",") if group.strip()]
+
+
 def authlib_metadata_url() -> str:
     """Return the explicit metadata URL or derive it from the issuer URL."""
     metadata_url = current_app.config.get("MVIEWERSTUDIO_AUTHLIB_METADATA_URL", "").strip()
@@ -111,6 +128,11 @@ def _roles_from_value(value: object) -> list[str]:
 
 def _roles_from_claims(claims: dict[str, object]) -> list[str]:
     """Extract application roles from common OIDC claim conventions."""
+    for claim_name in _configured_groups_claim_names():
+        configured_roles = _roles_from_value(claims.get(claim_name))
+        if configured_roles:
+            return configured_roles
+
     roles = _roles_from_value(claims.get("roles"))
     if roles:
         return roles
@@ -174,6 +196,30 @@ def normalize_claims(claims: object) -> dict[str, object]:
     except Exception:
         pass
     return normalized
+
+
+def authlib_user_is_allowed(claims: dict[str, object] | None = None) -> bool:
+    """Check whether the authenticated Authlib user passes group-based access rules."""
+    allowed_groups = allowed_authlib_groups()
+    if not allowed_groups:
+        return True
+
+    normalized_claims = claims if isinstance(claims, dict) else get_authlib_session_claims()
+    user_groups = normalized_claims.get("roles", [])
+    if not isinstance(user_groups, list):
+        user_groups = []
+
+    allowed = any(group in allowed_groups for group in user_groups)
+    try:
+        current_app.logger.info(
+            "Authlib group access check: allowed=%s, allowed_groups=%s, user_groups=%s",
+            allowed,
+            allowed_groups,
+            user_groups,
+        )
+    except Exception:
+        pass
+    return allowed
 
 
 def store_authlib_session(token: dict[str, object], claims: dict[str, object]) -> None:
