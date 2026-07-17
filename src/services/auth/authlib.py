@@ -5,7 +5,9 @@ discovery metadata so it can work with Keycloak, GeoNode/Django OIDC, or any
 other compliant provider.
 """
 
+import json
 from urllib.parse import urlencode
+from urllib.request import urlopen
 
 from flask import current_app, redirect, request, session, url_for
 from werkzeug.exceptions import InternalServerError
@@ -81,6 +83,46 @@ def authlib_client():
             pass
         raise InternalServerError("Authlib client is not configured.")
     return client
+
+
+def _load_authlib_server_metadata(client) -> dict[str, object]:
+    """Return OIDC metadata, fetching discovery data when this worker has none."""
+    metadata = getattr(client, "server_metadata", {}) or {}
+    if metadata.get("end_session_endpoint"):
+        return metadata
+
+    load_server_metadata = getattr(client, "load_server_metadata", None)
+    if callable(load_server_metadata):
+        try:
+            loaded_metadata = load_server_metadata()
+            if isinstance(loaded_metadata, dict) and loaded_metadata:
+                metadata = loaded_metadata
+                if metadata.get("end_session_endpoint"):
+                    return metadata
+        except Exception as e:
+            current_app.logger.warning("Could not load Authlib server metadata: %s", e)
+
+    metadata_url = authlib_metadata_url()
+    if not metadata_url:
+        return metadata if isinstance(metadata, dict) else {}
+
+    try:
+        with urlopen(metadata_url, timeout=5) as response:
+            fetched_metadata = json.load(response)
+        if isinstance(fetched_metadata, dict):
+            try:
+                client.server_metadata = fetched_metadata
+            except Exception:
+                pass
+            return fetched_metadata
+    except Exception as e:
+        current_app.logger.warning(
+            "Could not fetch Authlib discovery metadata from %s: %s",
+            metadata_url,
+            e,
+        )
+
+    return metadata if isinstance(metadata, dict) else {}
 
 
 def app_root_path() -> str:
@@ -361,11 +403,21 @@ def build_authlib_logout_redirect() -> str:
             pass
         return app_root_path()
 
-    metadata = getattr(client, "server_metadata", {}) or {}
-    end_session_endpoint = metadata.get("end_session_endpoint")
+    configured_end_session_endpoint = current_app.config.get(
+        "OIDC_END_SESSION_ENDPOINT", ""
+    ).strip()
+    if configured_end_session_endpoint:
+        metadata = {}
+        end_session_endpoint = configured_end_session_endpoint
+    else:
+        metadata = _load_authlib_server_metadata(client)
+        end_session_endpoint = metadata.get("end_session_endpoint")
     if not end_session_endpoint:
         try:
-            current_app.logger.info("No end_session_endpoint found in provider metadata")
+            current_app.logger.info(
+                "No end_session_endpoint found in provider metadata. metadata_keys=%s",
+                list(metadata.keys()),
+            )
         except Exception:
             pass
         return app_root_path()
