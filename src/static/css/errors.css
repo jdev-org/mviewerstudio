@@ -87,6 +87,10 @@ body {
     margin: 0;
 }
 
+.error-home__actions .error-home__lead {
+    margin-bottom: 24px;
+}
+
 .error-home__actions h2 {
     margin: 0 0 24px;
     font-size: clamp(2rem, 3vw, 3rem);
@@ -102,13 +106,14 @@ body {
 
 .error-card {
     flex: 1 1 260px;
-    min-height: 340px;
+    min-height: 100px;
     border-radius: 14px;
     padding: 28px;
     text-decoration: none;
     color: #ffffff;
     box-shadow: var(--error-shadow);
     transition: transform .2s, opacity .2s;
+    margin-top: 20px;
 }
 
 .error-card:hover {
