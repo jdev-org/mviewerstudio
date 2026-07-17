@@ -2,7 +2,7 @@
 from .utils.login_utils import _get_current_user, User
 import pytest
 from .app_factory import create_app
-from .services.auth.authlib import normalize_claims
+from .services.auth.authlib import allowed_authlib_groups, normalize_claims
 import hashlib
 import os
 from pathlib import Path
@@ -231,6 +231,46 @@ class TestAuthenticationModes:
             assert response.json["user_name"] == "alice"
             assert response.json["roles"] == ["EDITOR"]
 
+    def test_authlib_mode_denies_authenticated_user_without_allowed_group(self):
+        app = create_app()
+        app.testing = True
+        app.config["MVIEWERSTUDIO_AUTH_MODE"] = "authlib"
+        app.config["MVIEWERSTUDIO_AUTHLIB_ALLOWED_GROUPS"] = "ADMIN,OPS"
+        with app.test_client() as client:
+            with client.session_transaction() as flask_session:
+                flask_session["mviewerstudio.auth.claims"] = {
+                    "preferred_username": "alice",
+                    "given_name": "Alice",
+                    "family_name": "Martin",
+                    "organization": "acme",
+                    "roles": ["EDITOR"],
+                }
+
+            response = client.get("/api/user")
+            assert response.status_code == 403
+            assert response.json["error"] == "authorization_required"
+            assert response.json["allowed_groups"] == ["ADMIN", "OPS"]
+            assert response.json["user_groups"] == ["EDITOR"]
+
+    def test_authlib_mode_allows_authenticated_user_with_allowed_group(self):
+        app = create_app()
+        app.testing = True
+        app.config["MVIEWERSTUDIO_AUTH_MODE"] = "authlib"
+        app.config["MVIEWERSTUDIO_AUTHLIB_ALLOWED_GROUPS"] = "ADMIN,EDITOR"
+        with app.test_client() as client:
+            with client.session_transaction() as flask_session:
+                flask_session["mviewerstudio.auth.claims"] = {
+                    "preferred_username": "alice",
+                    "given_name": "Alice",
+                    "family_name": "Martin",
+                    "organization": "acme",
+                    "roles": ["EDITOR"],
+                }
+
+            response = client.get("/api/user")
+            assert response.status_code == 200
+            assert response.json["user_name"] == "alice"
+
     def test_authlib_mode_api_user_returns_login_url_when_anonymous(self):
         app = create_app()
         app.testing = True
@@ -288,6 +328,28 @@ class TestAuthlibClaimNormalization:
         assert claims["given_name"] == "Alice"
         assert claims["family_name"] == "Martin"
         assert claims["roles"] == ["EDITOR", "CATALOG"]
+
+    def test_normalize_claims_uses_configured_groups_claim(self):
+        app = create_app()
+        app.testing = True
+        app.config["MVIEWERSTUDIO_AUTH_MODE"] = "authlib"
+        app.config["MVIEWERSTUDIO_AUTHLIB_GROUPS_CLAIM"] = "member_of"
+        with app.app_context():
+            claims = normalize_claims(
+                {
+                    "preferred_username": "alice",
+                    "member_of": ["UMRLISA", "MVIEWER"],
+                }
+            )
+
+        assert claims["roles"] == ["UMRLISA", "MVIEWER"]
+
+    def test_allowed_authlib_groups_parses_csv_and_semicolon(self):
+        app = create_app()
+        app.testing = True
+        app.config["MVIEWERSTUDIO_AUTHLIB_ALLOWED_GROUPS"] = "UMRLISA, MVIEWER;ADMIN"
+        with app.app_context():
+            assert allowed_authlib_groups() == ["UMRLISA", "MVIEWER", "ADMIN"]
 
     def test_authlib_mode_prefixed_api_user_returns_login_url_when_anonymous(self):
         app = create_app()
