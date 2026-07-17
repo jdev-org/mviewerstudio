@@ -2,6 +2,7 @@
 from .utils.login_utils import _get_current_user, User
 import pytest
 from .app_factory import create_app
+from .services.auth import authlib as authlib_service
 from .services.auth.authlib import allowed_authlib_groups, normalize_claims
 import hashlib
 import os
@@ -230,6 +231,7 @@ class TestAuthenticationModes:
             assert response.status_code == 200
             assert response.json["user_name"] == "alice"
             assert response.json["roles"] == ["EDITOR"]
+            assert response.json["auth_mode"] == "authlib"
 
     def test_authlib_mode_denies_authenticated_user_without_allowed_group(self):
         app = create_app()
@@ -351,6 +353,66 @@ class TestAuthlibClaimNormalization:
         with app.app_context():
             assert allowed_authlib_groups() == ["UMRLISA", "MVIEWER", "ADMIN"]
 
+    def test_authlib_logout_fetches_metadata_when_worker_has_none(self, monkeypatch):
+        app = create_app()
+        app.testing = True
+        app.config["MVIEWERSTUDIO_AUTHLIB_ISSUER"] = "https://idp.example.test/o"
+
+        class FakeAuthlibClient:
+            server_metadata = {}
+
+        class FakeDiscoveryResponse:
+            def __enter__(self):
+                return self
+
+            def __exit__(self, exc_type, exc, traceback):
+                return False
+
+            def read(self):
+                return b'{"end_session_endpoint": "https://idp.example.test/o/logout"}'
+
+        monkeypatch.setattr(
+            authlib_service.oauth,
+            "create_client",
+            lambda name: FakeAuthlibClient(),
+        )
+        monkeypatch.setattr(
+            authlib_service,
+            "urlopen",
+            lambda url, timeout: FakeDiscoveryResponse(),
+        )
+
+        with app.test_request_context("/logout", base_url="https://studio.example.test/"):
+            authlib_service.session[authlib_service.AUTHLIB_SESSION_TOKEN_KEY] = {
+                "id_token": "token-id"
+            }
+
+            logout_url = authlib_service.build_authlib_logout_redirect()
+
+        assert logout_url.startswith("https://idp.example.test/o/logout?")
+        assert "id_token_hint=token-id" in logout_url
+        assert "post_logout_redirect_uri=https%3A%2F%2Fstudio.example.test%2F" in logout_url
+
+    def test_authlib_logout_prefers_configured_end_session_endpoint(self, monkeypatch):
+        app = create_app()
+        app.testing = True
+        app.config["OIDC_END_SESSION_ENDPOINT"] = "https://idp.example.test/account/logout/"
+
+        class FakeAuthlibClient:
+            server_metadata = {}
+
+        monkeypatch.setattr(
+            authlib_service.oauth,
+            "create_client",
+            lambda name: FakeAuthlibClient(),
+        )
+
+        with app.test_request_context("/logout", base_url="https://studio.example.test/"):
+            logout_url = authlib_service.build_authlib_logout_redirect()
+
+        assert logout_url.startswith("https://idp.example.test/account/logout/?")
+        assert "post_logout_redirect_uri=https%3A%2F%2Fstudio.example.test%2F" in logout_url
+
     def test_authlib_mode_prefixed_api_user_returns_login_url_when_anonymous(self):
         app = create_app()
         app.testing = True
@@ -449,8 +511,9 @@ class TestAuthlibClaimNormalization:
             response = client.get("/mviewerstudio/")
             assert response.status_code == 403
             assert "text/html" in response.content_type
-            assert b"ERREUR 403" in response.data
-            assert b"Acces refuse" in response.data
+            response_text = response.get_data(as_text=True)
+            assert "Accès refusé" in response_text
+            assert "Votre compte est authentifié" in response_text
 
     def test_authlib_mode_error_css_is_served_for_disallowed_user(self):
         app = create_app()
