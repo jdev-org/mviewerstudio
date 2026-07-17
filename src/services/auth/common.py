@@ -48,6 +48,7 @@ def _is_error_asset_request() -> bool:
     """Return ``True`` for the small set of static assets used by error pages."""
     return _request_path_without_prefix() in {
         "css/errors.css",
+        "img/homeMstudio.svg",
         "img/logo_mviewerstudio.svg",
     }
 
