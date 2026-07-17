@@ -4,6 +4,7 @@ from ..services.auth import apply_logout_cookies, build_authlib_logout_redirect
 from ..services.auth import build_logout_redirect, clear_authlib_session
 from ..services.auth import complete_authlib_login, is_authlib_mode
 from ..services.auth import require_authenticated_user, start_authlib_login
+from ..auth_mode import resolve_auth_mode
 from ..utils.login_utils import current_user
 
 auth_routes = Blueprint("auth-routes", __name__)
@@ -18,7 +19,9 @@ def user() -> Response:
     response = require_authenticated_user()
     if response is not None:
         return response
-    return jsonify(current_user.as_dict())
+    user_payload = current_user.as_dict()
+    user_payload["auth_mode"] = resolve_auth_mode()
+    return jsonify(user_payload)
 
 
 @auth_routes.route("/auth/login", methods=["GET"])
