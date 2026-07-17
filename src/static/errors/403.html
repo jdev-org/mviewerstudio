@@ -3,24 +3,40 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>403 - Acces refuse</title>
+    <title>403 - Accès refusé</title>
     <link rel="stylesheet" href="css/errors.css">
 </head>
 <body class="error-403">
-    <main class="panel">
-        <div class="header">
+    <nav class="error-navbar">
+        <div class="error-navbar__brand">
             <img src="img/logo_mviewerstudio.svg" alt="Logo Mviewer Studio">
+            <span>Mviewer Studio</span>
         </div>
-        <div class="content">
-            <span class="code">ERREUR 403</span>
-            <h1>Acces refuse</h1>
-            <p>Votre compte est authentifie, mais vous n'avez pas les droits necessaires pour acceder a Mviewer Studio.</p>
-            <p>Verifiez votre appartenance aux groupes autorises ou contactez un administrateur.</p>
-            <div class="actions">
-                <a class="button button-primary" href="index.html">Revenir a l'accueil</a>
-                <a class="button button-secondary" href="/">Retour au site</a>
+    </nav>
+    <main class="error-home">
+        <section class="error-home__visual">
+            <img src="img/homeMstudio.svg" alt="Illustration Mviewer Studio">
+            <div>
+                <span class="subtitle-home">MVIEWER STUDIO</span>
+                <h1 class="title-home">Accès refusé</h1>
+                <p class="error-home__lead">Votre compte est authentifié, mais il n'appartient pas à un groupe autorisé pour accéder à Mviewer Studio.</p>
             </div>
-        </div>
+        </section>
+        <section class="error-home__actions">
+            <h2>Que voulez-vous faire ?</h2>
+            <div class="error-cards">
+                <a class="error-card error-card--warning" href="/">
+                    <div class="error-card__icon">↩</div>
+                    <h3>Retour au site</h3>
+                    <p>Revenir au portail principal ou à l'application d'origine.</p>
+                </a>
+                <div class="error-card error-card--info">
+                    <div class="error-card__icon">!</div>
+                    <h3>Accès à demander</h3>
+                    <p>Vérifiez votre appartenance aux groupes autorisés puis contactez un administrateur si votre compte doit être ajouté.</p>
+                </div>
+            </div>
+        </section>
     </main>
 </body>
 </html>

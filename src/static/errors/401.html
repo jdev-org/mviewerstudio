@@ -3,24 +3,40 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>401 - Acces restreint</title>
+    <title>401 - Authentification requise</title>
     <link rel="stylesheet" href="css/errors.css">
 </head>
 <body class="error-401">
-    <main class="panel">
-        <div class="header">
+    <nav class="error-navbar">
+        <div class="error-navbar__brand">
             <img src="img/logo_mviewerstudio.svg" alt="Logo Mviewer Studio">
+            <span>Mviewer Studio</span>
         </div>
-        <div class="content">
-            <span class="code">ERREUR 401</span>
-            <h1>Authentification requise</h1>
-            <p>Vous devez etre connecte pour acceder a Mviewer Studio.</p>
-            <p>Si vous pensez qu'il s'agit d'une erreur, contactez un administrateur de la plateforme.</p>
-            <div class="actions">
-                <a class="button button-primary" href="index.html">Revenir a l'accueil</a>
-                <a class="button button-secondary" href="/">Retour au site</a>
+    </nav>
+    <main class="error-home">
+        <section class="error-home__visual">
+            <img src="img/homeMstudio.svg" alt="Illustration Mviewer Studio">
+            <div>
+                <span class="subtitle-home">MVIEWER STUDIO</span>
+                <h1 class="title-home">Authentification requise</h1>
+                <p class="error-home__lead">Vous devez vous connecter pour accéder à Mviewer Studio.</p>
             </div>
-        </div>
+        </section>
+        <section class="error-home__actions">
+            <h2>Que voulez-vous faire ?</h2>
+            <div class="error-cards">
+                <a class="error-card error-card--warning" href="/">
+                    <div class="error-card__icon">↩</div>
+                    <h3>Retour au site</h3>
+                    <p>Revenir au portail principal ou à l'application d'origine.</p>
+                </a>
+                <div class="error-card error-card--info">
+                    <div class="error-card__icon">i</div>
+                    <h3>Pourquoi cette page ?</h3>
+                    <p>Votre session n'est pas connectée ou a expiré. Reprenez le parcours d'authentification puis revenez dans Mviewer Studio.</p>
+                </div>
+            </div>
+        </section>
     </main>
 </body>
 </html>
