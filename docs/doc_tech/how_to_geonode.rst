@@ -147,12 +147,9 @@ les variables spécifiques à l'authentification OAuth2 sont :
 - ``MVIEWERSTUDIO_AUTHLIB_ALLOWED_GROUPS`` : liste optionnelle des groupes autorisés à accéder à mviewerstudio, séparés par des virgules ou des points-virgules. Si cette variable est vide, tout utilisateur authentifié est accepté.
 - ``MVIEWERSTUDIO_AUTHLIB_ANONYMOUS_REDIRECT_URL`` : URL de redirection optionnelle pour les utilisateurs anonymes dans les flux historiques.
 
-Vérifiez la découverte OIDC avant de démarrer mviewerstudio. L'URL indiquée dans
-``MVIEWERSTUDIO_AUTHLIB_ISSUER`` doit correspondre à l'``issuer`` publié par GeoNode.
-Vous pouvez aussi renseigner directement ``MVIEWERSTUDIO_AUTHLIB_METADATA_URL``
-avec l'URL du document ``.well-known/openid-configuration``. Ce document doit
-notamment exposer les endpoints d'autorisation, de token et, si nécessaire, de
-``userinfo`` et de déconnexion.
+Vérifiez la découverte OIDC avant de démarrer mviewerstudio.
+L'URL indiquée dans ``MVIEWERSTUDIO_AUTHLIB_ISSUER`` doit correspondre à l'``issuer`` publié par GeoNode.
+Vous pouvez aussi renseigner directement ``MVIEWERSTUDIO_AUTHLIB_METADATA_URL`` avec l'URL du document ``.well-known/openid-configuration``. Ce document doit notamment exposer les endpoints d'autorisation, de token et, si nécessaire, de ``userinfo`` et de déconnexion.
 
 Exemple minimal :
 
