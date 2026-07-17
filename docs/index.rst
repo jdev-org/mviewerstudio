@@ -49,6 +49,7 @@ Cette partie est dédiée aux personnes qui ont vocation à déployer et configu
    doc_tech/migration_notes
    doc_tech/move_to_python
    doc_tech/dev_corner
+   doc_tech/how_to_geonode
 
 
 Documentation contributeur
