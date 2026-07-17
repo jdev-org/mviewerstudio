@@ -430,6 +430,49 @@ class TestAuthlibClaimNormalization:
             assert response.status_code == 200
             assert "text/html" in response.content_type
 
+    def test_authlib_mode_root_serves_403_error_page_for_disallowed_user(self):
+        app = create_app()
+        app.testing = True
+        app.config["MVIEWERSTUDIO_AUTH_MODE"] = "authlib"
+        app.config["MVIEWERSTUDIO_URL_PATH_PREFIX"] = "mviewerstudio"
+        app.config["MVIEWERSTUDIO_AUTHLIB_ALLOWED_GROUPS"] = "UMRLISA"
+        with app.test_client() as client:
+            with client.session_transaction() as flask_session:
+                flask_session["mviewerstudio.auth.claims"] = {
+                    "preferred_username": "alice",
+                    "given_name": "Alice",
+                    "family_name": "Martin",
+                    "organization": "acme",
+                    "roles": ["Partenaire"],
+                }
+
+            response = client.get("/mviewerstudio/")
+            assert response.status_code == 403
+            assert "text/html" in response.content_type
+            assert b"ERREUR 403" in response.data
+            assert b"Acces refuse" in response.data
+
+    def test_authlib_mode_error_css_is_served_for_disallowed_user(self):
+        app = create_app()
+        app.testing = True
+        app.config["MVIEWERSTUDIO_AUTH_MODE"] = "authlib"
+        app.config["MVIEWERSTUDIO_URL_PATH_PREFIX"] = "mviewerstudio"
+        app.config["MVIEWERSTUDIO_AUTHLIB_ALLOWED_GROUPS"] = "UMRLISA"
+        with app.test_client() as client:
+            with client.session_transaction() as flask_session:
+                flask_session["mviewerstudio.auth.claims"] = {
+                    "preferred_username": "alice",
+                    "given_name": "Alice",
+                    "family_name": "Martin",
+                    "organization": "acme",
+                    "roles": ["Partenaire"],
+                }
+
+            response = client.get("/mviewerstudio/css/errors.css")
+            assert response.status_code == 200
+            assert "text/css" in response.content_type
+            assert b"--error-bg" in response.data
+
 
 @pytest.mark.usefixtures("cleandir")
 class TestStoreMviewerConfig:

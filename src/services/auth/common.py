@@ -10,6 +10,15 @@ from .authlib import allowed_authlib_groups, authlib_user_is_allowed
 from ...utils.login_utils import current_user, is_authenticated_user
 
 
+def _request_path_without_prefix() -> str:
+    """Return the current request path without the optional app URL prefix."""
+    path = request.path.lstrip("/")
+    app_prefix = current_app.config.get("MVIEWERSTUDIO_URL_PATH_PREFIX", "").strip("/")
+    if app_prefix and path.startswith(f"{app_prefix}/"):
+        return path[len(app_prefix) + 1 :]
+    return path
+
+
 def _anonymous_redirect_url() -> str:
     """Return the browser fallback URL advertised to anonymous API callers."""
     configured_url = current_app.config.get("MVIEWERSTUDIO_AUTHLIB_ANONYMOUS_REDIRECT_URL", "")
@@ -33,6 +42,14 @@ def _is_api_request() -> bool:
     app_prefix = current_app.config.get("MVIEWERSTUDIO_URL_PATH_PREFIX", "").strip("/")
     prefixed_api_root = f"/{app_prefix}/api/" if app_prefix else "/api/"
     return path.startswith("/api/") or path.startswith(prefixed_api_root)
+
+
+def _is_error_asset_request() -> bool:
+    """Return ``True`` for the small set of static assets used by error pages."""
+    return _request_path_without_prefix() in {
+        "css/errors.css",
+        "img/logo_mviewerstudio.svg",
+    }
 
 
 def _error_page_response(filename: str, status_code: int):
@@ -96,6 +113,10 @@ def require_authenticated_user() -> None:
             return redirect(login_url, code=302)
         raise Unauthorized("Authentication required.")
     if is_authlib_mode() and not authlib_user_is_allowed():
+        # Let the browser fetch the minimal static assets needed to render the
+        # dedicated 401/403 HTML pages without exposing the rest of /static.
+        if _is_error_asset_request():
+            return
         return _forbidden_authlib_response()
 
 
