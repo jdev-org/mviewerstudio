@@ -3,8 +3,12 @@ var API = {};
 
 var mviewer = {};
 
-function _isAuthlibMode(conf) {
-  return conf.auth_mode === "authlib" || conf.auth_type === "authlib";
+function _isAuthlibMode(user) {
+  return user?.auth_mode === "authlib";
+}
+
+function _configureLogoutLink() {
+  $("#menu_user_logout a").attr("href", _conf.logout_url || "logout");
 }
 
 $(document).ready(function () {
@@ -37,10 +41,6 @@ $(document).ready(function () {
         `MviewerStudio | Licence GPL-3.0 | Version ${VERSION}`;
       let mvCompliantInfo = document.querySelector("#mviewerCompliantInfo");
       mvCompliantInfo.innerHTML = `${mvCompliantInfo.innerHTML} ${_conf.mviewer_version}`;
-
-      if (_isAuthlibMode(_conf)) {
-        $("#menu_user_logout a").attr("href", _conf.logout_url || "logout");
-      }
 
       // Update web page title and title in the brand navbar
       document.title = _conf.studio_title;
@@ -260,7 +260,8 @@ const getUser = () => {
           let connectText = `Connecté en tant que ${data.first_name} ${data.last_name} (${userGroupFullName})`;
           $("#user_connected").text(connectText);
           document.querySelector("#user_connected").classList.remove("d-none");
-          if (_isAuthlibMode(_conf)) {
+          if (_isAuthlibMode(data)) {
+            _configureLogoutLink();
             document.querySelector("#menu_user_logout").classList.remove("d-none");
           }
         }
