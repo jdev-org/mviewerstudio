@@ -1,0 +1,133 @@
+:root {
+    --error-bg: #f5f7fb;
+    --error-panel: #ffffff;
+    --error-text: #17324d;
+    --error-muted: #5f7388;
+    --error-primary: #0b7fab;
+    --error-danger: #c0392b;
+    --error-border: #d9e2ec;
+    --error-shadow: 0 24px 60px rgba(23, 50, 77, 0.12);
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    min-height: 100vh;
+    font-family: Arial, sans-serif;
+    color: var(--error-text);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+}
+
+body.error-401 {
+    background:
+        radial-gradient(circle at top left, rgba(11, 127, 171, 0.16), transparent 34%),
+        linear-gradient(180deg, #f9fbfd 0%, var(--error-bg) 100%);
+}
+
+body.error-403 {
+    background:
+        radial-gradient(circle at top left, rgba(192, 57, 43, 0.12), transparent 34%),
+        linear-gradient(180deg, #f9fbfd 0%, var(--error-bg) 100%);
+}
+
+.panel {
+    width: min(720px, 100%);
+    background: var(--error-panel);
+    border: 1px solid var(--error-border);
+    border-radius: 24px;
+    box-shadow: var(--error-shadow);
+    overflow: hidden;
+}
+
+.header {
+    padding: 32px 32px 16px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.header img {
+    width: 128px;
+    height: auto;
+}
+
+.content {
+    padding: 16px 32px 32px;
+}
+
+.code {
+    display: inline-block;
+    margin-bottom: 12px;
+    padding: 6px 12px;
+    border-radius: 999px;
+    font-weight: bold;
+    letter-spacing: 0.08em;
+}
+
+.error-401 .code {
+    background: rgba(11, 127, 171, 0.1);
+    color: var(--error-primary);
+}
+
+.error-403 .code {
+    background: rgba(192, 57, 43, 0.1);
+    color: var(--error-danger);
+}
+
+h1 {
+    margin: 0 0 12px;
+    font-size: clamp(2rem, 4vw, 3rem);
+    line-height: 1.1;
+}
+
+p {
+    margin: 0 0 12px;
+    color: var(--error-muted);
+    font-size: 1rem;
+    line-height: 1.6;
+}
+
+.actions {
+    margin-top: 28px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.button {
+    display: inline-block;
+    padding: 12px 18px;
+    border-radius: 12px;
+    text-decoration: none;
+    font-weight: bold;
+}
+
+.button-primary {
+    background: var(--error-primary);
+    color: #ffffff;
+}
+
+.button-secondary {
+    border: 1px solid var(--error-border);
+    color: var(--error-text);
+    background: #ffffff;
+}
+
+@media (max-width: 640px) {
+    .header,
+    .content {
+        padding-left: 20px;
+        padding-right: 20px;
+    }
+
+    .header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+}
