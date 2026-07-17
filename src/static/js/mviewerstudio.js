@@ -3,36 +3,8 @@ var API = {};
 
 var mviewer = {};
 
-function _getAppRootPath() {
-  const pathname = window.location.pathname || "/";
-  if (pathname.endsWith("/index.html")) {
-    return pathname.slice(0, -"/index.html".length) || "/";
-  }
-  return pathname.endsWith("/") ? pathname : `${pathname}/`;
-}
-
-function _buildOidcProxyLogoutUrl(conf) {
-  if (
-    !["oidc", "keycloak"].includes(conf.auth_type) ||
-    !conf.oidc_end_session_endpoint ||
-    !conf.oauth2_client_id
-  ) {
-    return null;
-  }
-
-  const oauth2StartUrl = new URL("/oauth2/start", window.location.origin);
-  oauth2StartUrl.searchParams.set("rd", conf.logout_redirect_path || _getAppRootPath());
-
-  const providerLogoutUrl = new URL(conf.oidc_end_session_endpoint);
-  providerLogoutUrl.searchParams.set("client_id", conf.oauth2_client_id);
-  providerLogoutUrl.searchParams.set(
-    "post_logout_redirect_uri",
-    oauth2StartUrl.toString()
-  );
-
-  const proxyLogoutUrl = new URL("/oauth2/sign_out", window.location.origin);
-  proxyLogoutUrl.searchParams.set("rd", providerLogoutUrl.toString());
-  return proxyLogoutUrl.toString();
+function _isAuthlibMode(conf) {
+  return conf.auth_mode === "authlib" || conf.auth_type === "authlib";
 }
 
 $(document).ready(function () {
@@ -66,9 +38,8 @@ $(document).ready(function () {
       let mvCompliantInfo = document.querySelector("#mviewerCompliantInfo");
       mvCompliantInfo.innerHTML = `${mvCompliantInfo.innerHTML} ${_conf.mviewer_version}`;
 
-      const logoutUrl = _conf.logout_url || _buildOidcProxyLogoutUrl(_conf);
-      if (logoutUrl) {
-        $("#menu_user_logout a").attr("href", logoutUrl);
+      if (_isAuthlibMode(_conf)) {
+        $("#menu_user_logout a").attr("href", _conf.logout_url || "logout");
       }
 
       // Update web page title and title in the brand navbar
@@ -289,7 +260,9 @@ const getUser = () => {
           let connectText = `Connecté en tant que ${data.first_name} ${data.last_name} (${userGroupFullName})`;
           $("#user_connected").text(connectText);
           document.querySelector("#user_connected").classList.remove("d-none");
-          document.querySelector("#menu_user_logout").classList.remove("d-none");
+          if (_isAuthlibMode(_conf)) {
+            document.querySelector("#menu_user_logout").classList.remove("d-none");
+          }
         }
       }
     })
