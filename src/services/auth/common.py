@@ -1,6 +1,8 @@
 """Cross-mode access control helpers for protected routes."""
 
-from flask import current_app, jsonify, redirect, request, url_for
+from pathlib import Path
+
+from flask import current_app, jsonify, redirect, request, send_from_directory, url_for
 from werkzeug.exceptions import Forbidden, Unauthorized
 
 from ...auth_mode import is_authlib_mode, is_public_mode
@@ -9,6 +11,7 @@ from ...utils.login_utils import current_user, is_authenticated_user
 
 
 def _anonymous_redirect_url() -> str:
+    """Return the browser fallback URL advertised to anonymous API callers."""
     configured_url = current_app.config.get("MVIEWERSTUDIO_AUTHLIB_ANONYMOUS_REDIRECT_URL", "")
     configured_url = configured_url.strip() if isinstance(configured_url, str) else ""
     if configured_url:
@@ -17,6 +20,7 @@ def _anonymous_redirect_url() -> str:
 
 
 def _is_studio_entry_request() -> bool:
+    """Return ``True`` when the request targets the studio HTML entry point."""
     path = request.path.rstrip("/")
     app_prefix = current_app.config.get("MVIEWERSTUDIO_URL_PATH_PREFIX", "").strip("/")
     prefixed_root = f"/{app_prefix}" if app_prefix else ""
@@ -24,13 +28,21 @@ def _is_studio_entry_request() -> bool:
 
 
 def _is_api_request() -> bool:
+    """Return ``True`` when the request targets a prefixed or root API route."""
     path = request.path
     app_prefix = current_app.config.get("MVIEWERSTUDIO_URL_PATH_PREFIX", "").strip("/")
     prefixed_api_root = f"/{app_prefix}/api/" if app_prefix else "/api/"
     return path.startswith("/api/") or path.startswith(prefixed_api_root)
 
 
+def _error_page_response(filename: str, status_code: int):
+    """Serve a static HTML error page from ``src/static/errors``."""
+    errors_dir = Path(__file__).resolve().parents[2] / "static" / "errors"
+    return send_from_directory(errors_dir, filename), status_code
+
+
 def _forbidden_authlib_response():
+    """Return the most appropriate forbidden response for the current request."""
     allowed_groups = allowed_authlib_groups()
     if _is_api_request():
         return (
@@ -44,6 +56,10 @@ def _forbidden_authlib_response():
             ),
             403,
         )
+    if _is_studio_entry_request():
+        # Browser access to the studio entry point should render a user-facing
+        # HTML page instead of falling through to the generic JSON error handler.
+        return _error_page_response("403.html", 403)
     raise Forbidden("You are authenticated but not allowed to access MviewerStudio.")
 
 
@@ -52,6 +68,9 @@ def require_authenticated_user() -> None:
 
     In Authlib mode, browser navigation is redirected to the local login route.
     API requests still receive a ``401 Unauthorized`` response.
+
+    Returns a Flask response when the caller must be redirected or denied
+    immediately; otherwise returns ``None`` and lets the route continue.
     """
     if is_public_mode():
         return
@@ -81,6 +100,6 @@ def require_authenticated_user() -> None:
 
 
 def require_authenticated_studio_entry() -> None:
-    """Protect the studio entry page before any HTML is served."""
+    """Protect the studio entry page before any application HTML is served."""
     if _is_studio_entry_request():
         return require_authenticated_user()
