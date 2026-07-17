@@ -1,9 +1,10 @@
 """Cross-mode access control helpers for protected routes."""
 
 from flask import current_app, jsonify, redirect, request, url_for
-from werkzeug.exceptions import Unauthorized
+from werkzeug.exceptions import Forbidden, Unauthorized
 
 from ...auth_mode import is_authlib_mode, is_public_mode
+from .authlib import allowed_authlib_groups, authlib_user_is_allowed
 from ...utils.login_utils import current_user, is_authenticated_user
 
 
@@ -27,6 +28,23 @@ def _is_api_request() -> bool:
     app_prefix = current_app.config.get("MVIEWERSTUDIO_URL_PATH_PREFIX", "").strip("/")
     prefixed_api_root = f"/{app_prefix}/api/" if app_prefix else "/api/"
     return path.startswith("/api/") or path.startswith(prefixed_api_root)
+
+
+def _forbidden_authlib_response():
+    allowed_groups = allowed_authlib_groups()
+    if _is_api_request():
+        return (
+            jsonify(
+                {
+                    "error": "authorization_required",
+                    "description": "You are authenticated but not allowed to access MviewerStudio.",
+                    "allowed_groups": allowed_groups,
+                    "user_groups": current_user.roles,
+                }
+            ),
+            403,
+        )
+    raise Forbidden("You are authenticated but not allowed to access MviewerStudio.")
 
 
 def require_authenticated_user() -> None:
@@ -58,6 +76,8 @@ def require_authenticated_user() -> None:
                 )
             return redirect(login_url, code=302)
         raise Unauthorized("Authentication required.")
+    if is_authlib_mode() and not authlib_user_is_allowed():
+        return _forbidden_authlib_response()
 
 
 def require_authenticated_studio_entry() -> None:

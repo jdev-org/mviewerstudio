@@ -5,11 +5,22 @@ Only python Dockerfile will be maintained (PHP backend is fully deprecated).
 
 ## Environment variables
 
-- EXPORT_CONF_FOLDER is the "staging" folder where studio will store draft configs and work in progress
-- CONF_PATH_FROM_MVIEWER is the url path given to mviewer to access the same map files
-- MVIEWERSTUDIO_PUBLISH_PATH is the "production" folder where studio will copy the map files when you ask to *Publish*
-- CONF_PUBLISH_PATH_FROM_MVIEWER is the url path given to mviewer to access the same map files
-- MVIEWERSTUDIO_URL_PATH_PREFIX allows to serve studio on a non-root path, see [#271](https://github.com/mviewer/mviewerstudio/pull/271)
+| Variable | Description | Example |
+| --- | --- | --- |
+| `EXPORT_CONF_FOLDER` | Staging folder where Studio stores draft configs and work in progress. | `/home/mvuser/apps/store` |
+| `CONF_PATH_FROM_MVIEWER` | URL path used by mviewer to access draft map files. | `apps/store` |
+| `MVIEWERSTUDIO_PUBLISH_PATH` | Production folder where Studio copies map files when a config is published. | `/home/mvuser/apps/public` |
+| `CONF_PUBLISH_PATH_FROM_MVIEWER` | URL path used by mviewer to access published map files. | `apps/public` |
+| `MVIEWERSTUDIO_URL_PATH_PREFIX` | Serves Studio under a non-root path, see [#271](https://github.com/mviewer/mviewerstudio/pull/271). | `mviewerstudio` |
+| `MVIEWERSTUDIO_AUTH_MODE` | Authentication mode. Use `authlib` for direct OAuth2/OIDC login handled by mviewerstudio. | `authlib` |
+| `MVIEWERSTUDIO_AUTHLIB_ISSUER` | OIDC issuer URL used to derive discovery metadata when `MVIEWERSTUDIO_AUTHLIB_METADATA_URL` is not set. | `https://geonode.example.com/o` |
+| `MVIEWERSTUDIO_AUTHLIB_METADATA_URL` | Explicit OIDC discovery metadata URL. | `https://geonode.example.com/.well-known/openid-configuration` |
+| `MVIEWERSTUDIO_AUTHLIB_CLIENT_ID` | OAuth2/OIDC client ID used by mviewerstudio. | `mviewerstudio` |
+| `MVIEWERSTUDIO_AUTHLIB_CLIENT_SECRET` | OAuth2/OIDC client secret used by mviewerstudio. | `change-me` |
+| `MVIEWERSTUDIO_AUTHLIB_SCOPE` | Requested OAuth2/OIDC scopes during login. | `openid profile email` |
+| `MVIEWERSTUDIO_AUTHLIB_GROUPS_CLAIM` | Optional claim name, or comma-separated claim aliases, containing user groups or roles. If empty, mviewerstudio falls back to standard claims such as `roles`, `groups`, `group_list_all`. | `member_of` |
+| `MVIEWERSTUDIO_AUTHLIB_ALLOWED_GROUPS` | Optional comma- or semicolon-separated list of groups allowed to access mviewerstudio. If empty, any authenticated user can access. | `UMRLISA,MVIEWER_ADMIN` |
+| `MVIEWERSTUDIO_AUTHLIB_ANONYMOUS_REDIRECT_URL` | Optional redirect target for anonymous users in legacy flows. | `https://example.org/` |
 
 ## Default configuration
 
@@ -28,4 +39,3 @@ It is also configured to serve the frontend (static files) with gunicorn, which 
 Use docker compose to build image :
 
 `docker compose build mviewerstudio`
-
