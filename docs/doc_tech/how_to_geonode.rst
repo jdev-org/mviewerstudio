@@ -20,6 +20,20 @@ Prérequis
 
 Si vous avez ces prérequis, vous pouvez suivre les étapes ci-dessous.
 
+HTTPS
+-----
+
+Pour un déploiement normal de GeoNode et mviewerstudio, HTTPS doit être considéré comme obligatoire.
+En pratique :
+
+- GeoNode est généralement exposé en HTTPS ;
+- l'URL publique de mviewerstudio utilisée comme ``Redirect uri`` doit elle aussi être servie en HTTPS ;
+- les URLs déclarées dans l'issuer, la redirection et la déconnexion doivent rester cohérentes entre elles.
+
+Sans HTTPS, vous risquez des erreurs de redirection, des refus côté fournisseur d'identité ou une protection insuffisante des échanges.
+
+Pour un environnement strictement local ou de test, HTTP peut parfois fonctionner selon la configuration de GeoNode et du navigateur, mais ce n'est pas recommandé pour une instance partagée ou exposée sur un réseau.
+
 Ajouter une application dans Django OAuth Toolkit
 -------------------------------------------------
 
