@@ -48,7 +48,8 @@ Conservez ces deux valeurs et vérifiez que l'URL de redirection déclarée corr
 Ajouter les claims dans GeoNode
 -------------------------------
 
-Par défaut, le backend Django ne publie pas systématiquement les informations utiles à mviewerstudio dans l'id_token.
+Il est possible le backend Django ne publie pas systématiquement les informations utiles à mviewerstudio dans l'id_token.
+Cette étape n'est donc nécessaire que si GeoNode ne transmet pas déjà les informations attendues par mviewerstudio, par exemple l'identifiant utilisateur, l'email, le nom, le prénom ou les groupes.
 
 Préalablement, vous devrez donc prendre connaissance du fonctionnement via la documentation de django-oauth-toolkit utilisé par GeoNode :
 https://django-oauth-toolkit.readthedocs.io/en/latest/oidc.html
@@ -206,20 +207,20 @@ Voici un exemple de contenu de composition docker pour mviewerstudio :
 		- MVIEWERSTUDIO_URL_PATH_PREFIX=mviewerstudio
 		- MVIEWERSTUDIO_AUTHLIB_CLIENT_ID=id-value
 		- MVIEWERSTUDIO_AUTHLIB_CLIENT_SECRET=secret-value
-		- MVIEWERSTUDIO_AUTHLIB_ISSUER=https://locus-test2.udcpp.priv/
+		- MVIEWERSTUDIO_AUTHLIB_ISSUER=https://mywebsite/issuer-url
 		- MVIEWERSTUDIO_AUTHLIB_SCOPE=openid profile email
 		- MVIEWERSTUDIO_AUTHLIB_ANONYMOUS_REDIRECT_URL=https://mywebsite/account/login/
 		- OIDC_END_SESSION_ENDPOINT=https://mywebsite/account/logout/
 		env_file:
 		- .env
 		volumes:
-		- "/home/geonode/locus/cartes-mviewer/:/home/mvuser/apps"
-		- "/home/geonode/locus/cartes-mviewer/config.json:/home/mvuser/src/static/config.json"
-		- /home/geonode/locus/certs/mviewerstudio-ca-bundle.crt:/etc/ssl/certs/mviewerstudio-ca-bundle.crt:ro
+		- "/home/geonode/idg/cartes-mviewer/:/home/mvuser/apps"
+		- "/home/geonode/idg/cartes-mviewer/config.json:/home/mvuser/src/static/config.json"
+		- /home/geonode/idg/certs/mviewerstudio-ca-bundle.crt:/etc/ssl/certs/mviewerstudio-ca-bundle.crt:ro
 
 Dans cet exemple, adaptez les chemins comme suit :
 
-- ``/home/geonode/locus/certs/mviewerstudio-ca-bundle.crt`` est le chemin
+- ``/home/geonode/idg/certs/mviewerstudio-ca-bundle.crt`` est le chemin
   absolu du bundle présent sur l'hôte Docker. Remplacez-le par le chemin réel
   vers votre fichier de certificats ;
 - ``/etc/ssl/certs/mviewerstudio-ca-bundle.crt`` est le chemin du même fichier
