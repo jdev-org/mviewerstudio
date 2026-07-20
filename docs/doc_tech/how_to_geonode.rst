@@ -269,12 +269,48 @@ Pour HTTPS, demandez à l'administrateur du serveur ou à la DSI le bundle PEM �
 Il contient généralement le certificat serveur et les certificats intermédiaires.
 Un fichier ``fullchain.pem`` peut être utilisé directement.
 
+Créer le fichier ``mviewerstudio-ca-bundle.crt``
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Si vous ne disposez pas déjà d'un bundle fourni par la DSI, vous pouvez reconstruire un fichier PEM à partir du domaine HTTPS appelé par mviewerstudio.
+
+1. Définissez le domaine cible puis récupérez directement la chaîne de certificats dans un bundle.
+
+.. code-block:: sh
+
+   DOMAIN=mon-domaine.example.org
+   PORT=443
+   openssl s_client -showcerts -connect ${DOMAIN}:${PORT} -servername ${DOMAIN} </dev/null \
+     | sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' \
+     > mviewerstudio-ca-bundle.crt
+
+2. Vérifiez combien de certificats ont été extraits dans le bundle.
+
+.. code-block:: sh
+
+   grep -c "BEGIN CERTIFICATE" mviewerstudio-ca-bundle.crt
+
+3. Affichez les informations du premier certificat pour contrôler le sujet, l'émetteur et les dates de validité.
+
+.. code-block:: sh
+
+   openssl x509 -in mviewerstudio-ca-bundle.crt -noout -subject -issuer -dates
+
+4. Vérifiez que le nom DNS attendu apparaît bien dans les noms alternatifs du certificat serveur.
+
+.. code-block:: sh
+
+   openssl x509 -in mviewerstudio-ca-bundle.crt -noout -text | grep -A1 "Subject Alternative Name"
+
+Avec un certificat auto-signé, le bundle peut ne contenir qu'un seul certificat.
+Avec une chaîne plus classique, le bundle contient généralement le certificat serveur suivi des certificats intermédiaires.
+
 Dans Docker, adaptez le volume suivant :
 
 ``chemin-sur-l-hote:chemin-dans-le-conteneur:ro``
 
 Le chemin dans le conteneur doit être le même que celui indiqué dans ``SSL_CERT_FILE`` et ``REQUESTS_CA_BUNDLE``.
-Le chemin sur l'hôte doit pointer vers le bundle fourni par la DSI.
+Le chemin sur l'hôte doit pointer vers le bundle généré ou fourni pour votre instance.
 
-Faites vérifier par la DSI que le certificat contient le bon nom DNS dans le SAN, qu'il est valide, que sa chaîne est complète et qu'il correspond à la clé privée.
+Vérifiez aussi que le certificat contient le bon nom DNS dans le SAN, qu'il est valide et que sa chaîne est complète.
 Pour un certificat auto-signé, tous les clients concernés doivent faire confiance au certificat ou à l'autorité correspondante.
