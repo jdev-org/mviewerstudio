@@ -110,32 +110,10 @@ Définissez-les dans l'environnement du processus Python, puis redémarrez le se
 Les variantes minuscules (``http_proxy``, ``https_proxy``, ``no_proxy``) sont également reconnues et prioritaires.
 Les valeurs exposées dans ``src/settings.py`` reflètent cet environnement : modifier uniquement la configuration Flask ne modifie pas le proxy utilisé.
 
-Proxy API Grist
-~~~~~~~~~~~~~~~
+Configuration des proxys
+~~~~~~~~~~~~~~~~~~~~~~~~
 
-Le frontend utilise ``app_conf.grist.api_url: "grist"`` pour appeler la route
-``/<préfixe>/grist/api/<chemin>`` du backend sur la même origine, sans CORS.
-``instance_url`` reste l'adresse publique utilisée pour ouvrir Grist.
-
-- ``GRIST_API_URL`` : instance distante appelée par Python (défaut : ``https://grist.numerique.gouv.fr``), sans suffixe ``/api``.
-- ``GRIST_PROXY_TIMEOUT`` : délai d'attente réseau en secondes (défaut : ``20``).
-
-Le proxy transmet la méthode, les paramètres, le corps et le jeton ``Authorization``.
-Il utilise également ``HTTP_PROXY``, ``HTTPS_PROXY`` et ``NO_PROXY``.
-Les cookies de session ne sont pas transmis : saisissez votre clé API manuellement
-à la première utilisation. Les redirections distantes sont refusées.
-La jointure géographique Python utilise aussi ``GRIST_API_URL`` directement.
-Avec Docker Compose, passez ces variables dans ``services.mviewerstudio.environment``.
-
-Autres Variables
-----------------
-
-Pour utiliser les services types OGC (catalogue ou serveurs cartographiques), vous aurez besoin d'utiliser le proxy.
-Le Proxy interne proposé par mviewer ("/mviewerstudio/proxy/?url=") utilise un paramètre ``PROXY_WHITE_LIST`` qui doit être complété par tous les domaines (FQDN) des services que vous utiliserez.
-Ce paramètre est accessible dans :
-
-- ``src/settings.py``
-
+Consultez :doc:`proxy` pour configurer le proxy API Grist, les URL des couches exportées vers mviewer, les accès CORS, le proxy OGC et le proxy réseau sortant. Cette page contient les exemples VS Code et Docker Compose ainsi que la procédure de diagnostic.
 
 
 Lancement de l'application avec Flask (mode developpement)
