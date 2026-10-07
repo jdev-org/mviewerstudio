@@ -14,6 +14,7 @@ import Tooltip from "./components/tooltip/tooltip.js";
 import ButtonCard from "./components/buttonCard/buttonCard.js";
 import UrlCard from "./components/common/url-card/url-card.js";
 import ListCard from "./components/listCard/listCard.js";
+import StyleEditor from "./components/StyleEditor/StyleEditor.js";
 
 // Grist components
 import GristApiKey from "./components/grist/gristApiKey/gristApiKey.js";
@@ -55,6 +56,7 @@ mv.components.tooltip = Tooltip;
 mv.components.buttonCard = ButtonCard;
 mv.components.urlCard = UrlCard;
 mv.components.listCard = ListCard;
+mv.components.styleEditor = StyleEditor;
 
 // Grist components
 mv.components.grist.gristApiKey = GristApiKey;
@@ -78,6 +80,11 @@ mv.utils.grist.validation = gristValidation;
 mv.utils.grist.geocoding = gristGeocoding;
 mv.utils.grist.coordinates = gristCoordinates;
 mv.utils.grist.refGeo = gristRefGeo;
+
+const styleEditorTarget = document.getElementById("layer-style-editor");
+if (styleEditorTarget) {
+  new StyleEditor().appendTo(styleEditorTarget);
+}
 
 const gristContentTarget = document.getElementById("newlayer-grist-content");
 if (gristContentTarget) {
