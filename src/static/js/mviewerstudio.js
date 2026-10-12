@@ -1514,6 +1514,8 @@ var _configureTranslate = function (dic) {
     mviewer.tr = mviewer.lang[lang];
     _elementTranslate("body");
     mviewer.lang.lang = lang;
+    mviewer.translationsReady = true;
+    document.dispatchEvent(new Event("mviewerstudio:translations-ready"));
     _initTooltip(true);
   } else {
     console.log("langue non disponible " + lang);
