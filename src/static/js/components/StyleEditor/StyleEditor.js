@@ -1,6 +1,7 @@
 import { STYLE_MODES, STYLE_CHOICES } from "./constants.js";
 import CustomStyle from "./customStyle/CustomStyle.js";
 import StyleSelector from "./styleSelector/styleSelector.js";
+import TmsStyle from "../tmsStyle/tmsStyle.js";
 
 /**
  * Sélecteur du mode de création d'un style de couche.
@@ -12,6 +13,7 @@ const StyleEditor = function (options = {}) {
   this.element.className = "style-editor";
   this.customStyle = new CustomStyle(options);
   this.styleSelector = new StyleSelector();
+  this.tmsStyle = new TmsStyle();
 };
 
 /**
@@ -28,6 +30,7 @@ StyleEditor.prototype.setActiveMode = function (mode) {
   });
   this.customStyle.element.classList.toggle("d-none", mode !== STYLE_MODES.CUSTOM);
   this.styleSelector.element.classList.toggle("d-none", mode !== STYLE_MODES.EXISTING);
+  this.tmsStyle.element.classList.toggle("d-none", mode !== STYLE_MODES.EXISTING);
 };
 
 /**
@@ -42,7 +45,11 @@ StyleEditor.prototype.render = function () {
     </button>
   `
   ).join("")}</div>`;
-  this.element.append(this.styleSelector.render(), this.customStyle.render());
+  this.element.append(
+    this.styleSelector.render(),
+    this.tmsStyle.render(),
+    this.customStyle.render()
+  );
 
   this.element.querySelectorAll("[data-style-mode]").forEach((button) => {
     button.addEventListener("click", () => this.setActiveMode(button.dataset.styleMode));
