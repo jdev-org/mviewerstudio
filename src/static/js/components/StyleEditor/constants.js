@@ -3,9 +3,24 @@ export const STYLE_MODES = {
   CUSTOM: "custom",
 };
 
+export const STYLE_SELECTOR_IDS = {
+  container: "availableLayerStyles",
+  list: "frm-lis-styles",
+  titleContainer: "formLayerStyleTitle",
+  titleInput: "frm-layer-styletitle",
+};
+
 export const STYLE_CHOICES = [
-  { mode: STYLE_MODES.EXISTING, label: "Choisir un style existant" },
-  { mode: STYLE_MODES.CUSTOM, label: "Créer un style personnalisé" },
+  {
+    mode: STYLE_MODES.EXISTING,
+    label: "Choisir un style existant",
+    id: "style-editor-existing",
+  },
+  {
+    mode: STYLE_MODES.CUSTOM,
+    label: "Créer un style personnalisé",
+    id: "style-editor-custom",
+  },
 ];
 
 export const STYLE_TYPES = [

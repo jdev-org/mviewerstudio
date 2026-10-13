@@ -1,5 +1,6 @@
 import { STYLE_MODES, STYLE_CHOICES } from "./constants.js";
 import CustomStyle from "./customStyle/CustomStyle.js";
+import StyleSelector from "./styleSelector/styleSelector.js";
 
 /**
  * Sélecteur du mode de création d'un style de couche.
@@ -10,6 +11,7 @@ const StyleEditor = function (options = {}) {
   this.element = document.createElement("div");
   this.element.className = "style-editor";
   this.customStyle = new CustomStyle(options);
+  this.styleSelector = new StyleSelector();
 };
 
 /**
@@ -25,6 +27,7 @@ StyleEditor.prototype.setActiveMode = function (mode) {
     button.setAttribute("aria-pressed", isActive);
   });
   this.customStyle.element.classList.toggle("d-none", mode !== STYLE_MODES.CUSTOM);
+  this.styleSelector.element.classList.toggle("d-none", mode !== STYLE_MODES.EXISTING);
 };
 
 /**
@@ -34,12 +37,12 @@ StyleEditor.prototype.setActiveMode = function (mode) {
 StyleEditor.prototype.render = function () {
   this.element.innerHTML = `<div class="import-type-buttons__actions">${STYLE_CHOICES.map(
     (choice) => `
-    <button type="button" class="import-type-buttons__button" data-style-mode="${choice.mode}">
+    <button type="button" class="import-type-buttons__button" data-style-mode="${choice.mode}" id="${choice.id}">
       <span class="import-type-buttons__title">${choice.label}</span>
     </button>
   `
   ).join("")}</div>`;
-  this.element.appendChild(this.customStyle.render());
+  this.element.append(this.styleSelector.render(), this.customStyle.render());
 
   this.element.querySelectorAll("[data-style-mode]").forEach((button) => {
     button.addEventListener("click", () => this.setActiveMode(button.dataset.styleMode));
