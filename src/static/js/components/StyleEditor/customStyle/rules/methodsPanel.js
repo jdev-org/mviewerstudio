@@ -1,4 +1,5 @@
-import { CLASSIFICATION_METHODS } from "../../constants.js";
+import { CLASSIFICATION_METHODS, CLASSIFICATION_TOOLTIPS } from "../../constants.js";
+import Tooltip from "../../../tooltip/tooltip.js";
 
 /** Champs de classification ; émet update sans calculer de classes. */
 export default class MethodsPanel {
@@ -34,8 +35,8 @@ export default class MethodsPanel {
     if (this.type === "simple") return this.element;
 
     this.element.innerHTML = `
-      <label data-field-label>
-        Champ à représenter
+      <label>
+        <span data-field-title>Champ à représenter</span>
         <select class="form-control" name="field" required>
           <option value="">Choisir un champ</option>
         </select>
@@ -43,12 +44,10 @@ export default class MethodsPanel {
     `;
 
     if (this.type === "categorized") {
-      const label = this.element.querySelector("[data-field-label]");
+      const title = this.element.querySelector("[data-field-title]");
 
-      label.firstChild.textContent = "Champ à catégoriser ⓘ";
-
-      label.title =
-        "Il est recommandé d’utiliser 7 catégories. Jusqu’à 10 catégories restent possibles, mais la lisibilité peut diminuer.";
+      title.textContent = "Champ à catégoriser ";
+      new Tooltip({ message: CLASSIFICATION_TOOLTIPS.categories }).appendTo(title);
     }
 
     const select = this.element.querySelector('[name="field"]');
@@ -60,7 +59,27 @@ export default class MethodsPanel {
     if (this.type !== "categorized") {
       this.element.insertAdjacentHTML(
         "beforeend",
-        `<label>Titre de la légende<input class="form-control" name="legend"></label><label>Méthode de classification<select class="form-control" name="method"></select></label><label title="Il est recommandé d’utiliser 5 classes. Jusqu’à 7 classes restent possibles, mais la lisibilité peut diminuer.">Nombre de classes ⓘ<input class="form-control" name="classes" type="number" min="1" max="7" required></label>`
+        `
+        <label>Titre de la légende<input class="form-control" name="legend" /></label>
+        <label>
+          Méthode de classification
+          <select class="form-control" name="method"></select>
+        </label>
+        <label>
+          <span data-classes-title>Nombre de classes </span>
+          <input
+              class="form-control"
+              name="classes"
+              type="number"
+              min="1"
+              max="7"
+              required />
+        </label>
+        `
+      );
+
+      new Tooltip({ message: CLASSIFICATION_TOOLTIPS.classes }).appendTo(
+        this.element.querySelector("[data-classes-title]")
       );
 
       const method = this.element.querySelector('[name="method"]');
@@ -80,7 +99,7 @@ export default class MethodsPanel {
     `
     );
 
-    const calculate = this.element.querySelector("button");
+    const calculate = this.element.querySelector(".style-methods__actions button");
 
     calculate.addEventListener("click", () => {
       const inputs = [...this.element.querySelectorAll("input, select")];

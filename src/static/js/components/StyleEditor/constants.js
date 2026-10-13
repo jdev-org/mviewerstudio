@@ -3,11 +3,22 @@ export const STYLE_MODES = {
   CUSTOM: "custom",
 };
 
+export const STYLE_EDITOR_EVENTS = {
+  LOAD_OPTIONS: "loadOptions",
+};
+
 export const STYLE_SELECTOR_IDS = {
   container: "availableLayerStyles",
   list: "frm-lis-styles",
   titleContainer: "formLayerStyleTitle",
   titleInput: "frm-layer-styletitle",
+};
+
+export const CLASSIFICATION_TOOLTIPS = {
+  categories:
+    "Il est recommandé d’utiliser 7 catégories. Jusqu’à 10 catégories restent possibles, mais la lisibilité peut diminuer.",
+  classes:
+    "Il est recommandé d’utiliser 5 classes. Jusqu’à 7 classes restent possibles, mais la lisibilité peut diminuer.",
 };
 
 export const STYLE_CHOICES = [

@@ -308,7 +308,14 @@ var ogc = (function () {
         src: $(style).find("OnlineResource").attr("xlink:href"),
       });
     });
-    mv.showStyles(lst, layerid);
+    document.querySelector("#layer-style-editor .style-editor").dispatchEvent(
+      new CustomEvent("loadOptions", {
+        detail: {
+          styles: lst,
+          layerId: layerid,
+        },
+      })
+    );
   };
 
   var _wmsParse = function (xml, keyword) {

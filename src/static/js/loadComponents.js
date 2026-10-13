@@ -83,7 +83,17 @@ mv.utils.grist.refGeo = gristRefGeo;
 
 const styleEditorTarget = document.getElementById("layer-style-editor");
 if (styleEditorTarget) {
-  new StyleEditor().appendTo(styleEditorTarget);
+  const renderStyleEditor = () => {
+    new StyleEditor().appendTo(styleEditorTarget);
+  };
+
+  if (mviewer.translationsReady) {
+    renderStyleEditor();
+  } else {
+    document.addEventListener("mviewerstudio:translations-ready", renderStyleEditor, {
+      once: true,
+    });
+  }
 }
 
 const gristContentTarget = document.getElementById("newlayer-grist-content");

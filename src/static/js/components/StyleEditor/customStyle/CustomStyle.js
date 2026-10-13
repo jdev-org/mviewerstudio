@@ -79,4 +79,11 @@ CustomStyle.prototype.render = function () {
   return this.element;
 };
 
+CustomStyle.prototype.setLayerId = function (layerId) {
+  this.layerId = layerId;
+  Object.values(this.panels).forEach((panel) => {
+    panel.methods.setLayerId(layerId);
+  });
+}
+
 export default CustomStyle;

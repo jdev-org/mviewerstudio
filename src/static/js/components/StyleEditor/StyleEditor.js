@@ -1,19 +1,44 @@
-import { STYLE_MODES, STYLE_CHOICES } from "./constants.js";
+import { STYLE_MODES, STYLE_CHOICES, STYLE_EDITOR_EVENTS } from "./constants.js";
 import CustomStyle from "./customStyle/CustomStyle.js";
 import StyleSelector from "./styleSelector/styleSelector.js";
 import TmsStyle from "../tmsStyle/tmsStyle.js";
 
 /**
  * Sélecteur du mode de création d'un style de couche.
+ * @param {Object} [options={}] Options de la couche : geometry, fields et layerId.
  * @returns {void}
  */
 const StyleEditor = function (options = {}) {
+  this.options = { ...options };
   this.activeMode = STYLE_MODES.EXISTING;
   this.element = document.createElement("div");
   this.element.className = "style-editor";
   this.customStyle = new CustomStyle(options);
-  this.styleSelector = new StyleSelector();
+  this.styleSelector = new StyleSelector(options);
   this.tmsStyle = new TmsStyle();
+  this.layerId = options.layerId || null;
+  this.element.addEventListener(STYLE_EDITOR_EVENTS.LOAD_OPTIONS, (event) => {
+    this.reset(event.detail);
+  });
+};
+
+/**
+ * Charge les options et reconstruit l'éditeur et tous ses composants enfants.
+ * Les options absentes conservent leur valeur précédente.
+ * @param {Object} [options={}] Options à charger.
+ * @param {string} [options.geometry] Type de géométrie.
+ * @param {string[]} [options.fields] Champs disponibles.
+ * @param {string|null} [options.layerId] Identifiant de la couche.
+ * @returns {void} Recharge le contenu et ses événements sans changer le mode actif.
+ */
+StyleEditor.prototype.reset = function (options = {}) {
+  this.options = { ...this.options, ...options };
+  this.layerId = this.options.layerId || null;
+  this.customStyle = new CustomStyle(this.options);
+  this.customStyle.layerId = this.layerId;
+  this.styleSelector = new StyleSelector(this.options);
+  this.tmsStyle = new TmsStyle();
+  this.render();
 };
 
 /**
@@ -66,6 +91,16 @@ StyleEditor.prototype.render = function () {
 StyleEditor.prototype.appendTo = function (target) {
   target.replaceChildren(this.render());
   return this.element;
+};
+
+StyleEditor.prototype.setLayerId = function (layerId) {
+  this.options.layerId = layerId;
+  this.layerId = layerId;
+  this.customStyle.setLayerId(layerId);
+};
+
+StyleEditor.prototype.setFields = function (fields) {
+  this.reset({ fields });
 };
 
 export default StyleEditor;
