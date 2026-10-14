@@ -1,12 +1,14 @@
 import { STYLE_SELECTOR_IDS } from "../constants.js";
 import escapeHtml from "../../../utils/escapeHtml.js";
 import Tooltip from "../../tooltip/tooltip.js";
+import SpinnerGrow from "../../spinnergrow/spinnergrow.js";
 
 /**
  * Sélecteur des styles WMS existants de la couche.
  * @param {Object} [options={}] Options du sélecteur.
  * @param {Object[]} [options.styles=[]] Styles disponibles : name et src.
  * @param {string} [options.layerId] Identifiant de la couche configurée.
+ * @param {boolean} [options.stylesLoading=false] Chargement des styles en cours.
  * @returns {void}
  */
 const StyleSelector = function (options = {}) {
@@ -14,16 +16,36 @@ const StyleSelector = function (options = {}) {
   this.element = document.createElement("div");
   this.element.className = "style-selector";
   this.element.innerHTML = `
-    <div class="mt-4 layerOption-wms d-none" id="${STYLE_SELECTOR_IDS.container}">
-      <h6 i18n="modal.layer.styles">Style(s) de la donnée disponible(s)</h6>
-      <p><small><span i18n="modal.layer.styles.note">Si plusieurs styles sont sélectionnés, indiquer les libéllés des styles qui apparaîtront dans la liste déroulante.</span></small></p>
-      <div class="row mt-3" id="${STYLE_SELECTOR_IDS.list}"></div>
-    </div>
-    <div class="form-group layerOption-wms d-none" id="${STYLE_SELECTOR_IDS.titleContainer}">
-      <label for="${STYLE_SELECTOR_IDS.titleInput}"><span i18n="modal.layer.style.title">Libellé de la liste déroulante des styles</span> <span data-style-title-tooltip></span></label>
-      <input type="text" class="form-control" id="${STYLE_SELECTOR_IDS.titleInput}" placeholder="Libellé de la liste des styles" i18n="modal.layer.style.placeholder">
+    <div class="accordion mt-4 layerOption-wms d-none" id="${STYLE_SELECTOR_IDS.container}">
+      <div class="accordion-item">
+        <h2 class="accordion-header" id="${STYLE_SELECTOR_IDS.heading}">
+          <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#${STYLE_SELECTOR_IDS.collapse}" aria-expanded="true" aria-controls="${STYLE_SELECTOR_IDS.collapse}">
+            <span class="title-accordion" i18n="modal.layer.styles">Style(s) de la donnée disponible(s)</span>
+          </button>
+        </h2>
+        <div id="${STYLE_SELECTOR_IDS.collapse}" class="accordion-collapse collapse show" aria-labelledby="${STYLE_SELECTOR_IDS.heading}">
+          <div class="accordion-body">
+            <div id="${STYLE_SELECTOR_IDS.loading}"></div>
+            <p><small><span i18n="modal.layer.styles.note">Si plusieurs styles sont sélectionnés, indiquer les libéllés des styles qui apparaîtront dans la liste déroulante.</span></small></p>
+            <div class="row mt-3" id="${STYLE_SELECTOR_IDS.list}"></div>
+            <div class="form-group d-none" id="${STYLE_SELECTOR_IDS.titleContainer}">
+              <label for="${STYLE_SELECTOR_IDS.titleInput}"><span i18n="modal.layer.style.title">Libellé de la liste déroulante des styles</span> <span data-style-title-tooltip></span></label>
+              <input type="text" class="form-control" id="${STYLE_SELECTOR_IDS.titleInput}" placeholder="Libellé de la liste des styles" i18n="modal.layer.style.placeholder">
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   `;
+  this.spinner = new SpinnerGrow({
+    label: mviewer.tr("modal.layer.styles.loading"),
+    classes: "d-flex justify-content-center py-3",
+    visible: this.options.stylesLoading === true,
+  });
+  this.spinner.appendTo(this.element.querySelector(`#${STYLE_SELECTOR_IDS.loading}`));
+  this.element
+    .querySelector(`#${STYLE_SELECTOR_IDS.container}`)
+    .setAttribute("aria-busy", this.options.stylesLoading === true);
   new Tooltip({
     message: mviewer.tr("tooltip.analyse"),
     icon: "ri-information-line",
@@ -85,7 +107,7 @@ StyleSelector.prototype.loadStyles = function () {
     layer.styletitle || "";
   this.element
     .querySelector(`#${STYLE_SELECTOR_IDS.container}`)
-    .classList.toggle("d-none", !this.options.styles);
+    .classList.toggle("d-none", !this.options.styles && !this.options.stylesLoading);
   this.element
     .querySelector(`#${STYLE_SELECTOR_IDS.titleContainer}`)
     .classList.toggle("d-none", selectedStyles.filter((style) => style).length <= 1);

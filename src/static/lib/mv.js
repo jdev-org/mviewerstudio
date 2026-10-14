@@ -783,9 +783,12 @@ var mv = (function () {
       // set legendurl theme
       $("#frm-legendurl").val(layer.legendurl);
       // set legend type selector
-      document.querySelector("#frm-legend").value = layer?.legendurl
-        ? "custom"
-        : "default";
+      let legendType = "default";
+      if (layer.legendurl) {
+        legendType = "custom";
+      }
+      $("#frm-legend").val(legendType);
+      mv.changeLayerLegend(legendType);
       $("#frm-layerid").val(layer.id);
       $("#frm-url").val(layer.url);
       $("#frm-queryable").prop("checked", layer.queryable);
@@ -835,6 +838,12 @@ var mv = (function () {
         $("#frm-filter").val(layer.filter);
         $("#frm-layer-styletitle").val(layer.styletitle || "");
         $("#frm-layer-dynamiclegend").prop("checked", layer.dynamiclegend);
+        document.querySelector("#layer-style-editor .style-editor").dispatchEvent(
+          new CustomEvent("loadOptions", {
+            detail: { layerId: layerid, styles: [], stylesLoading: true },
+          })
+        );
+        ogc.getStylesFromWMS(layer.url, layerid);
         if (layer.attributefilter) {
           $("#frm-attributelabel").val(layer.attributelabel);
           layer.attributevalues.split(",").forEach(function (value, id) {
@@ -856,8 +865,7 @@ var mv = (function () {
                 });
               }
             })
-          )
-          .then(() => ogc.getStylesFromWMS(layer.url, layerid));
+          );
       }
 
       if (layer.type === "vector-tms") {

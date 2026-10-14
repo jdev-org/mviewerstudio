@@ -9,6 +9,9 @@ export const STYLE_EDITOR_EVENTS = {
 
 export const STYLE_SELECTOR_IDS = {
   container: "availableLayerStyles",
+  heading: "headingAvailableLayerStyles",
+  collapse: "collapseAvailableLayerStyles",
+  loading: "availableLayerStylesLoading",
   list: "frm-lis-styles",
   titleContainer: "formLayerStyleTitle",
   titleInput: "frm-layer-styletitle",

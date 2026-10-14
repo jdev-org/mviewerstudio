@@ -1,7 +1,8 @@
 import { STYLE_MODES, STYLE_CHOICES, STYLE_EDITOR_EVENTS } from "./constants.js";
 import CustomStyle from "./customStyle/CustomStyle.js";
 import StyleSelector from "./styleSelector/styleSelector.js";
-import TmsStyle from "../tmsStyle/tmsStyle.js";
+import TmsStyle from "./tmsStyle/tmsStyle.js";
+import LegendSelector from "../legendSelector/legendSelector.js";
 
 /**
  * Sélecteur du mode de création d'un style de couche.
@@ -16,6 +17,7 @@ const StyleEditor = function (options = {}) {
   this.customStyle = new CustomStyle(options);
   this.styleSelector = new StyleSelector(options);
   this.tmsStyle = new TmsStyle();
+  this.legendSelector = new LegendSelector();
   this.layerId = options.layerId || null;
   this.element.addEventListener(STYLE_EDITOR_EVENTS.LOAD_OPTIONS, (event) => {
     this.reset(event.detail);
@@ -23,7 +25,8 @@ const StyleEditor = function (options = {}) {
 };
 
 /**
- * Charge les options et reconstruit l'éditeur et tous ses composants enfants.
+ * Charge les options et reconstruit les composants de style.
+ * Conserve le formulaire de légende et ses valeurs pendant le chargement WMS.
  * Les options absentes conservent leur valeur précédente.
  * @param {Object} [options={}] Options à charger.
  * @param {string} [options.geometry] Type de géométrie.
@@ -73,7 +76,8 @@ StyleEditor.prototype.render = function () {
   this.element.append(
     this.styleSelector.render(),
     this.tmsStyle.render(),
-    this.customStyle.render()
+    this.customStyle.render(),
+    this.legendSelector.render()
   );
 
   this.element.querySelectorAll("[data-style-mode]").forEach((button) => {

@@ -12,7 +12,10 @@ var ogc = (function () {
   };
 
   var _showRequestAlert = function (message, url) {
-    alertCustom(`${message}<br><small class="text-break">${_escapeHtml(url)}</small>`, "danger");
+    alertCustom(
+      `${message}<br><small class="text-break">${_escapeHtml(url)}</small>`,
+      "danger"
+    );
   };
 
   $.findNS = function (o, nodeName) {
@@ -292,6 +295,9 @@ var ogc = (function () {
   };
 
   var _wmsCapabilitiesParse = function (data, layerid) {
+    if (document.getElementById("frm-layerid").value !== layerid) {
+      return;
+    }
     var layer = $(data)
       .find("Layer Layer Name")
       .filter(function (index, name) {
@@ -313,6 +319,7 @@ var ogc = (function () {
         detail: {
           styles: lst,
           layerId: layerid,
+          stylesLoading: false,
         },
       })
     );
@@ -458,7 +465,10 @@ var ogc = (function () {
           url: getCapabilitiesUrl,
           error: error,
         });
-        _showRequestAlert("Echec de la requête WMS GetCapabilities :", getCapabilitiesUrl);
+        _showRequestAlert(
+          "Echec de la requête WMS GetCapabilities :",
+          getCapabilitiesUrl
+        );
       });
   };
 
@@ -535,11 +545,22 @@ var ogc = (function () {
         _wmsCapabilitiesParse(_parseXml(data), layerid);
       })
       .catch((error) => {
+        if (document.getElementById("frm-layerid").value !== layerid) {
+          return;
+        }
+        document.querySelector("#layer-style-editor .style-editor").dispatchEvent(
+          new CustomEvent("loadOptions", {
+            detail: { layerId: layerid, styles: [], stylesLoading: false },
+          })
+        );
         console.error("WMS GetCapabilities request failed", {
           url: getCapabilitiesUrl,
           error: error,
         });
-        _showRequestAlert("Echec de la requête WMS GetCapabilities :", getCapabilitiesUrl);
+        _showRequestAlert(
+          "Echec de la requête WMS GetCapabilities :",
+          getCapabilitiesUrl
+        );
       });
   };
 
