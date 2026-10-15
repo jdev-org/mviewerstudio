@@ -622,6 +622,7 @@ STYLE FOR GRIST IMPORT
 	margin-bottom: 0;
 	color: var(--grist-color-text);
 	font-weight: 500;
+	margin-right: 5px;
 }
 
 .grist-api-key-help {

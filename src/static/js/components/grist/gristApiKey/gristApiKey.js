@@ -226,7 +226,7 @@ const getGristApiKey = () => {
 GristApiKey.prototype.render = function () {
   this.element.innerHTML = `
     <div class="grist-api-key-header">
-      <div class="d-flex align-items-center gap-1" data-grist-api-key-title>
+      <div class="d-flex align-items-center gap-2" data-grist-api-key-title>
         <label class="grist-api-key-label" for="${this.idPrefix}-input">
           ${mviewer.tr("grist.api_key.label")}
         </label>
