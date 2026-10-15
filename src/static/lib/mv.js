@@ -560,8 +560,8 @@ var mv = (function () {
           gristLayer.geojsonField = "geometry";
           gristLayer.geolocType = "referential";
         } else if (gristLocationMode === "xySwitch") {
-          gristLayer.xfield = "longitude";
-          gristLayer.yfield = "latitude";
+          gristLayer.xfield = $("#newlayer-grist-coordinate-x").val();
+          gristLayer.yfield = $("#newlayer-grist-coordinate-y").val();
           gristLayer.geolocType = "coordinates";
         } else {
           gristLayer.xfield = "longitude";
