@@ -141,20 +141,26 @@ const isUngeocodedRow = (row, gristConfig) => {
   return !score || score < gristConfig.geocodingScoreThreshold;
 };
 
-const filterUngeocodedRows = (rows) => {
-  const gristConfig = getGristConfig();
-
-  return rows.filter((row) => isUngeocodedRow(row, gristConfig));
-};
-
 /**
  * Build the display status from BAN geocoding results.
  *
  * @param {Object[]} rows Parsed BAN CSV rows.
+ * @param {Object[]} [sourceRows=[]] Source rows to identify records needing correction.
  * @returns {{type: string, label: string, message: string, localizedRows: number, totalRows: number, ungeocodedRows: Object[]}} Result status.
  */
-const getBanGeocodingStatus = (rows) => {
-  const ungeocodedRows = filterUngeocodedRows(rows);
+const getBanGeocodingStatus = (rows, sourceRows = []) => {
+  const gristConfig = getGristConfig();
+  const ungeocodedRows = [];
+
+  rows.forEach((row, index) => {
+    if (isUngeocodedRow(row, gristConfig)) {
+      ungeocodedRows.push({
+        ...sourceRows[index],
+        result_type: row.result_type || "",
+      });
+    }
+  });
+
   const localizedRows = rows.length - ungeocodedRows.length;
 
   if (localizedRows === 0) {
@@ -448,7 +454,7 @@ const geocodeAddressFieldsWithBan = async (importGristArea, getAddressFields) =>
   }
 
   const geocodedRows = parseCsvRows(await response.text());
-  const status = getBanGeocodingStatus(geocodedRows);
+  const status = getBanGeocodingStatus(geocodedRows, sourceData.rows);
 
   await updateGristTableWithGeocoding(sourceData, geocodedRows, importGristArea.apiKey);
 
