@@ -111,7 +111,7 @@ const confirmGristGeometryOverwrite = (nextButton) => {
   setGristWizardStep(4);
   resultContainer.replaceChildren(
     new ConfirmAction({
-      message: 'Voulez-vous écraser le contenu de la colonne existante "geometry" ?',
+      message: mviewer.tr("grist.confirm.geometry_overwrite"),
       color: "warning",
       onYes: () =>
         runGristRefGeoJoin({
@@ -152,7 +152,7 @@ const clearGristCurrentStep = (currentStep) => {
  */
 const refreshGristLocationFields = async () => {
   if (!activeImportGristArea) {
-    throw new Error("Aucune table Grist sélectionnée.");
+    throw new Error(mviewer.tr("grist.import.table_required"));
   }
 
   const sourceData = await activeImportGristArea.getSourceData();
@@ -200,28 +200,25 @@ const initGristLocationSwitches = () => {
     {
       targetId: GRIST_LOCATION_TARGET_IDS.address,
       id: GRIST_LOCATION_SWITCH_IDS.address,
-      label: "À partir d’une adresse",
-      description: "Géocodez vos données (adresse, ville...)",
-      tooltip:
-        "Calculer la localisation à partir des colonnes de la table (adresse, code postal...))",
+      label: mviewer.tr("modal.layer.grist.mode.address.title"),
+      description: mviewer.tr("modal.layer.grist.mode.address.description"),
+      tooltip: mviewer.tr("modal.layer.grist.mode.address.tooltip"),
       checked: true,
     },
     {
       targetId: GRIST_LOCATION_TARGET_IDS.ref,
       id: GRIST_LOCATION_SWITCH_IDS.ref,
-      label: "À partir d’un référentiel",
-      description: "Associez vos données à un référentiel géographique",
-      tooltip:
-        "Récupérer la géométrie à partir d'une donnée de références et d'un champ de la table",
+      label: mviewer.tr("modal.layer.grist.mode.referential.title"),
+      description: mviewer.tr("modal.layer.grist.mode.referential.description"),
+      tooltip: mviewer.tr("modal.layer.grist.mode.referential.tooltip"),
       checked: false,
     },
     {
       targetId: GRIST_LOCATION_TARGET_IDS.xy,
       id: GRIST_LOCATION_SWITCH_IDS.xy,
-      label: "À partir de coordonnées X/Y",
-      description: "Utilisez des colonnes de coordonnées existantes",
-      tooltip:
-        "Utiliser des colonnes contenant déjà des coordonnées X et Y pour localiser les points",
+      label: mviewer.tr("modal.layer.grist.mode.coordinates.title"),
+      description: mviewer.tr("modal.layer.grist.mode.coordinates.description"),
+      tooltip: mviewer.tr("modal.layer.grist.mode.coordinates.tooltip"),
       checked: false,
     },
   ];
@@ -466,12 +463,12 @@ const bindNewLayerModalGrist = (
         activeImportGristArea
           .prepareForLocationStep()
           .then(() => {
-            alertCustom("La table Grist a été importée avec succès.", "success");
+            alertCustom(mviewer.tr("grist.import.success"), "success");
             setGristWizardStep(3);
           })
           .catch((error) => {
             alertCustom(
-              error.message || "Impossible de préparer la table Grist.",
+              error.message || mviewer.tr("grist.import.prepare_failed"),
               "danger"
             );
             console.error("Error preparing Grist table:", error);
