@@ -805,11 +805,10 @@ STYLE FOR GRIST IMPORT
 
 .style-type-selector__preview {
 	flex: 0 0 40px;
+	width: 40px;
 	height: 40px;
+	object-fit: contain;
 	border-radius: 8px;
-	background-color: #f7f7f7;
-	background-image: radial-gradient(circle, var(--grist-color-purple) 1.5px, transparent 2px);
-	background-size: 13px 17px;
 }
 
 .style-type-selector__content {
@@ -818,12 +817,45 @@ STYLE FOR GRIST IMPORT
 }
 
 .style-type-selector__select {
-	display: block;
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
 	width: 100%;
+	text-align: left;
+	white-space: normal;
+	color: inherit;
+	font: inherit;
+}
+
+.style-type-selector__menu {
+	position: static;
+	width: 100%;
+	max-height: min(360px, 45vh);
+	margin-top: 4px;
+	overflow-y: auto;
+	padding: 0;
+	border-radius: 14px;
+}
+
+.style-type-selector__menu .dropdown-item {
+	display: flex;
+	align-items: center;
+	gap: 14px;
+	padding: 12px;
+	white-space: normal;
+}
+
+.style-type-selector__menu li + li {
+	border-top: 1px solid var(--grist-color-border-soft);
+}
+
+.style-type-selector__title,
+.style-type-selector__description {
+	display: block;
 }
 
 .style-type-selector__description {
-	display: block;
 	font-size: 12px;
 }
 
