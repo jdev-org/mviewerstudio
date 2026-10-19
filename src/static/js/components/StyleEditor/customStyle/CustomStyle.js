@@ -12,7 +12,10 @@ const CustomStyle = function ({ geometry = "Point", fields = [] } = {}) {
   this.geometry = geometry;
   this.fields = fields;
   this.panels = {};
-  this.card = new ListCard({ title: "Éditeur de style", classes: "custom-style" });
+  this.card = new ListCard({
+    title: mviewer.tr("style_editor.title"),
+    classes: "custom-style",
+  });
   this.element = this.card.element;
   this.styleTypeSelector = new ListStyleTypeSelector(geometry);
   this.content = document.createElement("div");

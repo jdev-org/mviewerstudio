@@ -3,6 +3,8 @@ import CustomStyle from "./customStyle/CustomStyle.js";
 import StyleSelector from "./styleSelector/styleSelector.js";
 import TmsStyle from "./tmsStyle/tmsStyle.js";
 import LegendSelector from "../legendSelector/legendSelector.js";
+import { analyse, categorize } from "../../utils/styler/methods.js";
+import { createColorRampScales } from "../../utils/styler/rampColor.js";
 
 /**
  * Sélecteur du mode de création d'un style de couche.
@@ -19,6 +21,7 @@ const StyleEditor = function (options = {}) {
   this.tmsStyle = new TmsStyle();
   this.legendSelector = new LegendSelector();
   this.layerId = options.layerId || null;
+  this.element.addEventListener("calculate", (event) => this.calculate(event));
   this.element.addEventListener(STYLE_EDITOR_EVENTS.LOAD_OPTIONS, (event) => {
     this.reset(event.detail);
   });
@@ -27,6 +30,83 @@ const StyleEditor = function (options = {}) {
 
     this.setFields(event.detail.fields);
   });
+};
+
+/**
+ * Charge les valeurs WFS du champ choisi et remplit les règles de classification.
+ * @param {CustomEvent} event Paramètres du calcul et fonction de mise à jour des règles.
+ * @returns {Promise<void>} Actualise les règles ou affiche l'erreur dans le panneau.
+ */
+StyleEditor.prototype.calculate = async function (event) {
+  const { field, method, classes, color, reverseColors, type, geometry, setRules } = event.detail;
+  const button = event.target.querySelector(".style-methods__actions button");
+  const message = event.target.querySelector("[data-classification-error]");
+  const layerId = this.layerId;
+  const customStyle = this.customStyle;
+
+  button.disabled = true;
+  message.textContent = "";
+  message.classList.add("d-none");
+
+  try {
+    const layer = config.temp.layers[layerId];
+    if (!layer || !layer.wfs_url) {
+      throw new Error(mviewer.tr("style_editor.error.no_wfs"));
+    }
+
+    const url = ogc.urlToObject(layer.wfs_url, {
+      SERVICE: "WFS",
+      VERSION: "1.0.0",
+      REQUEST: "GETFEATURE",
+      OUTPUTFORMAT: "application/json",
+      TYPENAME: layerId,
+      PROPERTYNAME: field,
+    });
+    const response = await fetch(url.toString());
+    if (!response.ok) {
+      throw new Error(mviewer.tr("style_editor.error.load_values"));
+    }
+    const collection = await response.json();
+    if (!Array.isArray(collection.features)) {
+      throw new Error(mviewer.tr("style_editor.error.invalid_data"));
+    }
+    const data = collection.features.map((feature) => feature.properties);
+    let rules;
+
+    if (type === "categorized") {
+      const values = categorize(data, field);
+      if (values.length > 10) {
+        throw new Error(mviewer.tr("style_editor.error.too_many_categories"));
+      }
+      rules = values.map((value) => ({ name: `${value}`, value }));
+    } else {
+      const boundaries = analyse(data, field, method, classes);
+      if (boundaries.length === 1) boundaries.push(boundaries[0]);
+      rules = boundaries.slice(1).map((max, index) => ({
+        name: `${boundaries[index]} – ${max}`,
+        min: boundaries[index],
+        max,
+      }));
+    }
+
+    if (rules.length === 0) {
+      throw new Error(mviewer.tr("style_editor.error.no_classes"));
+    }
+    const colors = createColorRampScales(color, rules.length, reverseColors);
+    rules.forEach((rule, index) => {
+      if (geometry === "LineString") {
+        rule.stroke = { color: colors[index] };
+      } else {
+        rule.fill = { color: colors[index] };
+      }
+    });
+    if (this.layerId === layerId && this.customStyle === customStyle) setRules(rules);
+  } catch (error) {
+    message.textContent = error.message;
+    message.classList.remove("d-none");
+  } finally {
+    button.disabled = false;
+  }
 };
 
 /**
@@ -80,7 +160,7 @@ StyleEditor.prototype.render = function () {
   this.element.innerHTML = `<div class="import-type-buttons__actions">${STYLE_CHOICES.map(
     (choice) => `
     <button type="button" class="import-type-buttons__button" data-style-mode="${choice.mode}" id="${choice.id}">
-      <span class="import-type-buttons__title">${choice.label}</span>
+      <span class="import-type-buttons__title">${mviewer.tr(choice.label)}</span>
     </button>
   `
   ).join("")}</div>`;

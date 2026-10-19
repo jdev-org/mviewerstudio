@@ -7,7 +7,7 @@ export default class RuleConfig {
 
     this.element.className = "style-rule-dialog";
 
-    this.element.setAttribute("aria-label", "Personnalisation du style");
+    this.element.setAttribute("aria-label", mviewer.tr("style_editor.rule.customize"));
   }
 
   /** Ouvre une copie de la règle ; seule la validation transmet les changements.
@@ -19,13 +19,13 @@ export default class RuleConfig {
     this.element.innerHTML = `
       <form>
         <header>
-          <h5>Personnalisation du style</h5>
-          <button type="button" data-close aria-label="Fermer">×</button>
+          <h5>${mviewer.tr("style_editor.rule.customize")}</h5>
+          <button type="button" data-close aria-label="${mviewer.tr("close")}">×</button>
         </header>
         <div class="style-rule-dialog__body"></div>
         <footer>
-          <button class="btn btn-primary" type="submit">Enregistrer</button>
-          <button class="btn btn-outline-primary" type="button" data-close>Fermer</button>
+          <button class="btn btn-primary" type="submit">${mviewer.tr("save")}</button>
+          <button class="btn btn-outline-primary" type="button" data-close>${mviewer.tr("close")}</button>
         </footer>
       </form>
     `;
@@ -49,9 +49,7 @@ export default class RuleConfig {
         max.setCustomValidity("");
 
         if (max.valueAsNumber < min.valueAsNumber) {
-          max.setCustomValidity(
-            "La taille maximale doit être supérieure ou égale à la taille minimale."
-          );
+          max.setCustomValidity(mviewer.tr("style_editor.error.size_range"));
 
           max.reportValidity();
 

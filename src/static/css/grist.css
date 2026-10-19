@@ -1151,6 +1151,10 @@ STYLE FOR GRIST IMPORT
 }
 
 /* Custom style editor */
+.custom-style.switch-card,
+.style-methods > .list-card {
+	overflow: visible;
+}
 .style-methods {
 	margin: 16px 0;
 }
@@ -1175,6 +1179,41 @@ STYLE FOR GRIST IMPORT
 	width: 100%;
 	height: 38px;
 	padding: 3px;
+}
+.style-fields .style-methods__reverse {
+	margin-top: 8px;
+}
+.style-methods__reverse input {
+	margin: 0;
+}
+.style-palette__toggle, .style-palette__option {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+}
+.style-palette__toggle {
+	margin-top: 8px;
+	text-align: left;
+}
+.style-palette__name {
+	min-width: 64px;
+}
+.style-palette__preview {
+	display: flex;
+	flex: 1;
+	min-width: 64px;
+	height: 20px;
+	border: 1px solid #aaa;
+	border-radius: 3px;
+	overflow: hidden;
+}
+.style-palette__preview > span {
+	flex: 1;
+}
+.style-palette__menu {
+	width: 100%;
+	max-height: 400px;
+	overflow-y: auto;
 }
 .style-config-card {
 	border: 1px solid #dedede;
@@ -1230,7 +1269,7 @@ STYLE FOR GRIST IMPORT
 .style-rules input.form-control { min-width: 85px; }
 .style-rules__order { white-space: nowrap; }
 .style-rules button:disabled { opacity: .35; }
-.style-rules__preview { width: 46px; height: 32px; padding: 5px; }
+.style-rules__preview { width: 45px; height: 45px; padding: 5px; }
 .style-rules__preview span { display: block; width: 100%; height: 100%; }
 .style-rules__toolbar { display: flex; gap: 12px; padding: 12px; }
 .style-rules__toolbar button { border: 0; }

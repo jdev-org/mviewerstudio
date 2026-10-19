@@ -1,9 +1,10 @@
-import { CLASSIFICATION_METHODS, CLASSIFICATION_TOOLTIPS } from "../../constants.js";
+import { CLASSIFICATION_METHODS, CLASSIFICATION_TOOLTIPS, DEFAULT_COLOR_SCALE } from "../../constants.js";
+import PaletteSelector from "./paletteSelector.js";
 import Tooltip from "../../../tooltip/tooltip.js";
 import Select from "../../../select/select.js";
 import ListCard from "../../../listCard/listCard.js";
 
-/** Champs de classification ; émet update sans calculer de classes. */
+/** Champs de classification ; émet les paramètres pour le calcul des règles. */
 export default class MethodsPanel {
   constructor({
     fields = [],
@@ -22,16 +23,18 @@ export default class MethodsPanel {
       legend: "",
       method: methods[0].value,
       classes: 5,
+      color: DEFAULT_COLOR_SCALE,
+      reverseColors: false,
       ...state,
     };
 
     this.element = document.createElement("div");
 
     this.element.className = "style-methods";
-    this.card = new ListCard({ title: "Paramètres de classification" });
+    this.card = new ListCard({ title: mviewer.tr("style_editor.classification.title") });
     this.fieldSelect = new Select({
-      label: "Champ à représenter",
-      placeholder: "Choisir un champ",
+      label: mviewer.tr("style_editor.classification.field"),
+      placeholder: mviewer.tr("style_editor.classification.placeholder"),
       value: this.state.field,
     });
   }
@@ -55,21 +58,23 @@ export default class MethodsPanel {
     if (this.type === "categorized") {
       const title = this.fieldSelect.element.querySelector("label");
 
-      title.textContent = "Champ à catégoriser ";
-      new Tooltip({ message: CLASSIFICATION_TOOLTIPS.categories }).appendTo(title);
+      title.textContent = mviewer.tr("style_editor.classification.category_field") + " ";
+      new Tooltip({ message: mviewer.tr(CLASSIFICATION_TOOLTIPS.categories) }).appendTo(
+        title
+      );
     }
 
     if (this.type !== "categorized") {
       fields.insertAdjacentHTML(
         "beforeend",
         `
-        <label>Titre de la légende<input class="form-control" name="legend" /></label>
+        <label>${mviewer.tr("style_editor.classification.legend")}<input class="form-control" name="legend" /></label>
         <label>
-          Méthode de classification
+          ${mviewer.tr("style_editor.classification.method")}
           <select class="form-control" name="method"></select>
         </label>
         <label>
-          <span data-classes-title>Nombre de classes </span>
+          <span data-classes-title>${mviewer.tr("style_editor.classification.classes")} </span>
           <input
               class="form-control"
               name="classes"
@@ -81,26 +86,49 @@ export default class MethodsPanel {
         `
       );
 
-      new Tooltip({ message: CLASSIFICATION_TOOLTIPS.classes }).appendTo(
+      new Tooltip({ message: mviewer.tr(CLASSIFICATION_TOOLTIPS.classes) }).appendTo(
         this.element.querySelector("[data-classes-title]")
       );
 
       const method = this.element.querySelector('[name="method"]');
 
-      this.methods.forEach((item) => method.add(new Option(item.label, item.value)));
+      this.methods.forEach((item) =>
+        method.add(new Option(mviewer.tr(item.label), item.value))
+      );
 
       for (const name of ["legend", "method", "classes"])
         this.element.querySelector(`[name="${name}"]`).value = this.state[name];
     }
 
+    this.paletteSelector = new PaletteSelector({
+      value: this.state.color,
+      classes: this.state.classes,
+      reverseColors: this.state.reverseColors,
+    });
+    const colorsField = document.createElement("div");
+    colorsField.appendChild(this.paletteSelector.render());
+    colorsField.insertAdjacentHTML(
+      "beforeend",
+      `<div class="custom-control custom-checkbox style-methods__reverse">
+        <input type="checkbox" class="custom-control-input" name="reverseColors" id="${this.paletteSelector.id}-reverse">
+        <label class="custom-control-label" for="${this.paletteSelector.id}-reverse">
+          ${mviewer.tr("style_editor.classification.reverse_colors")}
+        </label>
+      </div>`
+    );
+    fields.appendChild(colorsField);
+
     fields.insertAdjacentHTML(
       "beforeend",
       `
       <div class="style-methods__actions">
-        <button type="button" class="btn btn-primary">Calculer</button>
+        <button type="button" class="btn btn-primary">${mviewer.tr("style_editor.classification.calculate")}</button>
       </div>
+      <p class="text-danger d-none" role="alert" data-classification-error></p>
     `
     );
+
+    this.element.querySelector('[name="reverseColors"]').checked = this.state.reverseColors;
 
     const calculate = this.element.querySelector(".style-methods__actions button");
 
@@ -116,8 +144,16 @@ export default class MethodsPanel {
       );
     });
 
-    this.element.onchange = () => {
+    this.element.onchange = (event) => {
       this.readState();
+      if (event.target.name === "classes") {
+        if (event.target.checkValidity()) {
+          this.paletteSelector.updatePreviews(this.state.classes);
+        }
+      }
+      if (event.target.name === "reverseColors") {
+        this.paletteSelector.updatePreviews(this.paletteSelector.classes, this.state.reverseColors);
+      }
 
       this.element.dispatchEvent(
         new CustomEvent("update", { detail: { ...this.state }, bubbles: true })
@@ -135,6 +171,7 @@ export default class MethodsPanel {
       this.state[input.name] = input.value;
 
       if (input.type === "number") this.state[input.name] = input.valueAsNumber;
+      if (input.type === "checkbox") this.state[input.name] = input.checked;
     });
   }
 

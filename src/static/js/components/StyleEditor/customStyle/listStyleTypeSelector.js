@@ -17,8 +17,8 @@ const ListStyleTypeSelector = function (geometry = "Point") {
  */
 ListStyleTypeSelector.prototype.render = function () {
   this.element.innerHTML = `
-    <div class="style-type-selector__label" role="group" aria-label="Mode de représentation">
-      <span>Mode de représentation</span>
+    <div class="style-type-selector__label" role="group" aria-label="${mviewer.tr("style_editor.representation")}">
+      <span>${mviewer.tr("style_editor.representation")}</span>
         <div class="dropdown">
           <button type="button" class="style-type-selector__card dropdown-toggle style-type-selector__select" data-bs-toggle="dropdown" data-bs-display="static" aria-expanded="false">
             <img class="style-type-selector__preview" alt="" width="40" height="40">
@@ -35,8 +35,8 @@ ListStyleTypeSelector.prototype.render = function () {
                 <button type="button" class="dropdown-item" data-style-type="${type.value}">
                   <img class="style-type-selector__preview" src="${type.img}" alt="" width="40" height="40">
                   <span class="style-type-selector__content">
-                    <span class="style-type-selector__title">${type.label}</span>
-                    <span class="style-type-selector__description">${type.description}</span>
+                    <span class="style-type-selector__title">${mviewer.tr(type.label)}</span>
+                    <span class="style-type-selector__description">${mviewer.tr(type.description)}</span>
                   </span>
                 </button>
               </li>`
@@ -68,9 +68,12 @@ ListStyleTypeSelector.prototype.updateSelection = function () {
   const selectedType = this.types.find((type) => type.value === this.value);
   this.element.querySelector(".style-type-selector__preview").src = selectedType.img;
   const selection = this.element.querySelector(".style-type-selector__selection");
-  selection.querySelector(".style-type-selector__title").textContent = selectedType.label;
-  selection.querySelector(".style-type-selector__description").textContent =
-    selectedType.description;
+  selection.querySelector(".style-type-selector__title").textContent = mviewer.tr(
+    selectedType.label
+  );
+  selection.querySelector(".style-type-selector__description").textContent = mviewer.tr(
+    selectedType.description
+  );
   this.element.querySelectorAll("[data-style-type]").forEach((button) => {
     const isActive = button.dataset.styleType === this.value;
     button.classList.toggle("active", isActive);

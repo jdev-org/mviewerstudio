@@ -19,21 +19,19 @@ export const STYLE_SELECTOR_IDS = {
 };
 
 export const CLASSIFICATION_TOOLTIPS = {
-  categories:
-    "Il est recommandé d’utiliser 7 catégories. Jusqu’à 10 catégories restent possibles, mais la lisibilité peut diminuer.",
-  classes:
-    "Il est recommandé d’utiliser 5 classes. Jusqu’à 7 classes restent possibles, mais la lisibilité peut diminuer.",
+  categories: "style_editor.tooltip.categories",
+  classes: "style_editor.tooltip.classes",
 };
 
 export const STYLE_CHOICES = [
   {
     mode: STYLE_MODES.EXISTING,
-    label: "Choisir un style existant",
+    label: "style_editor.mode.existing",
     id: "style-editor-existing",
   },
   {
     mode: STYLE_MODES.CUSTOM,
-    label: "Créer un style personnalisé",
+    label: "style_editor.mode.custom",
     id: "style-editor-custom",
   },
 ];
@@ -41,16 +39,16 @@ export const STYLE_CHOICES = [
 export const STYLE_TYPES = [
   {
     value: "simple",
-    label: "Représentation uniforme",
-    description: "Représentation unique pour toutes les données",
+    label: "style_editor.type.simple",
+    description: "style_editor.type.simple.description",
     geom: ["Point", "LineString", "Polygon"],
     rules: ["size", "fill", "stroke", "symbolizer"],
     img: "img/styler/style_simple.png",
   },
   {
     value: "analyse",
-    label: "Variation de valeurs/couleurs",
-    description: "Représentation d'une donnée quantitative relative",
+    label: "style_editor.type.analyse",
+    description: "style_editor.type.analyse.description",
     geom: ["Point", "Polygon", "LineString"],
     methods: ["jenk", "equalInterval", "quantiles"],
     rules: ["size", "fill", "stroke", "methods", "classes"],
@@ -58,33 +56,32 @@ export const STYLE_TYPES = [
   },
   {
     value: "proportionalCircles",
-    label: "Cercles proportionnels",
-    description: "Représentation d’une donnée quantitative absolue",
+    label: "style_editor.type.proportionalCircles",
+    description: "style_editor.type.proportionalCircles.description",
     geom: ["Point"],
     methods: ["jenk", "equalInterval", "quantiles"],
     img: "img/styler/style_cercle_prop.png",
   },
   {
     value: "proportionalColoredCircles",
-    label: "Cercles proportionnels colorés",
-    description:
-      "Représentation d’une donnée quantitative absolue avec une variation (valeur relative) de couleur",
+    label: "style_editor.type.proportionalColoredCircles",
+    description: "style_editor.type.proportionalColoredCircles.description",
     geom: ["Point"],
     methods: ["jenk", "equalInterval", "quantiles"],
     img: "img/styler/style_cercle_prop_color.png",
   },
   {
     value: "categorized",
-    label: "Catégorisation",
-    description: "Représentation d'une données qualitative",
+    label: "style_editor.type.categorized",
+    description: "style_editor.type.categorized.description",
     geom: ["Point", "Polygon", "LineString"],
     maxClasses: 10,
     img: "img/styler/style_categ.png",
   },
   {
     value: "cluster",
-    label: "Regroupement géographique (clusters)",
-    description: "Représentation d'agrégats de points",
+    label: "style_editor.type.cluster",
+    description: "style_editor.type.cluster.description",
     geom: ["Point", "Polygon", "LineString"],
     rules: ["size", "fill", "stroke", "classes", "classesMinMax"],
     img: "img/styler/style_cluster_regroup.png",
@@ -92,6 +89,7 @@ export const STYLE_TYPES = [
 ];
 
 export const DEFAULT_FILL = { color: "#9e5698", opacity: 1 };
+export const DEFAULT_COLOR_SCALE = "Purples";
 export const DEFAULT_STROKE = {
   color: "#ffffff",
   opacity: 1,
@@ -105,31 +103,38 @@ export const DEFAULT_SYMBOL = {
   externalGraphic: "",
 };
 export const FILL_FIELDS = [
-  { name: "color", label: "Couleur", type: "color" },
-  { name: "opacity", label: "Opacité", type: "number", min: 0, max: 1, step: 0.1 },
+  { name: "color", label: "style_editor.field.color", type: "color" },
+  {
+    name: "opacity",
+    label: "style_editor.field.opacity",
+    type: "number",
+    min: 0,
+    max: 1,
+    step: 0.1,
+  },
 ];
 export const STROKE_FIELDS = [
   ...FILL_FIELDS,
-  { name: "width", label: "Épaisseur", type: "number", min: 0, step: 0.5 },
+  { name: "width", label: "style_editor.field.width", type: "number", min: 0, step: 0.5 },
 ];
 export const SYMBOL_FIELDS = [
-  { name: "minSize", label: "Taille minimale", type: "number", min: 1 },
-  { name: "maxSize", label: "Taille maximale", type: "number", min: 1 },
-  { name: "externalGraphic", label: "URL du symbole externe", type: "url" },
+  { name: "minSize", label: "style_editor.field.minSize", type: "number", min: 1 },
+  { name: "maxSize", label: "style_editor.field.maxSize", type: "number", min: 1 },
+  { name: "externalGraphic", label: "style_editor.field.externalGraphic", type: "url" },
 ];
 export const STROKE_TYPES = [
-  { value: "solid", label: "— Continu" },
-  { value: "dashed", label: "– – Tirets" },
-  { value: "dotted", label: "··· Pointillés" },
+  { value: "solid", label: "style_editor.stroke.solid" },
+  { value: "dashed", label: "style_editor.stroke.dashed" },
+  { value: "dotted", label: "style_editor.stroke.dotted" },
 ];
 export const SYMBOL_SHAPES = [
-  { value: "circle", label: "Cercle" },
-  { value: "square", label: "Carré" },
-  { value: "triangle", label: "Triangle" },
-  { value: "external", label: "Symbole externe" },
+  { value: "circle", label: "style_editor.shape.circle" },
+  { value: "square", label: "style_editor.shape.square" },
+  { value: "triangle", label: "style_editor.shape.triangle" },
+  { value: "external", label: "style_editor.shape.external" },
 ];
 export const CLASSIFICATION_METHODS = [
-  { value: "jenk", label: "Jenks" },
-  { value: "equalInterval", label: "Intervalles égaux" },
-  { value: "quantiles", label: "Quantiles" },
+  { value: "jenk", label: "style_editor.method.jenk" },
+  { value: "equalInterval", label: "style_editor.method.equalInterval" },
+  { value: "quantiles", label: "style_editor.method.quantiles" },
 ];

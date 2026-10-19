@@ -5,10 +5,14 @@ import { STROKE_FIELDS, DEFAULT_STROKE, STROKE_TYPES } from "../../constants.js"
 export default class Stroke extends FieldsPanel {
   constructor(values = {}) {
     super(
-      "Contour",
+      "style_editor.section.stroke",
       [
         ...STROKE_FIELDS,
-        { name: "lineStyle", label: "Style du trait", options: STROKE_TYPES },
+        {
+          name: "lineStyle",
+          label: "style_editor.field.lineStyle",
+          options: STROKE_TYPES,
+        },
       ],
       { ...DEFAULT_STROKE, ...values }
     );

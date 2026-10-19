@@ -2,15 +2,15 @@
 export function createField(definition, value) {
   const label = document.createElement("label");
 
-  label.innerHTML = `${definition.label}<input class="form-control" name="${definition.name}" type="${definition.type || "text"}">`;
+  label.innerHTML = `${mviewer.tr(definition.label)}<input class="form-control" name="${definition.name}" type="${definition.type || "text"}">`;
 
   if (definition.options) {
-    label.innerHTML = `${definition.label}<select class="form-control" name="${definition.name}"></select>`;
+    label.innerHTML = `${mviewer.tr(definition.label)}<select class="form-control" name="${definition.name}"></select>`;
 
     const select = label.querySelector("select");
 
     definition.options.forEach((option) =>
-      select.add(new Option(option.label, option.value))
+      select.add(new Option(mviewer.tr(option.label), option.value))
     );
   }
 
@@ -45,7 +45,7 @@ export class FieldsPanel {
 
   /** @returns {HTMLElement} Carte contenant les champs configurés. */
   render() {
-    this.element.innerHTML = `<summary>${this.title}</summary><div class="style-fields"></div>`;
+    this.element.innerHTML = `<summary>${mviewer.tr(this.title)}</summary><div class="style-fields"></div>`;
 
     const content = this.element.querySelector(".style-fields");
 

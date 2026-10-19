@@ -27,7 +27,7 @@ export default class RulesPanel {
   /** @returns {Object} Nouvelle règle indépendante. */
   createRule() {
     return {
-      name: "Nouvelle règle",
+      name: mviewer.tr("style_editor.rule.new"),
       value: "",
       min: 0,
       max: 1,
@@ -102,18 +102,18 @@ export default class RulesPanel {
         <table>
           <thead>
             <tr>
-              <th><input type="checkbox" aria-label="Sélectionner toutes les règles" data-all></th>
-              <th><span class="visually-hidden">Ordre</span></th>
-              <th>Style</th>
-              <th>Nom</th>
+              <th><input type="checkbox" aria-label="${mviewer.tr("style_editor.rule.select_all")}" data-all></th>
+              <th><span class="visually-hidden">${mviewer.tr("style_editor.rule.order")}</span></th>
+              <th>${mviewer.tr("style_editor.rule.style")}</th>
+              <th>${mviewer.tr("style_editor.rule.name")}</th>
             </tr>
           </thead>
           <tbody></tbody>
         </table>
       </div>
       <div class="style-rules__toolbar">
-        <button type="button" data-add>＋ Ajouter</button>
-        <button type="button" data-delete disabled>− Supprimer</button>
+        <button type="button" data-add>＋ ${mviewer.tr("style_editor.rule.add")}</button>
+        <button type="button" data-delete disabled>− ${mviewer.tr("style_editor.rule.delete")}</button>
       </div>
     `;
 
@@ -121,14 +121,20 @@ export default class RulesPanel {
     const header = this.element.querySelector("thead tr");
 
     if (this.type === "categorized") {
-      header.insertAdjacentHTML("beforeend", "<th>Valeur</th>");
+      header.insertAdjacentHTML(
+        "beforeend",
+        `<th>${mviewer.tr("style_editor.rule.value")}</th>`
+      );
     } else if (this.type !== "simple") {
-      header.insertAdjacentHTML("beforeend", "<th>Valeur min</th><th>Valeur max</th>");
+      header.insertAdjacentHTML(
+        "beforeend",
+        `<th>${mviewer.tr("style_editor.rule.min")}</th><th>${mviewer.tr("style_editor.rule.max")}</th>`
+      );
     }
 
     header.insertAdjacentHTML(
       "beforeend",
-      '<th><span class="visually-hidden">Dupliquer</span></th>'
+      `<th><span class="visually-hidden">${mviewer.tr("style_editor.rule.duplicate")}</span></th>`
     );
 
     const body = this.element.querySelector("tbody");
@@ -153,13 +159,13 @@ export default class RulesPanel {
     const row = document.createElement("tr");
 
     row.innerHTML = `
-      <td><input type="checkbox" aria-label="Sélectionner la règle ${index + 1}"></td>
+      <td><input type="checkbox" aria-label="${mviewer.tr("style_editor.rule.select").replace("{index}", index + 1)}"></td>
       <td class="style-rules__order">
-        <button type="button" data-up aria-label="Monter">⌃</button>
-        <button type="button" data-down aria-label="Descendre">⌄</button>
+        <button type="button" data-up aria-label="${mviewer.tr("style_editor.rule.up")}">⌃</button>
+        <button type="button" data-down aria-label="${mviewer.tr("style_editor.rule.down")}">⌄</button>
       </td>
       <td>
-        <button type="button" class="style-rules__preview" aria-label="Personnaliser la règle ${index + 1}">
+        <button type="button" class="style-rules__preview" aria-label="${mviewer.tr("style_editor.rule.edit").replace("{index}", index + 1)}">
           <span></span>
         </button>
       </td>
@@ -225,7 +231,7 @@ export default class RulesPanel {
     row.insertAdjacentHTML(
       "beforeend",
       `
-      <td><button type="button" data-duplicate aria-label="Dupliquer la règle">⧉</button></td>
+      <td><button type="button" data-duplicate aria-label="${mviewer.tr("style_editor.rule.duplicate")}">⧉</button></td>
     `
     );
 
@@ -265,7 +271,7 @@ export default class RulesPanel {
     }
 
     names.forEach((name) => {
-      const definition = { name, label: name, type: "text" };
+      const definition = { name, label: `style_editor.rule.${name}`, type: "text" };
 
       if (name === "min" || name === "max") {
         definition.type = "number";
@@ -277,7 +283,13 @@ export default class RulesPanel {
 
       const input = field.querySelector("input");
 
-      input.setAttribute("aria-label", `${name} de la règle ${index + 1}`);
+      input.setAttribute(
+        "aria-label",
+        mviewer
+          .tr("style_editor.rule.field_label")
+          .replace("{field}", mviewer.tr(definition.label))
+          .replace("{index}", index + 1)
+      );
 
       const cell = row.insertCell();
 
