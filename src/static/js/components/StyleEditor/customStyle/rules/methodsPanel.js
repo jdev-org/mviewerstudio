@@ -1,5 +1,7 @@
 import { CLASSIFICATION_METHODS, CLASSIFICATION_TOOLTIPS } from "../../constants.js";
 import Tooltip from "../../../tooltip/tooltip.js";
+import Select from "../../../select/select.js";
+import ListCard from "../../../listCard/listCard.js";
 
 /** Champs de classification ; émet update sans calculer de classes. */
 export default class MethodsPanel {
@@ -25,7 +27,13 @@ export default class MethodsPanel {
 
     this.element = document.createElement("div");
 
-    this.element.className = "style-methods style-fields";
+    this.element.className = "style-methods";
+    this.card = new ListCard({ title: "Paramètres de classification" });
+    this.fieldSelect = new Select({
+      label: "Champ à représenter",
+      placeholder: "Choisir un champ",
+      value: this.state.field,
+    });
   }
 
   /** @returns {HTMLElement} Champs de la méthode choisie. */
@@ -34,30 +42,25 @@ export default class MethodsPanel {
 
     if (this.type === "simple") return this.element;
 
-    this.element.innerHTML = `
-      <label>
-        <span data-field-title>Champ à représenter</span>
-        <select class="form-control" name="field" required>
-          <option value="">Choisir un champ</option>
-        </select>
-      </label>
-    `;
+    const fields = document.createElement("div");
+    fields.className = "style-fields";
+    fields.appendChild(this.fieldSelect.render());
+    this.element.appendChild(fields);
+
+    const select = this.fieldSelect.getSelect();
+    select.name = "field";
+    select.required = true;
+    this.setFields(this.fields);
 
     if (this.type === "categorized") {
-      const title = this.element.querySelector("[data-field-title]");
+      const title = this.fieldSelect.element.querySelector("label");
 
       title.textContent = "Champ à catégoriser ";
       new Tooltip({ message: CLASSIFICATION_TOOLTIPS.categories }).appendTo(title);
     }
 
-    const select = this.element.querySelector('[name="field"]');
-
-    this.fields.forEach((field) => select.add(new Option(field, field)));
-
-    select.value = this.state.field;
-
     if (this.type !== "categorized") {
-      this.element.insertAdjacentHTML(
+      fields.insertAdjacentHTML(
         "beforeend",
         `
         <label>Titre de la légende<input class="form-control" name="legend" /></label>
@@ -90,7 +93,7 @@ export default class MethodsPanel {
         this.element.querySelector(`[name="${name}"]`).value = this.state[name];
     }
 
-    this.element.insertAdjacentHTML(
+    fields.insertAdjacentHTML(
       "beforeend",
       `
       <div class="style-methods__actions">
@@ -121,6 +124,8 @@ export default class MethodsPanel {
       );
     };
 
+    this.element.replaceChildren(this.card.setItems([fields]));
+
     return this.element;
   }
 
@@ -132,4 +137,18 @@ export default class MethodsPanel {
       if (input.type === "number") this.state[input.name] = input.valueAsNumber;
     });
   }
+
+  /**
+   * Actualise les options et conserve la sélection si le champ existe encore.
+   * @param {string[]} fields Champs disponibles.
+   * @returns {void}
+   */
+  setFields = (fields) => {
+    this.fields = fields;
+
+    if (!fields.includes(this.state.field)) this.state.field = "";
+
+    this.fieldSelect.setValue(this.state.field);
+    this.fieldSelect.setOptions(fields.map((field) => ({ label: field, value: field })));
+  };
 }

@@ -518,6 +518,14 @@ var ogc = (function () {
       })
       .then((fields) => {
         mv.showFields(fields, layerid);
+        var styleEditor = document.querySelector("#layer-style-editor .style-editor");
+        if (styleEditor) {
+          styleEditor.dispatchEvent(
+            new CustomEvent("showFields", {
+              detail: { layerId: layerid, fields: fields },
+            })
+          );
+        }
       });
   };
 
