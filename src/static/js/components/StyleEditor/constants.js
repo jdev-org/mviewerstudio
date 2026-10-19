@@ -5,6 +5,7 @@ export const STYLE_MODES = {
 
 export const STYLE_EDITOR_EVENTS = {
   LOAD_OPTIONS: "loadOptions",
+  SHOW_FIELDS: "showFields",
 };
 
 export const STYLE_SELECTOR_IDS = {
@@ -44,6 +45,7 @@ export const STYLE_TYPES = [
     description: "Représentation unique pour toutes les données",
     geom: ["Point", "LineString", "Polygon"],
     rules: ["size", "fill", "stroke", "symbolizer"],
+    img: "img/styler/style_simple.png",
   },
   {
     value: "analyse",
@@ -52,6 +54,7 @@ export const STYLE_TYPES = [
     geom: ["Point", "Polygon", "LineString"],
     methods: ["jenk", "equalInterval", "quantiles"],
     rules: ["size", "fill", "stroke", "methods", "classes"],
+    img: "img/styler/style_degrade.png",
   },
   {
     value: "proportionalCircles",
@@ -59,6 +62,16 @@ export const STYLE_TYPES = [
     description: "Représentation d’une donnée quantitative absolue",
     geom: ["Point"],
     methods: ["jenk", "equalInterval", "quantiles"],
+    img: "img/styler/style_cercle_prop.png",
+  },
+  {
+    value: "proportionalColoredCircles",
+    label: "Cercles proportionnels colorés",
+    description:
+      "Représentation d’une donnée quantitative absolue avec une variation (valeur relative) de couleur",
+    geom: ["Point"],
+    methods: ["jenk", "equalInterval", "quantiles"],
+    img: "img/styler/style_cercle_prop_color.png",
   },
   {
     value: "categorized",
@@ -66,13 +79,15 @@ export const STYLE_TYPES = [
     description: "Représentation d'une données qualitative",
     geom: ["Point", "Polygon", "LineString"],
     maxClasses: 10,
+    img: "img/styler/style_categ.png",
   },
   {
     value: "cluster",
-    label: "Regroupement géographique",
+    label: "Regroupement géographique (clusters)",
     description: "Représentation d'agrégats de points",
     geom: ["Point", "Polygon", "LineString"],
     rules: ["size", "fill", "stroke", "classes", "classesMinMax"],
+    img: "img/styler/style_cluster_regroup.png",
   },
 ];
 

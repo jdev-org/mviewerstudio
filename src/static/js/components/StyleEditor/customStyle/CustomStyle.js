@@ -79,11 +79,16 @@ CustomStyle.prototype.render = function () {
   return this.element;
 };
 
-CustomStyle.prototype.setLayerId = function (layerId) {
-  this.layerId = layerId;
+/**
+ * Conserve les champs pour les futurs panneaux et actualise les panneaux existants.
+ * @param {string[]} fields Champs disponibles.
+ * @returns {void}
+ */
+CustomStyle.prototype.setFields = function (fields) {
+  this.fields = fields;
   Object.values(this.panels).forEach((panel) => {
-    panel.methods.setLayerId(layerId);
+    panel.methods.setFields(fields);
   });
-}
+};
 
 export default CustomStyle;

@@ -22,6 +22,11 @@ const StyleEditor = function (options = {}) {
   this.element.addEventListener(STYLE_EDITOR_EVENTS.LOAD_OPTIONS, (event) => {
     this.reset(event.detail);
   });
+  this.element.addEventListener(STYLE_EDITOR_EVENTS.SHOW_FIELDS, (event) => {
+    if (event.detail.layerId !== this.layerId) return;
+
+    this.setFields(event.detail.fields);
+  });
 };
 
 /**
@@ -35,10 +40,12 @@ const StyleEditor = function (options = {}) {
  * @returns {void} Recharge le contenu et ses événements sans changer le mode actif.
  */
 StyleEditor.prototype.reset = function (options = {}) {
+  if (options.layerId && options.layerId !== this.layerId) {
+    this.options.fields = [];
+  }
   this.options = { ...this.options, ...options };
   this.layerId = this.options.layerId || null;
   this.customStyle = new CustomStyle(this.options);
-  this.customStyle.layerId = this.layerId;
   this.styleSelector = new StyleSelector(this.options);
   this.tmsStyle = new TmsStyle();
   this.render();
@@ -50,6 +57,10 @@ StyleEditor.prototype.reset = function (options = {}) {
  * @returns {void}
  */
 StyleEditor.prototype.setActiveMode = function (mode) {
+  if (mode === STYLE_MODES.CUSTOM && this.layerId) {
+    const layer = config.temp.layers[this.layerId];
+    if (layer && layer.fields) this.setFields(Object.keys(layer.fields));
+  }
   this.activeMode = mode;
   this.element.querySelectorAll("[data-style-mode]").forEach((button) => {
     const isActive = button.dataset.styleMode === mode;
@@ -98,13 +109,17 @@ StyleEditor.prototype.appendTo = function (target) {
 };
 
 StyleEditor.prototype.setLayerId = function (layerId) {
-  this.options.layerId = layerId;
-  this.layerId = layerId;
-  this.customStyle.setLayerId(layerId);
+  this.reset({ layerId });
 };
 
+/**
+ * Conserve les champs pour les prochains panneaux et actualise les panneaux existants.
+ * @param {string[]} fields Champs disponibles pour la couche active.
+ * @returns {void}
+ */
 StyleEditor.prototype.setFields = function (fields) {
-  this.reset({ fields });
+  this.options.fields = fields;
+  this.customStyle.setFields(fields);
 };
 
 export default StyleEditor;
