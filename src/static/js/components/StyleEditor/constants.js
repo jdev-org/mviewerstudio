@@ -60,6 +60,7 @@ export const STYLE_TYPES = [
     description: "style_editor.type.proportionalCircles.description",
     geom: ["Point"],
     methods: ["jenk", "equalInterval", "quantiles"],
+    rules: ["size", "fill", "stroke"],
     img: "img/styler/style_cercle_prop.png",
   },
   {
@@ -67,6 +68,7 @@ export const STYLE_TYPES = [
     label: "style_editor.type.proportionalColoredCircles",
     description: "style_editor.type.proportionalColoredCircles.description",
     geom: ["Point"],
+    rules: ["size", "fill", "stroke", "methods", "classes"],
     methods: ["jenk", "equalInterval", "quantiles"],
     img: "img/styler/style_cercle_prop_color.png",
   },
@@ -74,6 +76,7 @@ export const STYLE_TYPES = [
     value: "categorized",
     label: "style_editor.type.categorized",
     description: "style_editor.type.categorized.description",
+    rules: ["size", "fill", "stroke", "symbolizer"],
     geom: ["Point", "Polygon", "LineString"],
     maxClasses: 10,
     img: "img/styler/style_categ.png",

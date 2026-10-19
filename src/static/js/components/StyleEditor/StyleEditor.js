@@ -4,7 +4,7 @@ import StyleSelector from "./styleSelector/styleSelector.js";
 import TmsStyle from "./tmsStyle/tmsStyle.js";
 import LegendSelector from "../legendSelector/legendSelector.js";
 import { analyse, categorize } from "../../utils/styler/methods.js";
-import { createColorRampScales } from "../../utils/styler/rampColor.js";
+import { createColorRampScales, crandomColorBClass } from "../../utils/styler/rampColor.js";
 
 /**
  * Sélecteur du mode de création d'un style de couche.
@@ -92,7 +92,14 @@ StyleEditor.prototype.calculate = async function (event) {
     if (rules.length === 0) {
       throw new Error(mviewer.tr("style_editor.error.no_classes"));
     }
-    const colors = createColorRampScales(color, rules.length, reverseColors);
+    let colors;
+    if (type === "categorized") {
+      colors = crandomColorBClass(globalThis.chroma.random().hex(), rules.length);
+    } else if (type === "proportionalCircles") {
+      colors = Array(rules.length).fill(color);
+    } else {
+      colors = createColorRampScales(color, rules.length, reverseColors);
+    }
     rules.forEach((rule, index) => {
       if (geometry === "LineString") {
         rule.stroke = { color: colors[index] };

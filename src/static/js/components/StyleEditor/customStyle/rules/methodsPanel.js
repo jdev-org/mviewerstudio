@@ -1,4 +1,10 @@
-import { CLASSIFICATION_METHODS, CLASSIFICATION_TOOLTIPS, DEFAULT_COLOR_SCALE } from "../../constants.js";
+import {
+  CLASSIFICATION_METHODS,
+  CLASSIFICATION_TOOLTIPS,
+  DEFAULT_COLOR_SCALE,
+  DEFAULT_FILL,
+} from "../../constants.js";
+import { createField } from "./fields.js";
 import PaletteSelector from "./paletteSelector.js";
 import Tooltip from "../../../tooltip/tooltip.js";
 import Select from "../../../select/select.js";
@@ -23,7 +29,7 @@ export default class MethodsPanel {
       legend: "",
       method: methods[0].value,
       classes: 5,
-      color: DEFAULT_COLOR_SCALE,
+      color: type === "proportionalCircles" ? DEFAULT_FILL.color : DEFAULT_COLOR_SCALE,
       reverseColors: false,
       ...state,
     };
@@ -98,25 +104,36 @@ export default class MethodsPanel {
 
       for (const name of ["legend", "method", "classes"])
         this.element.querySelector(`[name="${name}"]`).value = this.state[name];
-    }
 
-    this.paletteSelector = new PaletteSelector({
-      value: this.state.color,
-      classes: this.state.classes,
-      reverseColors: this.state.reverseColors,
-    });
-    const colorsField = document.createElement("div");
-    colorsField.appendChild(this.paletteSelector.render());
-    colorsField.insertAdjacentHTML(
-      "beforeend",
-      `<div class="custom-control custom-checkbox style-methods__reverse">
-        <input type="checkbox" class="custom-control-input" name="reverseColors" id="${this.paletteSelector.id}-reverse">
-        <label class="custom-control-label" for="${this.paletteSelector.id}-reverse">
-          ${mviewer.tr("style_editor.classification.reverse_colors")}
-        </label>
-      </div>`
-    );
-    fields.appendChild(colorsField);
+      if (this.type === "proportionalCircles") {
+        fields.appendChild(
+          createField(
+            { name: "color", label: "style_editor.field.color", type: "color" },
+            this.state.color
+          )
+        );
+      } else {
+        this.paletteSelector = new PaletteSelector({
+          value: this.state.color,
+          classes: this.state.classes,
+          reverseColors: this.state.reverseColors,
+        });
+        const colorsField = document.createElement("div");
+        colorsField.appendChild(this.paletteSelector.render());
+        colorsField.insertAdjacentHTML(
+          "beforeend",
+          `<div class="custom-control custom-checkbox style-methods__reverse">
+          <input type="checkbox" class="custom-control-input" name="reverseColors" id="${this.paletteSelector.id}-reverse">
+          <label class="custom-control-label" for="${this.paletteSelector.id}-reverse">
+            ${mviewer.tr("style_editor.classification.reverse_colors")}
+          </label>
+        </div>`
+        );
+        fields.appendChild(colorsField);
+        colorsField.querySelector('[name="reverseColors"]').checked =
+          this.state.reverseColors;
+      }
+    }
 
     fields.insertAdjacentHTML(
       "beforeend",
@@ -127,8 +144,6 @@ export default class MethodsPanel {
       <p class="text-danger d-none" role="alert" data-classification-error></p>
     `
     );
-
-    this.element.querySelector('[name="reverseColors"]').checked = this.state.reverseColors;
 
     const calculate = this.element.querySelector(".style-methods__actions button");
 
@@ -146,13 +161,16 @@ export default class MethodsPanel {
 
     this.element.onchange = (event) => {
       this.readState();
-      if (event.target.name === "classes") {
+      if (event.target.name === "classes" && this.paletteSelector) {
         if (event.target.checkValidity()) {
           this.paletteSelector.updatePreviews(this.state.classes);
         }
       }
       if (event.target.name === "reverseColors") {
-        this.paletteSelector.updatePreviews(this.paletteSelector.classes, this.state.reverseColors);
+        this.paletteSelector.updatePreviews(
+          this.paletteSelector.classes,
+          this.state.reverseColors
+        );
       }
 
       this.element.dispatchEvent(
