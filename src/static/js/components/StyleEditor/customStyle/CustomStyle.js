@@ -1,8 +1,10 @@
 import ListStyleTypeSelector from "./listStyleTypeSelector.js";
 import ListCard from "../../listCard/listCard.js";
-import MethodsPanel from "./rules/methodsPanel.js";
-import RulesPanel from "./rules/rulesPanel.js";
-import { STYLE_TYPES, CLASSIFICATION_METHODS } from "../constants.js";
+import ClassificationPanel from "./ClassificationPanel.js";
+import AccordionClassificationPanel from "./accordionClassificationPanel.js";
+import { STYLE_TYPES } from "../constants.js";
+
+let customStyleId = 0;
 
 /**
  * Conteneur de l'éditeur de style personnalisé.
@@ -19,6 +21,8 @@ const CustomStyle = function ({ geometry = "Point", fields = [] } = {}) {
   this.element = this.card.element;
   this.styleTypeSelector = new ListStyleTypeSelector(geometry);
   this.content = document.createElement("div");
+  customStyleId += 1;
+  this.content.id = `style-classifications-${customStyleId}`;
   this.styleTypeSelector.element.addEventListener("style-type-change", (event) =>
     this.showType(event.detail)
   );
@@ -30,32 +34,37 @@ const CustomStyle = function ({ geometry = "Point", fields = [] } = {}) {
  */
 CustomStyle.prototype.showType = function (type) {
   if (!this.panels[type]) {
-    const definition = STYLE_TYPES.find((item) => item.value === type);
-    let methods = CLASSIFICATION_METHODS;
-    if (definition.methods)
-      methods = methods.filter((method) => definition.methods.includes(method.value));
-    this.panels[type] = {
-      methods: new MethodsPanel({ fields: this.fields, type, methods, styleProp: definition.styleProp }),
-      rules: new RulesPanel({ geometry: this.geometry, type }),
-    };
-    const panels = this.panels[type];
-    panels.methods.element.addEventListener("calculate", (event) => {
-      event.stopPropagation();
-      this.element.dispatchEvent(
-        new CustomEvent("calculate", {
-          bubbles: true,
-          detail: {
-            ...event.detail,
-            type,
-            geometry: this.geometry,
-            setRules: (rules) => panels.rules.setRules(rules),
-          },
-        })
-      );
-    });
+    const options = { type, fields: this.fields, geometry: this.geometry };
+    if (type === "proportionalColoredCircles") {
+      const definition = STYLE_TYPES.find((item) => item.value === "proportionalCircles");
+      this.panels[type] = new AccordionClassificationPanel({
+        ...options,
+        parentId: this.content.id,
+        expanded: true,
+        type: "proportionalCircles",
+        styleProp: definition.styleProp.filter(
+          (property) => property !== "color" && property !== "ramps"
+        ),
+        ruleMode: "size",
+        title: "style_editor.classification.circle_sizes",
+      });
+      this.panels[type].colorClassification = new AccordionClassificationPanel({
+        ...options,
+        parentId: this.content.id,
+        type: "analyse",
+        ruleMode: "color",
+        title: "style_editor.classification.circle_colors",
+      });
+    } else {
+      this.panels[type] = new ClassificationPanel(options);
+    }
   }
   const panels = this.panels[type];
-  this.content.replaceChildren(panels.methods.render(), panels.rules.render());
+  this.content.classList.toggle("accordion", panels.colorClassification !== undefined);
+  this.content.replaceChildren(panels.render());
+  if (panels.colorClassification) {
+    this.content.appendChild(panels.colorClassification.render());
+  }
 };
 
 /** Retourne la configuration saisie, sans transformation SLD.
@@ -64,12 +73,15 @@ CustomStyle.prototype.showType = function (type) {
 CustomStyle.prototype.getValue = function () {
   const type = this.styleTypeSelector.value;
   const panels = this.panels[type];
-  return {
+  const value = {
     type,
     geometry: this.geometry,
-    ...panels.methods.state,
-    rules: structuredClone(panels.rules.rules),
+    ...panels.getValue(),
   };
+  if (panels.colorClassification) {
+    value.colorClassification = panels.colorClassification.getValue();
+  }
+  return value;
 };
 
 /**
@@ -91,6 +103,9 @@ CustomStyle.prototype.setFields = function (fields) {
   this.fields = fields;
   Object.values(this.panels).forEach((panel) => {
     panel.methods.setFields(fields);
+    if (panel.colorClassification) {
+      panel.colorClassification.methods.setFields(fields);
+    }
   });
 };
 

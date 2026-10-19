@@ -1,13 +1,26 @@
 import RuleConfig from "./ruleConfig.js";
-import { DEFAULT_FILL, DEFAULT_STROKE, DEFAULT_SYMBOL } from "../../constants.js";
+import {
+  DEFAULT_FILL,
+  DEFAULT_STROKE,
+  DEFAULT_SYMBOL,
+  DEFAULT_SIZE_COLOR,
+} from "../../constants.js";
 import { createField } from "./fields.js";
+
+let rulesPanelId = 0;
 
 /** Tableau éditable des règles, sans génération statistique ni palette. */
 export default class RulesPanel {
-  constructor({ geometry = "Point", type = "simple", rules = [] } = {}) {
+  constructor({
+    geometry = "Point",
+    type = "simple",
+    rules = [],
+    ruleMode = "all",
+  } = {}) {
     this.geometry = geometry;
 
     this.type = type;
+    this.ruleMode = ruleMode;
 
     this.rules = rules.map((rule) => this.prepareRule(rule));
 
@@ -16,6 +29,8 @@ export default class RulesPanel {
     this.element = document.createElement("div");
 
     this.element.className = "style-rules";
+    rulesPanelId += 1;
+    this.element.id = `style-rules-${rulesPanelId}`;
 
     this.config = new RuleConfig();
 
@@ -31,7 +46,10 @@ export default class RulesPanel {
       value: "",
       min: 0,
       max: 1,
-      fill: { ...DEFAULT_FILL },
+      fill: {
+        ...DEFAULT_FILL,
+        color: this.ruleMode === "size" ? DEFAULT_SIZE_COLOR : DEFAULT_FILL.color,
+      },
       stroke: { ...DEFAULT_STROKE },
       symbol: { ...DEFAULT_SYMBOL },
     };
@@ -99,7 +117,7 @@ export default class RulesPanel {
   render() {
     this.element.innerHTML = `
       <div class="style-rules__scroll">
-        <table>
+        <table id="${this.element.id}-table">
           <thead>
             <tr>
               <th><input type="checkbox" aria-label="${mviewer.tr("style_editor.rule.select_all")}" data-all></th>
@@ -215,6 +233,7 @@ export default class RulesPanel {
     preview.addEventListener("click", () => {
       this.config.open({
         geometry: this.geometry,
+        ruleMode: this.ruleMode,
         rule,
         onSave: (updatedRule) => {
           this.rules[index] = updatedRule;

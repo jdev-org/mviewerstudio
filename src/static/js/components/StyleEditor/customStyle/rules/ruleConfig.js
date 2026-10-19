@@ -13,8 +13,8 @@ export default class RuleConfig {
   /** Ouvre une copie de la règle ; seule la validation transmet les changements.
    * @param {Object} options Géométrie, règle et callback onSave.
    */
-  open({ geometry, rule, onSave }) {
-    const panel = new RuleConfigPanel({ geometry, rule });
+  open({ geometry, rule, ruleMode = "all", onSave }) {
+    const panel = new RuleConfigPanel({ geometry, rule, ruleMode });
 
     this.element.innerHTML = `
       <form>
@@ -59,7 +59,9 @@ export default class RuleConfig {
         }
       }
 
-      onSave({ ...rule, ...panel.getValue() });
+      const values = panel.getValue();
+      if (values.symbol) values.symbol = { ...rule.symbol, ...values.symbol };
+      onSave({ ...rule, ...values });
 
       this.element.close();
     });

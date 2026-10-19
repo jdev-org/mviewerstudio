@@ -42,7 +42,6 @@ export const STYLE_TYPES = [
     label: "style_editor.type.simple",
     description: "style_editor.type.simple.description",
     geom: ["Point", "LineString", "Polygon"],
-    rules: ["size", "fill", "stroke", "symbolizer"],
     img: "img/styler/style_simple.png",
     styleProp: [],
   },
@@ -52,9 +51,8 @@ export const STYLE_TYPES = [
     description: "style_editor.type.analyse.description",
     geom: ["Point", "Polygon", "LineString"],
     methods: ["jenk", "equalInterval", "quantiles"],
-    rules: ["size", "fill", "stroke", "methods", "classes"],
     img: "img/styler/style_degrade.png",
-    styleProp: ["methods", "field", "classes", "ramps"]
+    styleProp: ["field", "methods", "ramps", "classes"]
 
   },
   {
@@ -63,25 +61,22 @@ export const STYLE_TYPES = [
     description: "style_editor.type.proportionalCircles.description",
     geom: ["Point"],
     methods: ["jenk", "equalInterval", "quantiles"],
-    rules: ["size", "fill", "stroke"],
     img: "img/styler/style_cercle_prop.png",
-    styleProp: ["methods", "field", "classes", "color"]
+    styleProp: ["field", "methods", "color", "classes"]
   },
   {
     value: "proportionalColoredCircles",
     label: "style_editor.type.proportionalColoredCircles",
     description: "style_editor.type.proportionalColoredCircles.description",
     geom: ["Point"],
-    rules: ["size", "fill", "stroke", "methods", "classes"],
     methods: ["jenk", "equalInterval", "quantiles"],
     img: "img/styler/style_cercle_prop_color.png",
-    styleProp: ["methods", "field", "classes", "ramps"]
+    styleProp: ["field", "methods", "ramps", "classes"],
   },
   {
     value: "categorized",
     label: "style_editor.type.categorized",
     description: "style_editor.type.categorized.description",
-    rules: ["size", "fill", "stroke", "symbolizer"],
     geom: ["Point", "Polygon", "LineString"],
     maxClasses: 10,
     styleProp: ["field", "randomColor"],
@@ -92,7 +87,6 @@ export const STYLE_TYPES = [
     label: "style_editor.type.cluster",
     description: "style_editor.type.cluster.description",
     geom: ["Point", "Polygon", "LineString"],
-    rules: ["size", "fill", "stroke", "classes", "classesMinMax"],
     styleProp: ["field", "distance"],
     img: "img/styler/style_cluster_regroup.png",
   },
@@ -100,6 +94,7 @@ export const STYLE_TYPES = [
 
 export const DEFAULT_FILL = { color: "#9e5698", opacity: 1 };
 export const DEFAULT_COLOR_SCALE = "Purples";
+export const DEFAULT_SIZE_COLOR = "#808080";
 export const DEFAULT_CLUSTER_DISTANCE = 40;
 export const DEFAULT_STROKE = {
   color: "#ffffff",

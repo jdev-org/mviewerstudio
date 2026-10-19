@@ -42,7 +42,7 @@ export default class MethodsPanel {
     this.element = document.createElement("div");
 
     this.element.className = "style-methods";
-    this.card = new ListCard({ title: mviewer.tr("style_editor.classification.title") });
+    this.card = new ListCard({classes: "style-methods__card"});
     this.fieldSelect = new Select({
       label: mviewer.tr("style_editor.classification.field"),
       placeholder: mviewer.tr("style_editor.classification.placeholder"),

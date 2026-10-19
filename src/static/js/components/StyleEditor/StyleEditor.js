@@ -38,7 +38,7 @@ const StyleEditor = function (options = {}) {
  * @returns {Promise<void>} Actualise les règles ou affiche l'erreur dans le panneau.
  */
 StyleEditor.prototype.calculate = async function (event) {
-  const { field, method, classes, color, reverseColors, type, geometry, setRules } = event.detail;
+  const { field, method, classes, color, reverseColors, type, geometry, ruleMode, setRules } = event.detail;
   const { styleProp } = STYLE_TYPES.find((definition) => definition.value === type);
   const button = event.target.querySelector(".style-methods__actions button");
   const message = event.target.querySelector("[data-classification-error]");
@@ -102,6 +102,7 @@ StyleEditor.prototype.calculate = async function (event) {
       colors = Array(rules.length).fill(color);
     }
     rules.forEach((rule, index) => {
+      if (ruleMode === "size") return;
       if (geometry === "LineString") {
         rule.stroke = { color: colors[index] };
       } else {
