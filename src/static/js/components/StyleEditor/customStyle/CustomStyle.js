@@ -35,7 +35,7 @@ CustomStyle.prototype.showType = function (type) {
     if (definition.methods)
       methods = methods.filter((method) => definition.methods.includes(method.value));
     this.panels[type] = {
-      methods: new MethodsPanel({ fields: this.fields, type, methods }),
+      methods: new MethodsPanel({ fields: this.fields, type, methods, styleProp: definition.styleProp }),
       rules: new RulesPanel({ geometry: this.geometry, type }),
     };
     const panels = this.panels[type];

@@ -3,6 +3,8 @@ import {
   CLASSIFICATION_TOOLTIPS,
   DEFAULT_COLOR_SCALE,
   DEFAULT_FILL,
+  DEFAULT_CLUSTER_DISTANCE,
+  STYLE_TYPES,
 } from "../../constants.js";
 import { createField } from "./fields.js";
 import PaletteSelector from "./paletteSelector.js";
@@ -16,6 +18,7 @@ export default class MethodsPanel {
     fields = [],
     type = "simple",
     methods = CLASSIFICATION_METHODS,
+    styleProp = STYLE_TYPES.find((definition) => definition.value === type).styleProp,
     state = {},
   } = {}) {
     this.fields = fields;
@@ -23,13 +26,15 @@ export default class MethodsPanel {
     this.type = type;
 
     this.methods = methods;
+    this.styleProp = styleProp;
 
     this.state = {
       field: "",
       legend: "",
       method: methods[0].value,
       classes: 5,
-      color: type === "proportionalCircles" ? DEFAULT_FILL.color : DEFAULT_COLOR_SCALE,
+      color: styleProp.includes("ramps") ? DEFAULT_COLOR_SCALE : DEFAULT_FILL.color,
+      distance: DEFAULT_CLUSTER_DISTANCE,
       reverseColors: false,
       ...state,
     };
@@ -49,89 +54,86 @@ export default class MethodsPanel {
   render() {
     this.element.replaceChildren();
 
-    if (this.type === "simple") return this.element;
+    if (this.styleProp.length === 0) return this.element;
 
     const fields = document.createElement("div");
     fields.className = "style-fields";
-    fields.appendChild(this.fieldSelect.render());
     this.element.appendChild(fields);
+    this.paletteSelector = null;
 
-    const select = this.fieldSelect.getSelect();
-    select.name = "field";
-    select.required = true;
-    this.setFields(this.fields);
-
-    if (this.type === "categorized") {
-      const title = this.fieldSelect.element.querySelector("label");
-
-      title.textContent = mviewer.tr("style_editor.classification.category_field") + " ";
-      new Tooltip({ message: mviewer.tr(CLASSIFICATION_TOOLTIPS.categories) }).appendTo(
-        title
-      );
-    }
-
-    if (this.type !== "categorized") {
-      fields.insertAdjacentHTML(
-        "beforeend",
-        `
-        <label>${mviewer.tr("style_editor.classification.legend")}<input class="form-control" name="legend" /></label>
-        <label>
-          ${mviewer.tr("style_editor.classification.method")}
-          <select class="form-control" name="method"></select>
-        </label>
-        <label>
-          <span data-classes-title>${mviewer.tr("style_editor.classification.classes")} </span>
-          <input
-              class="form-control"
-              name="classes"
-              type="number"
-              min="1"
-              max="7"
-              required />
-        </label>
-        `
-      );
-
-      new Tooltip({ message: mviewer.tr(CLASSIFICATION_TOOLTIPS.classes) }).appendTo(
-        this.element.querySelector("[data-classes-title]")
-      );
-
-      const method = this.element.querySelector('[name="method"]');
-
-      this.methods.forEach((item) =>
-        method.add(new Option(mviewer.tr(item.label), item.value))
-      );
-
-      for (const name of ["legend", "method", "classes"])
-        this.element.querySelector(`[name="${name}"]`).value = this.state[name];
-
-      if (this.type === "proportionalCircles") {
+    for (const property of this.styleProp) {
+      if (property === "field") {
+        fields.appendChild(this.fieldSelect.render());
+        const select = this.fieldSelect.getSelect();
+        select.name = "field";
+        select.required = true;
+        this.setFields(this.fields);
+        if (this.styleProp.includes("randomColor")) {
+          const title = this.fieldSelect.element.querySelector("label");
+          title.textContent =
+            mviewer.tr("style_editor.classification.category_field") + " ";
+          new Tooltip({
+            message: mviewer.tr(CLASSIFICATION_TOOLTIPS.categories),
+          }).appendTo(title);
+        }
+      }
+      if (property === "methods") {
         fields.appendChild(
           createField(
-            { name: "color", label: "style_editor.field.color", type: "color" },
+            {
+              name: "method",
+              label: "style_editor.classification.method",
+              options: this.methods,
+            },
+            this.state.method
+          )
+        );
+      }
+      if (property === "classes") {
+        const field = createField(
+          {
+            name: "classes",
+            label: "style_editor.classification.classes",
+            type: "number",
+            min: 1,
+            max: 7,
+          },
+          this.state.classes
+        );
+        const tooltip = new Tooltip({
+          message: mviewer.tr(CLASSIFICATION_TOOLTIPS.classes),
+          classes: "ms-1",
+        });
+        field.insertBefore(tooltip.render(), field.querySelector("input"));
+        fields.appendChild(field);
+      }
+      if (property === "distance") {
+        fields.appendChild(
+          createField(
+            {
+              name: "distance",
+              label: "style_editor.field.distance",
+              type: "number",
+              min: 0,
+            },
+            this.state.distance
+          )
+        );
+      }
+      if (property === "color") {
+        fields.appendChild(
+          createField(
+            {
+              name: "color",
+              label: "style_editor.field.color",
+              type: "color",
+            },
             this.state.color
           )
         );
-      } else {
-        this.paletteSelector = new PaletteSelector({
-          value: this.state.color,
-          classes: this.state.classes,
-          reverseColors: this.state.reverseColors,
-        });
-        const colorsField = document.createElement("div");
-        colorsField.appendChild(this.paletteSelector.render());
-        colorsField.insertAdjacentHTML(
-          "beforeend",
-          `<div class="custom-control custom-checkbox style-methods__reverse">
-          <input type="checkbox" class="custom-control-input" name="reverseColors" id="${this.paletteSelector.id}-reverse">
-          <label class="custom-control-label" for="${this.paletteSelector.id}-reverse">
-            ${mviewer.tr("style_editor.classification.reverse_colors")}
-          </label>
-        </div>`
-        );
-        fields.appendChild(colorsField);
-        colorsField.querySelector('[name="reverseColors"]').checked =
-          this.state.reverseColors;
+      }
+      if (property === "ramps") {
+        fields.appendChild(this.renderPalette());
       }
     }
 
@@ -181,6 +183,30 @@ export default class MethodsPanel {
     this.element.replaceChildren(this.card.setItems([fields]));
 
     return this.element;
+  }
+
+  /** @returns {HTMLElement} Liste de palettes et option d'inversion. */
+  renderPalette() {
+    this.paletteSelector = new PaletteSelector({
+      value: this.state.color,
+      classes: this.state.classes,
+      reverseColors: this.state.reverseColors,
+    });
+    const field = document.createElement("div");
+    field.appendChild(this.paletteSelector.render());
+    field.insertAdjacentHTML(
+      "beforeend",
+      `
+      <div class="custom-control custom-checkbox style-methods__reverse">
+        <input type="checkbox" class="custom-control-input" name="reverseColors" id="${this.paletteSelector.id}-reverse">
+        <label class="custom-control-label" for="${this.paletteSelector.id}-reverse">
+          ${mviewer.tr("style_editor.classification.reverse_colors")}
+        </label>
+      </div>
+    `
+    );
+    field.querySelector('[name="reverseColors"]').checked = this.state.reverseColors;
+    return field;
   }
 
   /** Synchronise les paramètres avec les valeurs actuelles des champs. */

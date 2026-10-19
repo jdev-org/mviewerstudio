@@ -1,4 +1,4 @@
-import { STYLE_MODES, STYLE_CHOICES, STYLE_EDITOR_EVENTS } from "./constants.js";
+import { STYLE_MODES, STYLE_CHOICES, STYLE_EDITOR_EVENTS, STYLE_TYPES } from "./constants.js";
 import CustomStyle from "./customStyle/CustomStyle.js";
 import StyleSelector from "./styleSelector/styleSelector.js";
 import TmsStyle from "./tmsStyle/tmsStyle.js";
@@ -39,6 +39,7 @@ const StyleEditor = function (options = {}) {
  */
 StyleEditor.prototype.calculate = async function (event) {
   const { field, method, classes, color, reverseColors, type, geometry, setRules } = event.detail;
+  const { styleProp } = STYLE_TYPES.find((definition) => definition.value === type);
   const button = event.target.querySelector(".style-methods__actions button");
   const message = event.target.querySelector("[data-classification-error]");
   const layerId = this.layerId;
@@ -73,7 +74,7 @@ StyleEditor.prototype.calculate = async function (event) {
     const data = collection.features.map((feature) => feature.properties);
     let rules;
 
-    if (type === "categorized") {
+    if (styleProp.includes("randomColor")) {
       const values = categorize(data, field);
       if (values.length > 10) {
         throw new Error(mviewer.tr("style_editor.error.too_many_categories"));
@@ -93,12 +94,12 @@ StyleEditor.prototype.calculate = async function (event) {
       throw new Error(mviewer.tr("style_editor.error.no_classes"));
     }
     let colors;
-    if (type === "categorized") {
+    if (styleProp.includes("randomColor")) {
       colors = crandomColorBClass(globalThis.chroma.random().hex(), rules.length);
-    } else if (type === "proportionalCircles") {
-      colors = Array(rules.length).fill(color);
-    } else {
+    } else if (styleProp.includes("ramps")) {
       colors = createColorRampScales(color, rules.length, reverseColors);
+    } else {
+      colors = Array(rules.length).fill(color);
     }
     rules.forEach((rule, index) => {
       if (geometry === "LineString") {
