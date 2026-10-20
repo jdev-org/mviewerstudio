@@ -1,5 +1,10 @@
 /* Styles propres au contenu de layer-style-tab. */
 
+.style-editor .tooltip-icon,
+.style-editor .tooltip-info {
+	margin-inline-start: 0.25rem;
+}
+
 .layer-style {
 	margin-bottom: 1em;
 }
