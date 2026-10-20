@@ -16,6 +16,7 @@ import {
 } from "../../utils/styler/rampColor.js";
 import { calculateCircleSizes } from "../../utils/styler/circleSizes.js";
 import { getStyleGeometry } from "../../utils/styler/style.js";
+import { loadSldStyle } from "../../utils/styler/readStyle.js";
 
 /**
  * Sélecteur du mode de création d'un style de couche.
@@ -24,7 +25,10 @@ import { getStyleGeometry } from "../../utils/styler/style.js";
  */
 const StyleEditor = function (options = {}) {
   this.options = { ...options };
-  this.activeMode = options.styleMode || STYLE_MODES.EXISTING;
+  this.activeMode =
+    options.styleMode || (options.customsld ? STYLE_MODES.CUSTOM : STYLE_MODES.EXISTING);
+  this.loadingCustomStyle = false;
+  this.styleLoadError = null;
   this.element = document.createElement("div");
   this.element.className = "style-editor";
   this.customStyle = new CustomStyle({ ...options, state: options.customStyle });
@@ -45,6 +49,10 @@ const StyleEditor = function (options = {}) {
   });
   this.element.addEventListener(STYLE_EDITOR_EVENTS.SAVE, (event) => {
     if (this.activeMode === STYLE_MODES.CUSTOM) {
+      if (this.loadingCustomStyle || this.styleLoadError) {
+        event.preventDefault();
+        return;
+      }
       const inputs = [...this.customStyle.element.querySelectorAll("input, select")];
       if (!inputs.every((input) => input.reportValidity())) {
         event.preventDefault();
@@ -57,6 +65,53 @@ const StyleEditor = function (options = {}) {
       event.detail.mapId
     );
   });
+  if (options.customsld && options.sld && !options.customStyle) {
+    this.customStyleLoadPromise = this.loadCustomStyle();
+  }
+};
+
+/**
+ * Précharge le SLD Studio et ignore les réponses d'une couche quittée entre-temps.
+ * @returns {Promise<void>} Restaure le formulaire ou affiche l'erreur de lecture.
+ */
+StyleEditor.prototype.loadCustomStyle = async function () {
+  const request = {};
+  this.styleLoadRequest = request;
+  this.loadingCustomStyle = true;
+  this.styleLoadError = null;
+  this.updateLoadStatus();
+  try {
+    const saved = await loadSldStyle(this.options.sld);
+    if (this.styleLoadRequest !== request) return;
+    this.options.customStyle = saved.configuration;
+    this.options.geoStylerStyle = saved.geoStylerStyle;
+    this.options.geometry = saved.configuration.geometry;
+    this.customStyle = new CustomStyle({ ...this.options, state: saved.configuration });
+    this.customStyle.geoStylerStyle = structuredClone(saved.geoStylerStyle);
+    this.loadingCustomStyle = false;
+    this.render();
+  } catch (error) {
+    if (this.styleLoadRequest !== request) return;
+    this.loadingCustomStyle = false;
+    this.styleLoadError = error;
+    this.updateLoadStatus();
+  }
+};
+
+/** Affiche le chargement ou son erreur et protège le formulaire pendant la lecture.
+ * @returns {void}
+ */
+StyleEditor.prototype.updateLoadStatus = function () {
+  const failed = this.styleLoadError !== null;
+  this.customStyle.element.inert = this.loadingCustomStyle || failed;
+  this.customStyle.element.setAttribute("aria-busy", this.loadingCustomStyle);
+  const status = this.element.querySelector("[data-style-load-status]");
+  if (!status) return;
+  status.textContent = "";
+  if (this.loadingCustomStyle)
+    status.textContent = mviewer.tr("style_editor.loading_sld");
+  if (this.styleLoadError) status.textContent = mviewer.tr("style_editor.error.load_sld");
+  status.classList.toggle("text-danger", failed);
 };
 
 /**
@@ -92,6 +147,9 @@ StyleEditor.prototype.setGeometry = function (geometry) {
  */
 StyleEditor.prototype.saveToLayer = async function (layer, name, mapId) {
   const mode = this.activeMode;
+  if (mode === STYLE_MODES.CUSTOM && (this.loadingCustomStyle || this.styleLoadError)) {
+    throw new Error(mviewer.tr("style_editor.error.load_sld"));
+  }
   const customStyle = this.customStyle;
   if (mode === STYLE_MODES.CUSTOM) {
     const saved = await customStyle.save(mapId, name, layer.id);
@@ -99,11 +157,17 @@ StyleEditor.prototype.saveToLayer = async function (layer, name, mapId) {
     layer.geoStylerStyle = saved.geoStylerStyle;
     layer.styleId = saved.styleId;
     layer.sld = saved.sld.filepath;
+    layer.customsld = true;
     layer.jsonStyle = saved.json.filepath;
     if (this.customStyle === customStyle) {
       this.options.customStyle = structuredClone(layer.customStyle);
       this.options.geoStylerStyle = structuredClone(layer.geoStylerStyle);
+      this.options.sld = layer.sld;
+      this.options.customsld = true;
     }
+  } else {
+    layer.customsld = false;
+    this.options.customsld = false;
   }
   layer.styleMode = mode;
   if (this.customStyle === customStyle) this.options.styleMode = mode;
@@ -228,23 +292,35 @@ StyleEditor.prototype.calculate = async function (event) {
  * @returns {void} Recharge le contenu et restaure le mode enregistré sur la couche.
  */
 StyleEditor.prototype.reset = function (options = {}) {
+  this.styleLoadRequest = null;
+  this.loadingCustomStyle = false;
+  this.styleLoadError = null;
   if (options.layerId && options.layerId !== this.layerId) {
     this.options.fields = [];
     this.options.customStyle = null;
     this.options.geoStylerStyle = null;
     this.options.styleMode = STYLE_MODES.EXISTING;
+    this.options.sld = null;
+    this.options.customsld = false;
   }
   this.options = { ...this.options, ...options };
+  if (options.customsld && !options.styleMode)
+    this.options.styleMode = STYLE_MODES.CUSTOM;
   this.layerId = this.options.layerId || null;
   this.customStyle = new CustomStyle({
     ...this.options,
     state: this.options.customStyle,
   });
   this.customStyle.geoStylerStyle = structuredClone(this.options.geoStylerStyle || null);
-  this.activeMode = this.options.styleMode || STYLE_MODES.EXISTING;
+  this.activeMode =
+    this.options.styleMode ||
+    (this.options.customsld ? STYLE_MODES.CUSTOM : STYLE_MODES.EXISTING);
   this.styleSelector = new StyleSelector(this.options);
   this.tmsStyle = new TmsStyle();
   this.render();
+  if (this.options.customsld && this.options.sld && !this.options.customStyle) {
+    this.customStyleLoadPromise = this.loadCustomStyle();
+  }
 };
 
 /**
@@ -279,7 +355,7 @@ StyleEditor.prototype.render = function () {
       <span class="import-type-buttons__title">${mviewer.tr(choice.label)}</span>
     </button>
   `
-  ).join("")}</div>`;
+  ).join("")}</div><p role="status" data-style-load-status></p>`;
   this.element.append(
     this.styleSelector.render(),
     this.tmsStyle.render(),
@@ -291,6 +367,7 @@ StyleEditor.prototype.render = function () {
     button.addEventListener("click", () => this.setActiveMode(button.dataset.styleMode));
   });
   this.setActiveMode(this.activeMode);
+  this.updateLoadStatus();
   return this.element;
 };
 

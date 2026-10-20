@@ -54,6 +54,7 @@ var mv = (function () {
       filterstyle: $(layerInfos).attr("filterstyle"),
       stylesalias: $(layerInfos).attr("stylesalias"),
       sld: $(layerInfos).attr("sld"),
+      customsld: $(layerInfos).attr("customsld") === "true",
       legendurl: $(layerInfos).attr("legendurl"),
       attributefilter: $(layerInfos).attr("attributefilter") === "true",
       showintoc: $(layerInfos).attr("showintoc") != "false",
@@ -834,7 +835,7 @@ var mv = (function () {
 
       if (["wms", "csv"].includes(layer.type)) {
         let defaultStyleMode = "existing";
-        if (layer.type === "csv") defaultStyleMode = "custom";
+        if (layer.type === "csv" || layer.customsld) defaultStyleMode = "custom";
         document.querySelector("#layer-style-editor .style-editor").dispatchEvent(
           new CustomEvent("loadOptions", {
             detail: {
@@ -844,6 +845,8 @@ var mv = (function () {
               stylesLoading: layer.type === "wms",
               customStyle: layer.customStyle,
               geoStylerStyle: layer.geoStylerStyle,
+              sld: layer.sld,
+              customsld: layer.customsld,
               styleMode: layer.styleMode || defaultStyleMode,
             },
           })
@@ -1250,7 +1253,12 @@ var mv = (function () {
       //WMS params
       if (layer.type == "wms") {
         layer["styletitle"] = $("#frm-layer-styletitle").val();
-        if (layer.styleMode !== "custom") layer.sld = $("#frm-sld").val();
+        var selected_styles = $("#frm-lis-styles input[type='checkbox']:checked");
+        if (layer.styleMode !== "custom") {
+          layer.customsld = false;
+          layer.sld = $("#frm-sld").val();
+          if (selected_styles.length > 0) layer.sld = "";
+        }
         if ($("#frm-scalemin").val() >= 0 && $("#frm-scalemax").val() > 0) {
           layer.scalemin = $("#frm-scalemin").val();
           layer.scalemax = $("#frm-scalemax").val();
@@ -1270,7 +1278,6 @@ var mv = (function () {
           layer.attributelabel = label;
         }
         //Styles
-        var selected_styles = $("#frm-lis-styles input[type='checkbox']:checked");
         var style_names = [];
         var style_alias = [];
         switch (selected_styles.length) {
@@ -1375,6 +1382,7 @@ var mv = (function () {
         "useproxy",
         "filter",
         "sld",
+        "customsld",
         "legendurl",
         "scalemin",
         "scalemax",
