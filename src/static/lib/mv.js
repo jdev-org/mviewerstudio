@@ -840,7 +840,15 @@ var mv = (function () {
         $("#frm-layer-dynamiclegend").prop("checked", layer.dynamiclegend);
         document.querySelector("#layer-style-editor .style-editor").dispatchEvent(
           new CustomEvent("loadOptions", {
-            detail: { layerId: layerid, styles: [], stylesLoading: true },
+            detail: {
+              layerId: layerid,
+              geometry: layer.customStyle ? layer.customStyle.geometry : "Point",
+              styles: [],
+              stylesLoading: true,
+              customStyle: layer.customStyle,
+              geoStylerStyle: layer.geoStylerStyle,
+              styleMode: layer.styleMode || "existing",
+            },
           })
         );
         ogc.getStylesFromWMS(layer.url, layerid);
@@ -1129,6 +1137,18 @@ var mv = (function () {
           : config.themes[themeid].groups
               .find((group) => group.id === groupid)
               .layers.find(getLayerbyId);
+
+      if (layer.type === "wms") {
+        const saved = document
+          .querySelector("#layer-style-editor .style-editor")
+          .dispatchEvent(
+            new CustomEvent("saveStyle", {
+              detail: { layer, name: $("#frm-layer-title").val() },
+              cancelable: true,
+            })
+          );
+        if (!saved) return;
+      }
 
       // Commons params
       if (layer.isGrist || layer.url.includes("/download/csv")) {

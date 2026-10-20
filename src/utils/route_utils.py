@@ -117,15 +117,15 @@ def get_layer_styles_directory(id: str):
 
 
 def get_layer_style_file(directory, filename: str):
-    """Validate an SLD basename and prevent traversal or symbolic link access."""
+    """Validate an SLD/JSON basename and prevent traversal or symbolic link access."""
     if (
         not filename
         or "/" in filename
         or "\\" in filename
         or "\x00" in filename
-        or not filename.endswith(".sld")
+        or not filename.endswith((".sld", ".json"))
     ):
-        raise BadRequest("Expected an SLD file name without a directory !")
+        raise BadRequest("Expected an SLD or JSON file name without a directory !")
     file = directory / filename
     if file.is_symlink():
         raise BadRequest("Symbolic links are not allowed for styles !")

@@ -1,10 +1,19 @@
-import { STYLE_MODES, STYLE_CHOICES, STYLE_EDITOR_EVENTS, STYLE_TYPES, DEFAULT_SYMBOL } from "./constants.js";
+import {
+  STYLE_MODES,
+  STYLE_CHOICES,
+  STYLE_EDITOR_EVENTS,
+  STYLE_TYPES,
+  DEFAULT_SYMBOL,
+} from "./constants.js";
 import CustomStyle from "./customStyle/CustomStyle.js";
 import StyleSelector from "./styleSelector/styleSelector.js";
 import TmsStyle from "./tmsStyle/tmsStyle.js";
 import LegendSelector from "../legendSelector/legendSelector.js";
 import { analyse, categorize } from "../../utils/styler/methods.js";
-import { createColorRampScales, crandomColorBClass } from "../../utils/styler/rampColor.js";
+import {
+  createColorRampScales,
+  crandomColorBClass,
+} from "../../utils/styler/rampColor.js";
 import { calculateCircleSizes } from "../../utils/styler/circleSizes.js";
 
 /**
@@ -14,10 +23,11 @@ import { calculateCircleSizes } from "../../utils/styler/circleSizes.js";
  */
 const StyleEditor = function (options = {}) {
   this.options = { ...options };
-  this.activeMode = STYLE_MODES.EXISTING;
+  this.activeMode = options.styleMode || STYLE_MODES.EXISTING;
   this.element = document.createElement("div");
   this.element.className = "style-editor";
-  this.customStyle = new CustomStyle(options);
+  this.customStyle = new CustomStyle({ ...options, state: options.customStyle });
+  this.customStyle.geoStylerStyle = structuredClone(options.geoStylerStyle || null);
   this.styleSelector = new StyleSelector(options);
   this.tmsStyle = new TmsStyle();
   this.legendSelector = new LegendSelector();
@@ -31,6 +41,39 @@ const StyleEditor = function (options = {}) {
 
     this.setFields(event.detail.fields);
   });
+  this.element.addEventListener(STYLE_EDITOR_EVENTS.SAVE, (event) => {
+    if (this.activeMode === STYLE_MODES.CUSTOM) {
+      const inputs = [...this.customStyle.element.querySelectorAll("input, select")];
+      if (!inputs.every((input) => input.reportValidity())) {
+        event.preventDefault();
+        return;
+      }
+    }
+    try {
+      this.saveToLayer(event.detail.layer, event.detail.name);
+    } catch (error) {
+      event.preventDefault();
+      alertCustom(error.message, "danger");
+    }
+  });
+};
+
+/**
+ * Enregistre le style personnalisé et son formulaire sur la couche.
+ * @param {Object} layer Couche modifiée par les options.
+ * @param {string} name Nom du style.
+ * @returns {void} Actualise la couche uniquement après une conversion réussie.
+ */
+StyleEditor.prototype.saveToLayer = function (layer, name) {
+  if (this.activeMode === STYLE_MODES.CUSTOM) {
+    const geoStylerStyle = this.customStyle.save(name);
+    layer.customStyle = this.customStyle.getValue();
+    layer.geoStylerStyle = geoStylerStyle;
+    this.options.customStyle = structuredClone(layer.customStyle);
+    this.options.geoStylerStyle = structuredClone(geoStylerStyle);
+  }
+  layer.styleMode = this.activeMode;
+  this.options.styleMode = this.activeMode;
 };
 
 /**
@@ -39,7 +82,18 @@ const StyleEditor = function (options = {}) {
  * @returns {Promise<void>} Actualise les règles ou affiche l'erreur dans le panneau.
  */
 StyleEditor.prototype.calculate = async function (event) {
-  const { field, method, classes, color, reverseColors, maxSize = DEFAULT_SYMBOL.maxSize, type, geometry, ruleMode, setRules } = event.detail;
+  const {
+    field,
+    method,
+    classes,
+    color,
+    reverseColors,
+    maxSize = DEFAULT_SYMBOL.maxSize,
+    type,
+    geometry,
+    ruleMode,
+    setRules,
+  } = event.detail;
   const { styleProp } = STYLE_TYPES.find((definition) => definition.value === type);
   const button = event.target.querySelector(".style-methods__actions button");
   const message = event.target.querySelector("[data-classification-error]");
@@ -107,7 +161,12 @@ StyleEditor.prototype.calculate = async function (event) {
     if (proportional) sizes = calculateCircleSizes(rules, maxSize);
     rules.forEach((rule, index) => {
       if (proportional) {
-        rule.symbol = { ...DEFAULT_SYMBOL, shape: "circle", minSize: sizes[index], maxSize: sizes[index] };
+        rule.symbol = {
+          ...DEFAULT_SYMBOL,
+          shape: "circle",
+          minSize: sizes[index],
+          maxSize: sizes[index],
+        };
       }
       if (ruleMode === "size") return;
       if (geometry === "LineString") {
@@ -133,15 +192,23 @@ StyleEditor.prototype.calculate = async function (event) {
  * @param {string} [options.geometry] Type de géométrie.
  * @param {string[]} [options.fields] Champs disponibles.
  * @param {string|null} [options.layerId] Identifiant de la couche.
- * @returns {void} Recharge le contenu et ses événements sans changer le mode actif.
+ * @returns {void} Recharge le contenu et restaure le mode enregistré sur la couche.
  */
 StyleEditor.prototype.reset = function (options = {}) {
   if (options.layerId && options.layerId !== this.layerId) {
     this.options.fields = [];
+    this.options.customStyle = null;
+    this.options.geoStylerStyle = null;
+    this.options.styleMode = STYLE_MODES.EXISTING;
   }
   this.options = { ...this.options, ...options };
   this.layerId = this.options.layerId || null;
-  this.customStyle = new CustomStyle(this.options);
+  this.customStyle = new CustomStyle({
+    ...this.options,
+    state: this.options.customStyle,
+  });
+  this.customStyle.geoStylerStyle = structuredClone(this.options.geoStylerStyle || null);
+  this.activeMode = this.options.styleMode || STYLE_MODES.EXISTING;
   this.styleSelector = new StyleSelector(this.options);
   this.tmsStyle = new TmsStyle();
   this.render();

@@ -796,7 +796,7 @@ def proxy() -> Response:
 @basic_store.route("/api/styles/<id>", methods=["GET"])
 def readLayerStyle(id) -> Response:
     """
-    List application SLD files, or read one with the filename query parameter.
+    List application SLD/JSON pairs, or read one file using filename.
 
     :param id: application UUID
     :returns: JSON style list or the requested SLD document (404 if missing)
@@ -805,35 +805,45 @@ def readLayerStyle(id) -> Response:
     filename = request.args.get("filename")
     if filename:
         get_layer_style_file(directory, filename)
-        return send_from_directory(
-            directory, filename, mimetype="application/vnd.ogc.sld+xml"
-        )
+        mimetype = "application/vnd.ogc.sld+xml"
+        if filename.endswith(".json"):
+            mimetype = "application/json"
+        return send_from_directory(directory, filename, mimetype=mimetype)
 
     styles = []
     if directory.is_dir():
         for file in sorted(directory.iterdir()):
             if file.suffix == ".sld" and file.is_file() and not file.is_symlink():
-                styles.append(
-                    {
-                        "filename": file.name,
+                style = {
+                    "filename": file.name,
+                    "filepath": path.join(
+                        current_app.config["CONF_PATH_FROM_MVIEWER"],
+                        relative_directory,
+                        file.name,
+                    ),
+                }
+                json_file = file.with_suffix(".json")
+                if json_file.is_file() and not json_file.is_symlink():
+                    style["json"] = {
+                        "filename": json_file.name,
                         "filepath": path.join(
                             current_app.config["CONF_PATH_FROM_MVIEWER"],
                             relative_directory,
-                            file.name,
+                            json_file.name,
                         ),
                     }
-                )
+                styles.append(style)
     return jsonify({"success": True, "styles": styles})
 
 
 @basic_store.route("/api/styles/<id>", methods=["POST"])
 def saveLayerStyle(id) -> Response:
     """
-    Store an application's UTF-8 SLD document from the raw request body.
+    Store an application's UTF-8 SLD or associated GeoStyler JSON document.
 
     :param id: application UUID
-    :returns: JSON filename and public filepath; filename defaults to a SHA-256 hash
-    :raises BadRequest: for invalid XML, SLD root, encoding or filename
+    :returns: JSON filename and public filepath; a new SLD defaults to a unique UUID
+    :raises BadRequest: for invalid SLD, GeoStyler JSON, encoding or filename
     :raises Unauthorized: when no authenticated user is provided by the proxy
     """
     username = current_user.username.strip()
@@ -844,19 +854,32 @@ def saveLayerStyle(id) -> Response:
     try:
         raw_style = request.data.decode("utf-8")
     except UnicodeDecodeError:
-        raise BadRequest("SLD content must use UTF-8 !")
+        raise BadRequest("Style content must use UTF-8 !")
     if not raw_style.strip():
-        raise BadRequest("Missing SLD document !")
-    root = get_xml_root(raw_style)
-    if root.tag not in (
-        "StyledLayerDescriptor",
-        "{http://www.opengis.net/sld}StyledLayerDescriptor",
-    ):
-        raise BadRequest("Expected a StyledLayerDescriptor document !")
+        raise BadRequest("Missing style document !")
 
     filename = request.args.get("filename")
-    if not filename:
-        filename = f"{hashlib.sha256(raw_style.encode('utf-8')).hexdigest()}.sld"
+    if request.is_json:
+        style = request.get_json()
+        if (
+            not isinstance(style, dict)
+            or not isinstance(style.get("name"), str)
+            or not isinstance(style.get("rules"), list)
+        ):
+            raise BadRequest("Expected a GeoStyler object with name and rules !")
+        if not filename or not filename.endswith(".json"):
+            raise BadRequest("A JSON filename matching the SLD basename is required !")
+    else:
+        root = get_xml_root(raw_style)
+        if root.tag not in (
+            "StyledLayerDescriptor",
+            "{http://www.opengis.net/sld}StyledLayerDescriptor",
+        ):
+            raise BadRequest("Expected a StyledLayerDescriptor document !")
+        if not filename:
+            filename = f"{uuid.uuid4()}.sld"
+        if not filename.endswith(".sld"):
+            raise BadRequest("An SLD document requires an .sld filename !")
     file = get_layer_style_file(directory, filename)
     directory.mkdir(parents=True, exist_ok=True)
     file.write_text(raw_style, encoding="utf-8")

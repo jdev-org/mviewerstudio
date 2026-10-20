@@ -3,6 +3,7 @@ import ListCard from "../../listCard/listCard.js";
 import ClassificationPanel from "./ClassificationPanel.js";
 import AccordionClassificationPanel from "./accordionClassificationPanel.js";
 import { STYLE_TYPES } from "../constants.js";
+import { createGeoStylerStyle } from "../../../utils/styler/style.js";
 
 let customStyleId = 0;
 
@@ -10,9 +11,11 @@ let customStyleId = 0;
  * Conteneur de l'éditeur de style personnalisé.
  * @returns {void}
  */
-const CustomStyle = function ({ geometry = "Point", fields = [] } = {}) {
+const CustomStyle = function ({ geometry = "Point", fields = [], state = null } = {}) {
   this.geometry = geometry;
   this.fields = fields;
+  this.state = state;
+  this.geoStylerStyle = null;
   this.panels = {};
   this.card = new ListCard({
     title: mviewer.tr("style_editor.title"),
@@ -20,6 +23,7 @@ const CustomStyle = function ({ geometry = "Point", fields = [] } = {}) {
   });
   this.element = this.card.element;
   this.styleTypeSelector = new ListStyleTypeSelector(geometry);
+  if (state) this.styleTypeSelector.value = state.type;
   this.content = document.createElement("div");
   customStyleId += 1;
   this.content.id = `style-classifications-${customStyleId}`;
@@ -58,6 +62,15 @@ CustomStyle.prototype.showType = function (type) {
     } else {
       this.panels[type] = new ClassificationPanel(options);
     }
+    if (this.state && this.state.type === type) {
+      this.restoreClassification(this.panels[type], this.state);
+      if (this.state.colorClassification) {
+        this.restoreClassification(
+          this.panels[type].colorClassification,
+          this.state.colorClassification
+        );
+      }
+    }
   }
   const panels = this.panels[type];
   this.content.classList.toggle("accordion", panels.colorClassification !== undefined);
@@ -65,6 +78,31 @@ CustomStyle.prototype.showType = function (type) {
   if (panels.colorClassification) {
     this.content.appendChild(panels.colorClassification.render());
   }
+};
+
+/**
+ * Recharge les paramètres et règles d'une classification enregistrée.
+ * @param {ClassificationPanel} panel Panneau à restaurer.
+ * @param {Object} value Paramètres et règles sauvegardés.
+ * @returns {void}
+ */
+CustomStyle.prototype.restoreClassification = function (panel, value) {
+  const { rules, ...state } = value;
+  panel.methods.state = { ...panel.methods.state, ...structuredClone(state) };
+  const fields = [...this.fields];
+  if (value.field && !fields.includes(value.field)) fields.push(value.field);
+  panel.methods.fields = fields;
+  panel.rules.rules = rules.map((rule) => panel.rules.prepareRule(rule));
+};
+
+/**
+ * Met à jour l'objet GeoStyler à partir des valeurs courantes.
+ * @param {string} name Nom du style.
+ * @returns {Object} Style GeoStyler enregistré.
+ */
+CustomStyle.prototype.save = function (name) {
+  this.geoStylerStyle = createGeoStylerStyle(this.getValue(), name);
+  return structuredClone(this.geoStylerStyle);
 };
 
 /** Retourne la configuration saisie, sans transformation SLD.

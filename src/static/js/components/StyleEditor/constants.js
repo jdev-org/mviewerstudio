@@ -6,6 +6,7 @@ export const STYLE_MODES = {
 export const STYLE_EDITOR_EVENTS = {
   LOAD_OPTIONS: "loadOptions",
   SHOW_FIELDS: "showFields",
+  SAVE: "saveStyle",
 };
 
 export const STYLE_SELECTOR_IDS = {
@@ -52,8 +53,7 @@ export const STYLE_TYPES = [
     geom: ["Point", "Polygon", "LineString"],
     methods: ["jenk", "equalInterval", "quantiles"],
     img: "img/styler/style_degrade.png",
-    styleProp: ["field", "methods", "ramps", "classes"]
-
+    styleProp: ["field", "methods", "ramps", "classes"],
   },
   {
     value: "proportionalCircles",
@@ -131,8 +131,20 @@ export const STROKE_FIELDS = [
   { name: "width", label: "style_editor.field.width", type: "number", min: 0, step: 0.5 },
 ];
 export const SYMBOL_FIELDS = [
-  { name: "minSize", label: "style_editor.field.minSize", type: "number", min: 0, step: "any" },
-  { name: "maxSize", label: "style_editor.field.maxSize", type: "number", min: 0, step: "any" },
+  {
+    name: "minSize",
+    label: "style_editor.field.minSize",
+    type: "number",
+    min: 0,
+    step: "any",
+  },
+  {
+    name: "maxSize",
+    label: "style_editor.field.maxSize",
+    type: "number",
+    min: 0,
+    step: "any",
+  },
   { name: "externalGraphic", label: "style_editor.field.externalGraphic", type: "url" },
 ];
 export const STROKE_TYPES = [
