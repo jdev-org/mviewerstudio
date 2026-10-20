@@ -62,7 +62,7 @@ export const STYLE_TYPES = [
     geom: ["Point"],
     methods: ["jenk", "equalInterval", "quantiles"],
     img: "img/styler/style_cercle_prop.png",
-    styleProp: ["field", "methods", "color", "classes"]
+    styleProp: ["field", "methods", "color", "classes", "maxSize"]
   },
   {
     value: "proportionalColoredCircles",
@@ -96,6 +96,13 @@ export const DEFAULT_FILL = { color: "#9e5698", opacity: 1 };
 export const DEFAULT_COLOR_SCALE = "Purples";
 export const DEFAULT_SIZE_COLOR = "#808080";
 export const DEFAULT_CLUSTER_DISTANCE = 40;
+export const RULE_PREVIEW = {
+  width: 80,
+  height: 48,
+  padding: 4,
+  symbolSize: 24,
+  svgNamespace: "http://www.w3.org/2000/svg",
+};
 export const DEFAULT_STROKE = {
   color: "#ffffff",
   opacity: 1,
@@ -124,8 +131,8 @@ export const STROKE_FIELDS = [
   { name: "width", label: "style_editor.field.width", type: "number", min: 0, step: 0.5 },
 ];
 export const SYMBOL_FIELDS = [
-  { name: "minSize", label: "style_editor.field.minSize", type: "number", min: 1 },
-  { name: "maxSize", label: "style_editor.field.maxSize", type: "number", min: 1 },
+  { name: "minSize", label: "style_editor.field.minSize", type: "number", min: 0, step: "any" },
+  { name: "maxSize", label: "style_editor.field.maxSize", type: "number", min: 0, step: "any" },
   { name: "externalGraphic", label: "style_editor.field.externalGraphic", type: "url" },
 ];
 export const STROKE_TYPES = [

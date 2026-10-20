@@ -1,4 +1,5 @@
 import RuleConfig from "./ruleConfig.js";
+import RulePreview from "./rulePreview.js";
 import {
   DEFAULT_FILL,
   DEFAULT_STROKE,
@@ -61,11 +62,12 @@ export default class RulesPanel {
    */
   prepareRule(rule) {
     const copy = structuredClone(rule);
+    const defaults = this.createRule();
 
     return {
-      ...this.createRule(),
+      ...defaults,
       ...copy,
-      fill: { ...DEFAULT_FILL, ...copy.fill },
+      fill: { ...defaults.fill, ...copy.fill },
       stroke: { ...DEFAULT_STROKE, ...copy.stroke },
       symbol: { ...DEFAULT_SYMBOL, ...copy.symbol },
     };
@@ -184,7 +186,6 @@ export default class RulesPanel {
       </td>
       <td>
         <button type="button" class="style-rules__preview" aria-label="${mviewer.tr("style_editor.rule.edit").replace("{index}", index + 1)}">
-          <span></span>
         </button>
       </td>
     `;
@@ -216,18 +217,15 @@ export default class RulesPanel {
     downButton.addEventListener("click", () => this.move(index, 1));
 
     const preview = row.querySelector(".style-rules__preview");
-
-    const swatch = preview.querySelector("span");
-
-    swatch.style.backgroundColor = rule.fill.color;
-
-    if (this.geometry === "LineString") {
-      swatch.style.backgroundColor = rule.stroke.color;
+    const previewOptions = { rule, geometry: this.geometry };
+    if (this.type === "proportionalCircles" || this.ruleMode === "size") {
+      previewOptions.symbolSize = rule.symbol.maxSize;
+      previewOptions.maxSymbolSize = Math.max(
+        ...this.rules.map((item) => item.symbol.maxSize)
+      );
     }
 
-    if (this.geometry === "Point") {
-      swatch.style.borderRadius = "50%";
-    }
+    preview.appendChild(new RulePreview(previewOptions).render());
 
     // La fenêtre ne modifie la règle qu'après un clic sur Enregistrer.
     preview.addEventListener("click", () => {

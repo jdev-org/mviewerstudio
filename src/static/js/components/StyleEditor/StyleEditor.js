@@ -1,10 +1,11 @@
-import { STYLE_MODES, STYLE_CHOICES, STYLE_EDITOR_EVENTS, STYLE_TYPES } from "./constants.js";
+import { STYLE_MODES, STYLE_CHOICES, STYLE_EDITOR_EVENTS, STYLE_TYPES, DEFAULT_SYMBOL } from "./constants.js";
 import CustomStyle from "./customStyle/CustomStyle.js";
 import StyleSelector from "./styleSelector/styleSelector.js";
 import TmsStyle from "./tmsStyle/tmsStyle.js";
 import LegendSelector from "../legendSelector/legendSelector.js";
 import { analyse, categorize } from "../../utils/styler/methods.js";
 import { createColorRampScales, crandomColorBClass } from "../../utils/styler/rampColor.js";
+import { calculateCircleSizes } from "../../utils/styler/circleSizes.js";
 
 /**
  * Sélecteur du mode de création d'un style de couche.
@@ -38,7 +39,7 @@ const StyleEditor = function (options = {}) {
  * @returns {Promise<void>} Actualise les règles ou affiche l'erreur dans le panneau.
  */
 StyleEditor.prototype.calculate = async function (event) {
-  const { field, method, classes, color, reverseColors, type, geometry, ruleMode, setRules } = event.detail;
+  const { field, method, classes, color, reverseColors, maxSize = DEFAULT_SYMBOL.maxSize, type, geometry, ruleMode, setRules } = event.detail;
   const { styleProp } = STYLE_TYPES.find((definition) => definition.value === type);
   const button = event.target.querySelector(".style-methods__actions button");
   const message = event.target.querySelector("[data-classification-error]");
@@ -101,7 +102,13 @@ StyleEditor.prototype.calculate = async function (event) {
     } else {
       colors = Array(rules.length).fill(color);
     }
+    const proportional = type === "proportionalCircles" || ruleMode === "size";
+    let sizes;
+    if (proportional) sizes = calculateCircleSizes(rules, maxSize);
     rules.forEach((rule, index) => {
+      if (proportional) {
+        rule.symbol = { ...DEFAULT_SYMBOL, shape: "circle", minSize: sizes[index], maxSize: sizes[index] };
+      }
       if (ruleMode === "size") return;
       if (geometry === "LineString") {
         rule.stroke = { color: colors[index] };

@@ -4,6 +4,7 @@ import {
   DEFAULT_COLOR_SCALE,
   DEFAULT_FILL,
   DEFAULT_CLUSTER_DISTANCE,
+  DEFAULT_SYMBOL,
   STYLE_TYPES,
 } from "../../constants.js";
 import { createField } from "./fields.js";
@@ -33,6 +34,7 @@ export default class MethodsPanel {
       legend: "",
       method: methods[0].value,
       classes: 5,
+      maxSize: DEFAULT_SYMBOL.maxSize,
       color: styleProp.includes("ramps") ? DEFAULT_COLOR_SCALE : DEFAULT_FILL.color,
       distance: DEFAULT_CLUSTER_DISTANCE,
       reverseColors: false,
@@ -42,7 +44,7 @@ export default class MethodsPanel {
     this.element = document.createElement("div");
 
     this.element.className = "style-methods";
-    this.card = new ListCard({classes: "style-methods__card"});
+    this.card = new ListCard({ classes: "style-methods__card" });
     this.fieldSelect = new Select({
       label: mviewer.tr("style_editor.classification.field"),
       placeholder: mviewer.tr("style_editor.classification.placeholder"),
@@ -106,6 +108,20 @@ export default class MethodsPanel {
         });
         field.insertBefore(tooltip.render(), field.querySelector("input"));
         fields.appendChild(field);
+      }
+      if (property === "maxSize") {
+        fields.appendChild(
+          createField(
+            {
+              name: "maxSize",
+              label: "style_editor.field.maxSize",
+              type: "number",
+              min: 1,
+              step: "any",
+            },
+            this.state.maxSize
+          )
+        );
       }
       if (property === "distance") {
         fields.appendChild(

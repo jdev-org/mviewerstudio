@@ -15,6 +15,11 @@ export default class RuleConfig {
    */
   open({ geometry, rule, ruleMode = "all", onSave }) {
     const panel = new RuleConfigPanel({ geometry, rule, ruleMode });
+    const readRule = () => {
+      const values = panel.getValue();
+      if (values.symbol) values.symbol = { ...rule.symbol, ...values.symbol };
+      return { ...rule, ...values };
+    };
 
     this.element.innerHTML = `
       <form>
@@ -59,9 +64,7 @@ export default class RuleConfig {
         }
       }
 
-      const values = panel.getValue();
-      if (values.symbol) values.symbol = { ...rule.symbol, ...values.symbol };
-      onSave({ ...rule, ...values });
+      onSave(readRule());
 
       this.element.close();
     });
