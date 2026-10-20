@@ -5,6 +5,7 @@ import {
   DEFAULT_STROKE,
   DEFAULT_SYMBOL,
   DEFAULT_SIZE_COLOR,
+  STYLE_TYPES,
 } from "../../constants.js";
 import { createField } from "./fields.js";
 
@@ -54,6 +55,22 @@ export default class RulesPanel {
       stroke: { ...DEFAULT_STROKE },
       symbol: { ...DEFAULT_SYMBOL },
     };
+  }
+
+  /** @returns {boolean} Indique si le style autorise une règle supplémentaire. */
+  canAddRule() {
+    if (this.type === "simple") return false;
+
+    const definition = STYLE_TYPES.find((item) => item.value === this.type);
+
+    return !definition.maxClasses || this.rules.length < definition.maxClasses;
+  }
+
+  /** @returns {boolean} Indique si la sélection peut être supprimée. */
+  canDeleteRules() {
+    if (this.selected.size === 0) return false;
+
+    return this.type !== "simple" || this.selected.size < this.rules.length;
   }
 
   /** Complète une règle reçue sans modifier l'objet d'origine.
@@ -193,6 +210,7 @@ export default class RulesPanel {
     const checkbox = row.querySelector("input");
 
     checkbox.checked = this.selected.has(index);
+    checkbox.disabled = this.type === "simple";
 
     checkbox.addEventListener("change", () => {
       if (checkbox.checked) {
@@ -254,9 +272,11 @@ export default class RulesPanel {
 
     const duplicateButton = row.querySelector("[data-duplicate]");
 
-    duplicateButton.disabled = this.type === "categorized" && this.rules.length >= 10;
+    duplicateButton.disabled = !this.canAddRule();
 
     duplicateButton.addEventListener("click", () => {
+      if (!this.canAddRule()) return;
+
       // Une copie indépendante évite de partager les couleurs entre deux règles.
       const copy = structuredClone(rule);
 
@@ -327,6 +347,7 @@ export default class RulesPanel {
   /** Branche les actions qui concernent l'ensemble du tableau. */
   bindToolbar() {
     const selectAll = this.element.querySelector("[data-all]");
+    selectAll.disabled = this.type === "simple";
 
     const addButton = this.element.querySelector("[data-add]");
 
@@ -344,9 +365,11 @@ export default class RulesPanel {
       this.render();
     });
 
-    addButton.disabled = this.type === "categorized" && this.rules.length >= 10;
+    addButton.disabled = !this.canAddRule();
 
     addButton.addEventListener("click", () => {
+      if (!this.canAddRule()) return;
+
       this.rules.push(this.createRule());
 
       this.render();
@@ -355,6 +378,8 @@ export default class RulesPanel {
     });
 
     deleteButton.addEventListener("click", () => {
+      if (!this.canDeleteRules()) return;
+
       this.rules = this.rules.filter((rule, index) => !this.selected.has(index));
 
       this.selected.clear();
@@ -373,6 +398,6 @@ export default class RulesPanel {
 
     all.indeterminate = this.selected.size > 0 && !all.checked;
 
-    this.element.querySelector("[data-delete]").disabled = this.selected.size === 0;
+    this.element.querySelector("[data-delete]").disabled = !this.canDeleteRules();
   }
 }

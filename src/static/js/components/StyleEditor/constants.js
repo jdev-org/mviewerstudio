@@ -62,7 +62,7 @@ export const STYLE_TYPES = [
     geom: ["Point"],
     methods: ["jenk", "equalInterval", "quantiles"],
     img: "img/styler/style_cercle_prop.png",
-    styleProp: ["field", "methods", "color", "classes", "maxSize"]
+    styleProp: ["field", "methods", "color", "classes", "maxSize"],
   },
   {
     value: "proportionalColoredCircles",
