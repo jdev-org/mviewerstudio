@@ -3,6 +3,8 @@ from urllib.parse import urlparse
 from pathlib import Path
 import requests
 import xml.etree.ElementTree as ET
+from xml.dom.minidom import parseString
+from xml.parsers.expat import ExpatError
 
 from werkzeug.exceptions import BadRequest, Forbidden
 
@@ -133,6 +135,7 @@ def get_layer_style_file(directory, filename: str):
 
 
 def fetch_remote_xml(url: str, timeout: int = 10) -> str:
+    """Fetch XML using its declared encoding and return Unicode for the UTF-8 API."""
     if not url:
         raise BadRequest("Missing url parameter !")
 
@@ -163,4 +166,9 @@ def fetch_remote_xml(url: str, timeout: int = 10) -> str:
         current_app.logger.exception("Could not retrieve XML from %s", url)
         raise BadRequest(f"Could not retrieve XML: {exc}")
 
-    return response.text
+    # Parse bytes so the XML declaration takes precedence over HTTP charset guesses.
+    try:
+        with parseString(response.content) as document:
+            return document.toxml()
+    except ExpatError:
+        raise BadRequest("XML seems not correct !")
