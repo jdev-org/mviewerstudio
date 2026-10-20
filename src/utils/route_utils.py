@@ -1,5 +1,6 @@
 from flask import current_app
 from urllib.parse import urlparse
+from pathlib import Path
 import requests
 import xml.etree.ElementTree as ET
 
@@ -70,6 +71,19 @@ def get_existing_config_or_404(id: str) -> dict:
     return config[0]
 
 
+def authorize_config_organization(config: dict) -> dict:
+    """
+    Ensure the current user belongs to the configuration owner's organization.
+
+    :param config: configuration metadata containing the normalized publisher
+    :returns: the same configuration metadata when authorized
+    :raises Forbidden: when the user's organization differs from the publisher
+    """
+    if config["publisher"] != current_user.normalize_name:
+        raise Forbidden("Not allowed to access this organization's configuration !")
+    return config
+
+
 def authorize_config_mutation(config: dict) -> dict:
     """
     Ensure the current user can mutate the given configuration.
@@ -81,11 +95,41 @@ def authorize_config_mutation(config: dict) -> dict:
     :returns: the same configuration metadata when authorized
     :raises Forbidden: when the current user is not allowed to modify it
     """
-    if config["publisher"] != current_user.normalize_name:
-        raise Forbidden("Not allowed to modify this configuration !")
+    authorize_config_organization(config)
     if config["creator"] != current_user.username:
         raise Forbidden("Not allowed to modify this configuration !")
     return config
+
+
+def get_layer_styles_directory(id: str):
+    """Return <publisher>/<map id>/styles for a member of the owning organization."""
+    config = authorize_config_organization(get_existing_config_or_404(id))
+    root = Path(current_app.config["EXPORT_CONF_FOLDER"]).resolve()
+    workspace = root / config["publisher"] / config["id"]
+    relative_directory = Path(config["publisher"]) / config["id"] / "styles"
+    directory = (root / relative_directory).resolve()
+    try:
+        workspace.resolve().relative_to(root)
+        directory.relative_to(workspace.resolve())
+    except ValueError:
+        raise BadRequest("Invalid application styles directory !")
+    return directory, relative_directory.as_posix()
+
+
+def get_layer_style_file(directory, filename: str):
+    """Validate an SLD basename and prevent traversal or symbolic link access."""
+    if (
+        not filename
+        or "/" in filename
+        or "\\" in filename
+        or "\x00" in filename
+        or not filename.endswith(".sld")
+    ):
+        raise BadRequest("Expected an SLD file name without a directory !")
+    file = directory / filename
+    if file.is_symlink():
+        raise BadRequest("Symbolic links are not allowed for styles !")
+    return file
 
 
 def fetch_remote_xml(url: str, timeout: int = 10) -> str:

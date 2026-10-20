@@ -379,6 +379,86 @@ paths:
                   filepath:
                     type: string
 
+  /api/styles/{id}:
+    parameters:
+      - in: path
+        name: id
+        required: true
+        description: Map identifier. Access requires membership in the owning organization.
+        schema:
+          type: string
+      - in: query
+        name: filename
+        description: SLD basename, without directories. On POST, defaults to the content's SHA-256 hash plus .sld.
+        schema:
+          type: string
+          example: layer.sld
+    get:
+      tags: [Files]
+      summary: List application styles or read one SLD file
+      description: Without filename, returns a sorted list of styles. With filename, returns the SLD document.
+      responses:
+        '200':
+          description: Style list or SLD document
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  styles:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        filename:
+                          type: string
+                        filepath:
+                          type: string
+            application/vnd.ogc.sld+xml:
+              schema:
+                type: string
+        '400':
+          description: Unknown application or invalid filename
+        '403':
+          description: Access denied
+        '404':
+          description: SLD file not found
+    post:
+      tags: [Files]
+      summary: Save an application SLD style
+      description: Requires an authenticated user from the map owner's organization, identified by the trusted proxy. Stores a UTF-8 StyledLayerDescriptor under <organization>/<map id>/styles. An existing filename is replaced.
+      requestBody:
+        required: true
+        content:
+          application/vnd.ogc.sld+xml:
+            schema:
+              type: string
+          application/xml:
+            schema:
+              type: string
+      responses:
+        '200':
+          description: Saved style filename and public URL
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  filename:
+                    type: string
+                  filepath:
+                    type: string
+        '400':
+          description: Unknown application, invalid filename or invalid SLD document
+        '401':
+          description: Authentication required
+        '403':
+          description: Access denied
+
   /api/app/{id}/template/{file_name}:
     post:
       tags: [Templates]

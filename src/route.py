@@ -24,6 +24,9 @@ from .utils.route_utils import (
     get_existing_config_or_404,
     authorize_config_mutation,
     fetch_remote_xml,
+    get_xml_root,
+    get_layer_styles_directory,
+    get_layer_style_file,
 )
 import hashlib, uuid
 from .utils.register_utils import from_xml_path
@@ -788,3 +791,84 @@ def proxy() -> Response:
     else:
         raise BadRequest("Missing param : url")
     return response
+
+
+@basic_store.route("/api/styles/<id>", methods=["GET"])
+def readLayerStyle(id) -> Response:
+    """
+    List application SLD files, or read one with the filename query parameter.
+
+    :param id: application UUID
+    :returns: JSON style list or the requested SLD document (404 if missing)
+    """
+    directory, relative_directory = get_layer_styles_directory(id)
+    filename = request.args.get("filename")
+    if filename:
+        get_layer_style_file(directory, filename)
+        return send_from_directory(
+            directory, filename, mimetype="application/vnd.ogc.sld+xml"
+        )
+
+    styles = []
+    if directory.is_dir():
+        for file in sorted(directory.iterdir()):
+            if file.suffix == ".sld" and file.is_file() and not file.is_symlink():
+                styles.append(
+                    {
+                        "filename": file.name,
+                        "filepath": path.join(
+                            current_app.config["CONF_PATH_FROM_MVIEWER"],
+                            relative_directory,
+                            file.name,
+                        ),
+                    }
+                )
+    return jsonify({"success": True, "styles": styles})
+
+
+@basic_store.route("/api/styles/<id>", methods=["POST"])
+def saveLayerStyle(id) -> Response:
+    """
+    Store an application's UTF-8 SLD document from the raw request body.
+
+    :param id: application UUID
+    :returns: JSON filename and public filepath; filename defaults to a SHA-256 hash
+    :raises BadRequest: for invalid XML, SLD root, encoding or filename
+    :raises Unauthorized: when no authenticated user is provided by the proxy
+    """
+    username = current_user.username.strip()
+    if not username or username == "anonymous":
+        raise Unauthorized("Authentication required to save a layer style !")
+
+    directory, relative_directory = get_layer_styles_directory(id)
+    try:
+        raw_style = request.data.decode("utf-8")
+    except UnicodeDecodeError:
+        raise BadRequest("SLD content must use UTF-8 !")
+    if not raw_style.strip():
+        raise BadRequest("Missing SLD document !")
+    root = get_xml_root(raw_style)
+    if root.tag not in (
+        "StyledLayerDescriptor",
+        "{http://www.opengis.net/sld}StyledLayerDescriptor",
+    ):
+        raise BadRequest("Expected a StyledLayerDescriptor document !")
+
+    filename = request.args.get("filename")
+    if not filename:
+        filename = f"{hashlib.sha256(raw_style.encode('utf-8')).hexdigest()}.sld"
+    file = get_layer_style_file(directory, filename)
+    directory.mkdir(parents=True, exist_ok=True)
+    file.write_text(raw_style, encoding="utf-8")
+
+    return jsonify(
+        {
+            "success": True,
+            "filename": filename,
+            "filepath": path.join(
+                current_app.config["CONF_PATH_FROM_MVIEWER"],
+                relative_directory,
+                filename,
+            ),
+        }
+    )
