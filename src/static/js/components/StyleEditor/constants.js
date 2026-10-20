@@ -37,6 +37,19 @@ export const STYLE_CHOICES = [
   },
 ];
 
+export const STYLE_GEOMETRIES = {
+  Point: "Point",
+  MultiPoint: "Point",
+  LineString: "LineString",
+  MultiLineString: "LineString",
+  Curve: "LineString",
+  MultiCurve: "LineString",
+  Polygon: "Polygon",
+  MultiPolygon: "Polygon",
+  Surface: "Polygon",
+  MultiSurface: "Polygon",
+};
+
 export const STYLE_TYPES = [
   {
     value: "simple",

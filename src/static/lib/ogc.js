@@ -484,6 +484,7 @@ var ogc = (function () {
         if (xml_type.search("gml") != -1) {
           _type = "geometry";
           layer.geometry = $(fld).attr("name");
+          layer.geometryType = xml_type;
         } else if (xml_type.search("string") != -1) {
           _type = "string";
           fields.push($(fld).attr("name"));
@@ -493,12 +494,8 @@ var ogc = (function () {
           fields.push($(fld).attr("name"));
           layer.fields[$(fld).attr("name")] = { type: _type };
         }
-        if (!config.temp.layers[layerid]) {
-          config.temp.layers[layerid] = layer;
-        } else {
-          config.temp.layers[layerid] = { ...layer, ...config.temp.layers[layerid] };
-        }
       });
+    config.temp.layers[layerid] = { ...config.temp.layers[layerid], ...layer };
     return fields;
   };
 
@@ -522,7 +519,11 @@ var ogc = (function () {
         if (styleEditor) {
           styleEditor.dispatchEvent(
             new CustomEvent("showFields", {
-              detail: { layerId: layerid, fields: fields },
+              detail: {
+                layerId: layerid,
+                fields: fields,
+                geometry: config.temp.layers[layerid].geometryType,
+              },
             })
           );
         }

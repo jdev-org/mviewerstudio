@@ -89,6 +89,9 @@ CustomStyle.prototype.showType = function (type) {
  */
 CustomStyle.prototype.restoreClassification = function (panel, value) {
   const { rules, ...state } = value;
+  delete state.type;
+  delete state.geometry;
+  delete state.colorClassification;
   panel.methods.state = { ...panel.methods.state, ...structuredClone(state) };
   const fields = [...this.fields];
   if (value.field && !fields.includes(value.field)) fields.push(value.field);
@@ -101,12 +104,13 @@ CustomStyle.prototype.restoreClassification = function (panel, value) {
  * L'objet enregistré est actualisé uniquement après les deux envois.
  * @param {string} mapId Identifiant de la carte enregistrée sur le serveur.
  * @param {string} name Nom du style.
+ * @param {string} layerName Nom technique de la couche WMS.
  * @returns {Promise<Object>} Identifiant, configuration, objet GeoStyler et fichiers.
  */
-CustomStyle.prototype.save = async function (mapId, name) {
+CustomStyle.prototype.save = async function (mapId, name, layerName) {
   const configuration = this.getValue();
   const geoStylerStyle = createGeoStylerStyle(configuration, name);
-  const sldContent = await geoStylerToSld(geoStylerStyle);
+  const sldContent = await geoStylerToSld(geoStylerStyle, { layerName });
   const styleId = crypto.randomUUID();
   const sld = await sendSldFile(mapId, styleId, sldContent);
   const json = await sendJsonStyleStyle(mapId, styleId, geoStylerStyle);

@@ -760,6 +760,10 @@ var mv = (function () {
         return l.id === layerid;
       }
       const groupid = el.attr("data-groupid") || "undefined";
+      const layerOptions = document.getElementById("mod-layerOptions");
+      layerOptions.dataset.themeid = themeid;
+      layerOptions.dataset.layerid = layerid;
+      layerOptions.dataset.groupid = groupid;
       var layer =
         groupid === "undefined"
           ? config.themes[themeid].layers.find(getLayerbyId)
@@ -870,12 +874,26 @@ var mv = (function () {
           })
           .then(({ wfs_url }) =>
             ogc.getFeatures(wfs_url, { TYPENAME: layerid, MAXFEATURES: 1 }, (data) => {
-              if (config.temp.layers[layerid]) {
-                config.temp.layers[layerid].features = data?.features || [];
-                mv.createDispatchEvent("wfsFeaturesReady", {
-                  features: config.temp.layers[layerid].features,
-                });
+              if (!data || !Array.isArray(data.features)) return;
+              if (!config.temp.layers[layerid]) config.temp.layers[layerid] = {};
+              const layerData = config.temp.layers[layerid];
+              layerData.features = data.features;
+              const feature = data.features.find((item) => item.geometry);
+              if (feature) {
+                layerData.geometryType = feature.geometry.type;
+                document.querySelector("#layer-style-editor .style-editor").dispatchEvent(
+                  new CustomEvent("showFields", {
+                    detail: {
+                      layerId: layerid,
+                      fields: Object.keys(layerData.fields || {}),
+                      geometry: feature.geometry.type,
+                    },
+                  })
+                );
               }
+              mv.createDispatchEvent("wfsFeaturesReady", {
+                features: layerData.features,
+              });
             })
           );
       }
@@ -1128,22 +1146,33 @@ var mv = (function () {
     },
 
     saveLayerOptions: async function (button = null) {
-      var layerid = mv.getCurrentLayerId();
-      const themeid = mv.getCurrentThemeId();
-      const groupid = mv.getCurrentGroupId();
+      if (button && button.disabled) return;
+      const layerOptions = document.getElementById("mod-layerOptions");
+      const layerid = layerOptions.dataset.layerid || mv.getCurrentLayerId();
+      const themeid = layerOptions.dataset.themeid || mv.getCurrentThemeId();
+      const groupid = layerOptions.dataset.groupid || mv.getCurrentGroupId();
+      const theme = config.themes[themeid];
+      if (!theme) {
+        alertCustom(mviewer.tr("msg.save_failure"), "danger");
+        return;
+      }
 
       function getLayerbyId(l) {
         return l.id === layerid;
       }
-      var layer =
-        !groupid || groupid === "undefined"
-          ? config.themes[themeid].layers.find(getLayerbyId)
-          : config.themes[themeid].groups
-              .find((group) => group.id === groupid)
-              .layers.find(getLayerbyId);
+      let layer;
+      if (!groupid || groupid === "undefined") {
+        layer = theme.layers.find(getLayerbyId);
+      } else {
+        const group = theme.groups.find((item) => item.id === groupid);
+        if (group) layer = group.layers.find(getLayerbyId);
+      }
+      if (!layer) {
+        alertCustom(mviewer.tr("msg.save_failure"), "danger");
+        return;
+      }
 
       if (["wms", "csv"].includes(layer.type)) {
-        if (button && button.disabled) return;
         const detail = {
           layer,
           name: $("#frm-layer-title").val(),
@@ -1168,7 +1197,8 @@ var mv = (function () {
         } finally {
           if (button) button.disabled = false;
         }
-        if (mv.getCurrentLayerId() !== layerid) return;
+        const currentLayerId = layerOptions.dataset.layerid || mv.getCurrentLayerId();
+        if (currentLayerId !== layerid) return;
       }
 
       // Commons params

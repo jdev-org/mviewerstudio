@@ -15,6 +15,7 @@ import {
   crandomColorBClass,
 } from "../../utils/styler/rampColor.js";
 import { calculateCircleSizes } from "../../utils/styler/circleSizes.js";
+import { getStyleGeometry } from "../../utils/styler/style.js";
 
 /**
  * Sélecteur du mode de création d'un style de couche.
@@ -40,6 +41,7 @@ const StyleEditor = function (options = {}) {
     if (event.detail.layerId !== this.layerId) return;
 
     this.setFields(event.detail.fields);
+    this.setGeometry(event.detail.geometry);
   });
   this.element.addEventListener(STYLE_EDITOR_EVENTS.SAVE, (event) => {
     if (this.activeMode === STYLE_MODES.CUSTOM) {
@@ -58,6 +60,30 @@ const StyleEditor = function (options = {}) {
 };
 
 /**
+ * Adapte le style à la géométrie identifiée par le WFS.
+ * Un type incompatible est remplacé par une représentation uniforme.
+ * @param {string} geometry Type de géométrie GML ou GeoJSON.
+ * @returns {void} Reconstruit les panneaux lorsque la géométrie change.
+ */
+StyleEditor.prototype.setGeometry = function (geometry) {
+  const styleGeometry = getStyleGeometry(geometry);
+  if (!styleGeometry || styleGeometry === this.customStyle.geometry) return;
+
+  const state = this.customStyle.getValue();
+  const definition = STYLE_TYPES.find((type) => type.value === state.type);
+  state.geometry = styleGeometry;
+  if (!definition.geom.includes(styleGeometry)) {
+    state.type = "simple";
+    state.rules = state.rules.slice(0, 1);
+    delete state.colorClassification;
+  }
+  this.options.geometry = styleGeometry;
+  this.options.customStyle = state;
+  this.customStyle = new CustomStyle({ ...this.options, state });
+  this.render();
+};
+
+/**
  * Enregistre le style personnalisé et son formulaire sur la couche.
  * @param {Object} layer Couche modifiée par les options.
  * @param {string} name Nom du style.
@@ -68,14 +94,11 @@ StyleEditor.prototype.saveToLayer = async function (layer, name, mapId) {
   const mode = this.activeMode;
   const customStyle = this.customStyle;
   if (mode === STYLE_MODES.CUSTOM) {
-    const saved = await customStyle.save(mapId, name);
-    const mviewerUrl = new URL(_conf.mviewer_instance, window.location.origin);
-    if (!mviewerUrl.pathname.endsWith("/")) mviewerUrl.pathname += "/";
-    const sldUrl = new URL(saved.sld.filepath, mviewerUrl).href;
+    const saved = await customStyle.save(mapId, name, layer.id);
     layer.customStyle = saved.configuration;
     layer.geoStylerStyle = saved.geoStylerStyle;
     layer.styleId = saved.styleId;
-    layer.sld = sldUrl;
+    layer.sld = saved.sld.filepath;
     layer.jsonStyle = saved.json.filepath;
     if (this.customStyle === customStyle) {
       this.options.customStyle = structuredClone(layer.customStyle);

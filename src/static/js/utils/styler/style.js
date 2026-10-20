@@ -2,7 +2,23 @@ import {
   DEFAULT_FILL,
   DEFAULT_STROKE,
   DEFAULT_SYMBOL,
+  STYLE_GEOMETRIES,
+  STYLE_TYPES,
 } from "../../components/StyleEditor/constants.js";
+
+/**
+ * Associe une géométrie GeoJSON ou un type GML à la géométrie de l'éditeur.
+ * @param {string} geometry Type GeoJSON ou WFS, par exemple gml:MultiSurfacePropertyType.
+ * @returns {string|undefined} Point, LineString ou Polygon ; absent si indéterminé.
+ */
+export const getStyleGeometry = (geometry) => {
+  if (!geometry) return;
+  const type = geometry
+    .split(":")
+    .pop()
+    .replace(/PropertyType$|Type$/, "");
+  return STYLE_GEOMETRIES[type];
+};
 
 /**
  * Construit un style GeoStyler indépendant des règles fournies.
@@ -28,6 +44,7 @@ export const createGeoStylerSymbolizer = ({
   stroke = {},
   symbol = {},
 } = {}) => {
+  const styleGeometry = getStyleGeometry(geometry);
   fill = { ...DEFAULT_FILL, ...fill };
   stroke = { ...DEFAULT_STROKE, ...stroke };
   symbol = { ...DEFAULT_SYMBOL, ...symbol };
@@ -40,7 +57,7 @@ export const createGeoStylerSymbolizer = ({
     dasharray = [stroke.width, stroke.width * 3];
   }
 
-  if (geometry === "LineString" || geometry === "MultiLineString") {
+  if (styleGeometry === "LineString") {
     const result = {
       kind: "Line",
       color: stroke.color,
@@ -52,7 +69,7 @@ export const createGeoStylerSymbolizer = ({
     return result;
   }
 
-  if (geometry === "Polygon" || geometry === "MultiPolygon") {
+  if (styleGeometry === "Polygon") {
     const result = {
       kind: "Fill",
       color: fill.color,
@@ -66,7 +83,7 @@ export const createGeoStylerSymbolizer = ({
     return result;
   }
 
-  if (geometry !== "Point" && geometry !== "MultiPoint") {
+  if (styleGeometry !== "Point") {
     throw new Error(`Unsupported geometry: ${geometry}`);
   }
 
@@ -141,9 +158,16 @@ const createClassificationFilter = (classification, rule) => {
  * @returns {Object} Style GeoStyler indépendant de la configuration.
  */
 export const createGeoStylerStyle = (configuration, name = "") => {
+  const geometry = getStyleGeometry(configuration.geometry);
+  const definition = STYLE_TYPES.find((type) => type.value === configuration.type);
+  if (!definition || !definition.geom.includes(geometry)) {
+    throw new Error(
+      `Style ${configuration.type} is incompatible with geometry ${configuration.geometry}.`
+    );
+  }
   const rules = [];
   const addRule = (rule, colorRule, colorClassification) => {
-    const options = { ...rule, geometry: configuration.geometry };
+    const options = { ...rule, geometry };
     let ruleName = rule.name;
     let filter = createClassificationFilter(configuration, rule);
     if (colorRule) {
@@ -177,15 +201,31 @@ export const createGeoStylerStyle = (configuration, name = "") => {
  * Sérialise un style GeoStyler avec la bibliothèque chargée dans index.html.
  * @param {Object} style Style GeoStyler contenant name et rules.
  * @param {Object} [options={}] Options de SldStyleParser, dont sldVersion.
+ * @param {string} [options.layerName] Nom technique WMS pour NamedLayer/Name.
  * @returns {Promise<string>} Document SLD.
  * @throws {Error} Si la bibliothèque manque ou si la conversion échoue.
  */
 export const geoStylerToSld = async (style, options = {}) => {
-  const parser = new globalThis.GeoStylerSLDParser.SldStyleParser(options);
+  const { layerName, ...parserOptions } = options;
+  const parser = new globalThis.GeoStylerSLDParser.SldStyleParser(parserOptions);
   const { output, errors } = await parser.writeStyle(style);
   if (errors && errors.length > 0) {
     throw new Error(errors.map((error) => error.message || error).join("\n"));
   }
   if (!output) throw new Error("SLD conversion produced no output.");
+  if (layerName) {
+    const xmlLayerName = layerName.replace(
+      /[<>&"']/g,
+      (character) =>
+        ({ "<": "&lt;", ">": "&gt;", "&": "&amp;", '"': "&quot;", "'": "&apos;" })[
+          character
+        ]
+    );
+    // Seul le nom de la couche est remplacé ; UserStyle garde le libellé du style.
+    return output.replace(
+      /(<NamedLayer>\s*<(?:se:)?Name>)[\s\S]*?(<\/(?:se:)?Name>)/,
+      (match, opening, closing) => `${opening}${xmlLayerName}${closing}`
+    );
+  }
   return output;
 };
