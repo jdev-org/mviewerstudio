@@ -3,7 +3,8 @@ import ListCard from "../../listCard/listCard.js";
 import ClassificationPanel from "./ClassificationPanel.js";
 import AccordionClassificationPanel from "./accordionClassificationPanel.js";
 import { STYLE_TYPES } from "../constants.js";
-import { createGeoStylerStyle } from "../../../utils/styler/style.js";
+import { createGeoStylerStyle, geoStylerToSld } from "../../../utils/styler/style.js";
+import { sendSldFile, sendJsonStyleStyle } from "../../../utils/styler/requests.js";
 
 let customStyleId = 0;
 
@@ -96,13 +97,21 @@ CustomStyle.prototype.restoreClassification = function (panel, value) {
 };
 
 /**
- * Met à jour l'objet GeoStyler à partir des valeurs courantes.
+ * Convertit puis sauvegarde le duo SLD/JSON avec un identifiant unique commun.
+ * L'objet enregistré est actualisé uniquement après les deux envois.
+ * @param {string} mapId Identifiant de la carte enregistrée sur le serveur.
  * @param {string} name Nom du style.
- * @returns {Object} Style GeoStyler enregistré.
+ * @returns {Promise<Object>} Identifiant, configuration, objet GeoStyler et fichiers.
  */
-CustomStyle.prototype.save = function (name) {
-  this.geoStylerStyle = createGeoStylerStyle(this.getValue(), name);
-  return structuredClone(this.geoStylerStyle);
+CustomStyle.prototype.save = async function (mapId, name) {
+  const configuration = this.getValue();
+  const geoStylerStyle = createGeoStylerStyle(configuration, name);
+  const sldContent = await geoStylerToSld(geoStylerStyle);
+  const styleId = crypto.randomUUID();
+  const sld = await sendSldFile(mapId, styleId, sldContent);
+  const json = await sendJsonStyleStyle(mapId, styleId, geoStylerStyle);
+  this.geoStylerStyle = structuredClone(geoStylerStyle);
+  return { styleId, configuration, geoStylerStyle, sld, json };
 };
 
 /** Retourne la configuration saisie, sans transformation SLD.

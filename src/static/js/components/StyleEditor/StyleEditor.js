@@ -49,12 +49,11 @@ const StyleEditor = function (options = {}) {
         return;
       }
     }
-    try {
-      this.saveToLayer(event.detail.layer, event.detail.name);
-    } catch (error) {
-      event.preventDefault();
-      alertCustom(error.message, "danger");
-    }
+    event.detail.promise = this.saveToLayer(
+      event.detail.layer,
+      event.detail.name,
+      event.detail.mapId
+    );
   });
 };
 
@@ -62,18 +61,29 @@ const StyleEditor = function (options = {}) {
  * Enregistre le style personnalisé et son formulaire sur la couche.
  * @param {Object} layer Couche modifiée par les options.
  * @param {string} name Nom du style.
- * @returns {void} Actualise la couche uniquement après une conversion réussie.
+ * @param {string} mapId Identifiant de la carte.
+ * @returns {Promise<void>} Actualise la couche après la sauvegarde des deux fichiers.
  */
-StyleEditor.prototype.saveToLayer = function (layer, name) {
-  if (this.activeMode === STYLE_MODES.CUSTOM) {
-    const geoStylerStyle = this.customStyle.save(name);
-    layer.customStyle = this.customStyle.getValue();
-    layer.geoStylerStyle = geoStylerStyle;
-    this.options.customStyle = structuredClone(layer.customStyle);
-    this.options.geoStylerStyle = structuredClone(geoStylerStyle);
+StyleEditor.prototype.saveToLayer = async function (layer, name, mapId) {
+  const mode = this.activeMode;
+  const customStyle = this.customStyle;
+  if (mode === STYLE_MODES.CUSTOM) {
+    const saved = await customStyle.save(mapId, name);
+    const mviewerUrl = new URL(_conf.mviewer_instance, window.location.origin);
+    if (!mviewerUrl.pathname.endsWith("/")) mviewerUrl.pathname += "/";
+    const sldUrl = new URL(saved.sld.filepath, mviewerUrl).href;
+    layer.customStyle = saved.configuration;
+    layer.geoStylerStyle = saved.geoStylerStyle;
+    layer.styleId = saved.styleId;
+    layer.sld = sldUrl;
+    layer.jsonStyle = saved.json.filepath;
+    if (this.customStyle === customStyle) {
+      this.options.customStyle = structuredClone(layer.customStyle);
+      this.options.geoStylerStyle = structuredClone(layer.geoStylerStyle);
+    }
   }
-  layer.styleMode = this.activeMode;
-  this.options.styleMode = this.activeMode;
+  layer.styleMode = mode;
+  if (this.customStyle === customStyle) this.options.styleMode = mode;
 };
 
 /**
