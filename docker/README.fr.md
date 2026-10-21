@@ -74,11 +74,23 @@ L’image publiée doit intégrer les droits de lecture du code nécessaires à 
 
 ## Variables d'environnement
 
-- `EXPORT_CONF_FOLDER` : dossier des brouillons et des configurations en cours.
-- `CONF_PATH_FROM_MVIEWER` : chemin utilisé par mviewer pour accéder aux brouillons.
-- `MVIEWERSTUDIO_PUBLISH_PATH` : dossier de destination lors de la publication.
-- `CONF_PUBLISH_PATH_FROM_MVIEWER` : chemin utilisé par mviewer pour accéder aux publications.
-- `MVIEWERSTUDIO_URL_PATH_PREFIX` : préfixe de l'URL de l'application.
+| Variable | Description | Exemple |
+| --- | --- | --- |
+| `EXPORT_CONF_FOLDER` | Dossier dans lequel Studio stocke les brouillons et les configurations en cours. | `/home/mvuser/apps/store` |
+| `CONF_PATH_FROM_MVIEWER` | Chemin URL utilisé par mviewer pour accéder aux fichiers des brouillons. | `apps/store` |
+| `MVIEWERSTUDIO_PUBLISH_PATH` | Dossier dans lequel Studio copie les fichiers lors de la publication. | `/home/mvuser/apps/public` |
+| `CONF_PUBLISH_PATH_FROM_MVIEWER` | Chemin URL utilisé par mviewer pour accéder aux fichiers publiés. | `apps/public` |
+| `MVIEWERSTUDIO_URL_PATH_PREFIX` | Préfixe d’URL pour servir Studio sous un sous-chemin ; voir [#271](https://github.com/mviewer/mviewerstudio/pull/271). | `mviewerstudio` |
+| `MVIEWERSTUDIO_AUTH_MODE` | Mode d’authentification. Utilisez `authlib` pour une connexion OAuth2/OIDC directe gérée par mviewerstudio. | `authlib` |
+| `MVIEWERSTUDIO_AUTHLIB_ISSUER` | URL de l’émetteur OIDC utilisée pour déterminer les métadonnées de découverte lorsque `MVIEWERSTUDIO_AUTHLIB_METADATA_URL` n’est pas définie. | `https://geonode.example.com/o` |
+| `MVIEWERSTUDIO_AUTHLIB_METADATA_URL` | URL explicite des métadonnées de découverte OIDC. | `https://geonode.example.com/.well-known/openid-configuration` |
+| `MVIEWERSTUDIO_AUTHLIB_CLIENT_ID` | Identifiant du client OAuth2/OIDC utilisé par mviewerstudio. | `mviewerstudio` |
+| `MVIEWERSTUDIO_AUTHLIB_CLIENT_SECRET` | Secret du client OAuth2/OIDC utilisé par mviewerstudio. | `change-me` |
+| `MVIEWERSTUDIO_AUTHLIB_SCOPE` | Portées OAuth2/OIDC demandées lors de la connexion. | `openid profile email` |
+| `OIDC_END_SESSION_ENDPOINT` | URL facultative remplaçant le point de terminaison de déconnexion OAuth2/OIDC du backend. Si elle est vide, mviewerstudio utilise celui découvert dans les métadonnées de l’émetteur Authlib. | `https://locus-test2.udcpp.priv/account/logout/` |
+| `MVIEWERSTUDIO_AUTHLIB_GROUPS_CLAIM` | Nom facultatif du claim contenant les groupes ou rôles, ou liste d’alias séparés par des virgules. Si ce champ est vide, mviewerstudio utilise les claims standards tels que `roles`, `groups`, `group_list_all`. | `member_of` |
+| `MVIEWERSTUDIO_AUTHLIB_ALLOWED_GROUPS` | Liste facultative des groupes autorisés à accéder à mviewerstudio, séparés par des virgules ou des points-virgules. Si elle est vide, tout utilisateur authentifié peut accéder à l’application. | `UMRLISA,MVIEWER_ADMIN` |
+| `MVIEWERSTUDIO_AUTHLIB_ANONYMOUS_REDIRECT_URL` | URL facultative de redirection des utilisateurs anonymes dans les anciens parcours. | `https://example.org/` |
 
 ## Configuration par défaut
 
