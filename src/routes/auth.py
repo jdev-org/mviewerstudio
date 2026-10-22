@@ -13,8 +13,7 @@ auth_routes = Blueprint("auth-routes", __name__)
 @auth_routes.route("/api/user", methods=["GET"])
 def user() -> Response:
     """
-    Return current authentified user.
-    Actually works with sec-proxy only.
+    Return the authenticated user and the active authentication mode.
     """
     response = require_authenticated_user()
     if response is not None:
