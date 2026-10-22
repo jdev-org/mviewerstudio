@@ -63,6 +63,37 @@ def test_anonymous_api_is_denied_with_login_url(studio, route):
     assert urlsplit(response.json["login_url"]).path == f"{prefix}/auth/login"
 
 
+@pytest.mark.parametrize("route", ["/", "/index.html"])
+def test_anonymous_entry_uses_configured_landing_page(studio, route):
+    client, prefix = studio
+    client.application.config["MVIEWERSTUDIO_AUTHLIB_ANONYMOUS_REDIRECT_URL"] = "/"
+    response = client.get(prefix + route)
+    assert response.status_code == 302
+    assert response.location == "/"
+    # The session probe must remain a 401 JSON response, without a redirect loop.
+    session = client.get(prefix + "/api/user")
+    assert session.status_code == 401
+    assert session.json["redirect_url"] == "/"
+
+
+def test_disallowed_user_can_logout(studio, monkeypatch):
+    from .routes import auth as auth_routes_module
+
+    client, prefix = studio
+    monkeypatch.setattr(auth_routes_module, "build_authlib_logout_redirect", lambda: "/")
+    with client.session_transaction() as session:
+        session["mviewerstudio.auth.claims"] = {
+            "preferred_username": "alice", "roles": ["VIEWER"]
+        }
+        session["mviewerstudio.auth.token"] = {"id_token": "test-token"}
+    response = client.get(prefix + "/logout")
+    assert response.status_code == 302
+    assert response.location == "/"
+    assert client.get(prefix + "/api/user").status_code == 401
+    with client.session_transaction() as session:
+        assert "mviewerstudio.auth.token" not in session
+
+
 def test_session_user_is_reported_without_proxy_headers(studio):
     client, prefix = studio
     with client.session_transaction() as session:

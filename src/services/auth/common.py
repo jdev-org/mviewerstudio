@@ -84,7 +84,8 @@ def _forbidden_authlib_response():
 def require_authenticated_user() -> None:
     """Allow public mode, otherwise enforce an authenticated application user.
 
-    In Authlib mode, browser navigation is redirected to the local login route.
+    In Authlib mode, browser entry uses the configured anonymous landing page,
+    or the local login route when no landing page is configured.
     API requests still receive a ``401 Unauthorized`` response.
 
     Returns a Flask response when the caller must be redirected or denied
@@ -99,7 +100,10 @@ def require_authenticated_user() -> None:
                 next=request.headers.get("X-Auth-Return-To") or request.referrer or request.url,
             )
             if _is_studio_entry_request():
-                return redirect(login_url, code=302)
+                landing_url = current_app.config.get(
+                    "MVIEWERSTUDIO_AUTHLIB_ANONYMOUS_REDIRECT_URL", ""
+                ).strip()
+                return redirect(landing_url or login_url, code=302)
             if _is_api_request():
                 return (
                     jsonify(

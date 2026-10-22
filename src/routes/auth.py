@@ -40,14 +40,15 @@ def authlib_callback() -> Response:
 @auth_routes.route("/logout", methods=["GET"])
 @auth_routes.route("/api/logout", methods=["GET"])
 def logout() -> Response:
-    response = require_authenticated_user()
-    if response is not None:
-        return response
+    # Users without an allowed Studio group must also be able to end their session.
     if is_authlib_mode():
         redirect_target = build_authlib_logout_redirect()
         clear_authlib_session()
         return redirect(redirect_target, code=302)
 
+    response = require_authenticated_user()
+    if response is not None:
+        return response
     response = redirect(build_logout_redirect(), code=302)
     apply_logout_cookies(response)
     return response
