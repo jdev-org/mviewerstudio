@@ -212,12 +212,12 @@ const getUser = () => {
       }
       if (r.status === 401) {
         const payload = await r.json().catch(() => null);
-        if (payload && payload.redirect_url) {
-          window.location.assign(payload.redirect_url);
-          return null;
-        }
         if (payload && payload.login_url) {
           window.location.assign(payload.login_url);
+          return null;
+        }
+        if (payload && payload.redirect_url) {
+          window.location.assign(payload.redirect_url);
           return null;
         }
       }

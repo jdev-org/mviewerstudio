@@ -3,6 +3,38 @@
 ## Image
 Only python Dockerfile will be maintained (PHP backend is fully deprecated).
 
+## Keycloak without oauth2-proxy
+
+Studio supports direct OIDC login through Authlib. Pass these variables to the
+container through Compose `environment:` or `docker run --env-file`:
+
+```dotenv
+MVIEWERSTUDIO_AUTH_MODE=authlib
+MVIEWERSTUDIO_AUTHLIB_ISSUER=https://sso.example.org/realms/my-realm
+MVIEWERSTUDIO_AUTHLIB_CLIENT_ID=mviewerstudio
+MVIEWERSTUDIO_AUTHLIB_CLIENT_SECRET=replace-with-client-secret
+MVIEWERSTUDIO_AUTHLIB_SCOPE=openid profile email
+MVIEWERSTUDIO_URL_PATH_PREFIX=mviewerstudio
+SECRET_KEY=replace-with-a-long-stable-random-key
+```
+
+In Keycloak, enable **Client authentication** and **Standard flow** for the OIDC
+client, then set its **Valid redirect URI** to
+`https://studio.example.org/mviewerstudio/auth/callback`.
+Adapt the domain and prefix to your deployment. The callback uses HTTPS; the
+reverse proxy must forward the public host and protocol. The issuer must be
+reachable by both the container and the browser.
+
+Anonymous visitors to `/mviewerstudio/index.html` are redirected through
+`/mviewerstudio/auth/login` to Keycloak, then returned to Studio after login.
+APIs return 401 with `login_url`, which the frontend uses to restart login.
+
+Set `MVIEWERSTUDIO_AUTH_MODE=authlib` explicitly: the legacy setting
+`MVIEWERSTUDIO_AUTH_TYPE=keycloak` selects proxy authentication. The image tag
+`mviewerstudio:keycloak` does not configure authentication. A Compose `.env` file
+alone does not pass these variables into the container: use `environment:` or
+`env_file:` and recreate the container after changes.
+
 ## Manual Docker permissions
 
 Run the commands below from the repository root. The container does not change
@@ -85,8 +117,19 @@ custom UID. Once it does, changing IDs only requires recreating the container.
 | `MVIEWERSTUDIO_AUTHLIB_SCOPE` | Requested OAuth2/OIDC scopes during login. | `openid profile email` |
 | `OIDC_END_SESSION_ENDPOINT` | Optional OAuth2/OIDC logout endpoint override used by the backend logout route. If empty, mviewerstudio uses the endpoint discovered from the Authlib issuer metadata. | `https://locus-test2.udcpp.priv/account/logout/` |
 | `MVIEWERSTUDIO_AUTHLIB_GROUPS_CLAIM` | Optional claim name, or comma-separated claim aliases, containing user groups or roles. If empty, mviewerstudio falls back to standard claims such as `roles`, `groups`, `group_list_all`. | `member_of` |
+| `MVIEWERSTUDIO_AUTHLIB_CLAIMS_MAPPING` | JSON object mapping user fields to paths in raw claims. See the example below. | `{"organization":"organization[0]"}` |
 | `MVIEWERSTUDIO_AUTHLIB_ALLOWED_GROUPS` | Optional comma- or semicolon-separated list of groups allowed to access mviewerstudio. If empty, any authenticated user can access. | `UMRLISA,MVIEWER_ADMIN` |
 | `MVIEWERSTUDIO_AUTHLIB_ANONYMOUS_REDIRECT_URL` | Optional redirect target for anonymous users in legacy flows. | `https://example.org/` |
+
+### Authlib claims mapping
+
+```dotenv
+MVIEWERSTUDIO_AUTHLIB_CLAIMS_MAPPING='{"organization":"organization[0]","roles":"realm_access.roles"}'
+```
+
+For `organization: ["jdev", {"jdev": {}}]`, `organization[0]` returns `jdev`. For a string claim, use `"organization":"organization"`. Paths support nested keys (`profile.organization`), list indexes (`organization[0]`), and bracketed keys (`profile["organization"]`). Python expressions are never executed.
+
+Supported fields: `preferred_username`, `email`, `name`, `given_name`, `family_name`, `organization`, `roles`, `sub`. Unmapped fields retain their default normalization. Missing paths return `null` (`[]` for roles); a missing organization uses `DEFAULT_ORG`. Invalid mappings raise a configuration error during login. Restart the service after changes and log in again to refresh session claims.
 
 ## Default configuration
 

@@ -73,7 +73,7 @@ def basic_store_init(state: BlueprintSetupState):
 
 @basic_store.before_request
 def protect_authenticated_access() -> None:
-    require_authenticated_user()
+    return require_authenticated_user()
 
 
 @basic_store.route("/")
@@ -127,15 +127,6 @@ def swagger_spec() -> Response:
     Serve OpenAPI specification file.
     """
     return send_from_directory(Path(__file__).resolve().parents[1], "swagger.yaml")
-
-
-@basic_store.route("/api/user", methods=["GET"])
-def user() -> Response:
-    """
-    Return current authentified user.
-    Actually works with sec-proxy only.
-    """
-    return jsonify(current_user.as_dict())
 
 
 @basic_store.route("/api/app/load", methods=["GET", "POST"])

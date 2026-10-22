@@ -5,6 +5,7 @@ discovery metadata so it can work with Keycloak, GeoNode/Django OIDC, or any
 other compliant provider.
 """
 
+import ast
 import json
 from urllib.parse import urlencode
 from urllib.request import urlopen
@@ -192,6 +193,49 @@ def _roles_from_claims(claims: dict[str, object]) -> list[str]:
     return []
 
 
+def _claim_path_parts(expression: str) -> list[str | int]:
+    """Parse dictionary keys and list indexes without executing expressions."""
+    def parts(node):
+        if isinstance(node, ast.Name):
+            return [node.id]
+        if isinstance(node, ast.Attribute):
+            return parts(node.value) + [node.attr]
+        if isinstance(node, ast.Subscript) and isinstance(node.slice, ast.Constant):
+            key = node.slice.value
+            if type(key) in (str, int) and (not isinstance(key, int) or key >= 0):
+                return parts(node.value) + [key]
+        raise ValueError("Claim paths only support keys and non-negative list indexes")
+
+    try:
+        return parts(ast.parse(expression, mode="eval").body)
+    except SyntaxError as exc:
+        raise ValueError("Invalid claim path") from exc
+
+
+def _apply_claims_mapping(raw_claims: dict, normalized: dict) -> None:
+    """Override normalized fields using configured paths into provider claims."""
+    configured = current_app.config.get("MVIEWERSTUDIO_AUTHLIB_CLAIMS_MAPPING", "{}")
+    try:
+        mapping = json.loads(configured or "{}")
+    except (TypeError, ValueError) as exc:
+        raise ValueError("MVIEWERSTUDIO_AUTHLIB_CLAIMS_MAPPING must be a JSON object") from exc
+    if not isinstance(mapping, dict):
+        raise ValueError("MVIEWERSTUDIO_AUTHLIB_CLAIMS_MAPPING must be a JSON object")
+    for field, expression in mapping.items():
+        if field not in normalized or not isinstance(expression, str):
+            raise ValueError(f"Invalid claim mapping for {field!r}")
+        value = raw_claims
+        for key in _claim_path_parts(expression):
+            if isinstance(value, dict) and isinstance(key, str):
+                value = value.get(key)
+            elif isinstance(value, list) and isinstance(key, int) and key < len(value):
+                value = value[key]
+            else:
+                value = None
+                break
+        normalized[field] = _roles_from_value(value) if field == "roles" else value
+
+
 def normalize_claims(claims: object) -> dict[str, object]:
     """Map provider-specific claim names to the application's user shape."""
     raw_claims = _coerce_claims(claims)
@@ -233,6 +277,7 @@ def normalize_claims(claims: object) -> dict[str, object]:
         "roles": _roles_from_claims(raw_claims),
         "sub": _first_claim(raw_claims, "sub"),
     }
+    _apply_claims_mapping(raw_claims, normalized)
     try:
         current_app.logger.info("Authlib normalized claims: %s", normalized)
     except Exception:
@@ -298,7 +343,7 @@ def start_authlib_login():
     app_index = app_root_path().rstrip("/") + "/index.html"
     next_url = request.args.get("next") or request.referrer or app_index
     session["mviewerstudio.auth.next_url"] = next_url
-    callback_url = url_for("auth-routes.authlib_callback", _external=True, _scheme="https")
+    callback_url = url_for("auth-routes.authlib_callback", _external=True)
     client = authlib_client()
     metadata = getattr(client, "server_metadata", {}) or {}
     try:

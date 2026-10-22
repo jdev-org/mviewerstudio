@@ -5,6 +5,39 @@
 Seule l'image Docker du backend Python est maintenue ; le backend PHP est abandonné.
 Exécutez les commandes de ce guide depuis la racine du dépôt.
 
+## Keycloak sans oauth2-proxy
+
+Studio peut gérer directement la connexion OIDC avec Authlib. Transmettez ces
+variables au conteneur (bloc `environment:` de Compose ou `docker run --env-file`) :
+
+```dotenv
+MVIEWERSTUDIO_AUTH_MODE=authlib
+MVIEWERSTUDIO_AUTHLIB_ISSUER=https://sso.example.org/realms/mon-realm
+MVIEWERSTUDIO_AUTHLIB_CLIENT_ID=mviewerstudio
+MVIEWERSTUDIO_AUTHLIB_CLIENT_SECRET=remplacer-par-le-secret-du-client
+MVIEWERSTUDIO_AUTHLIB_SCOPE=openid profile email
+MVIEWERSTUDIO_URL_PATH_PREFIX=mviewerstudio
+SECRET_KEY=remplacer-par-une-cle-aleatoire-longue-et-stable
+```
+
+Dans Keycloak, configurez un client OpenID Connect avec **Client authentication**
+et **Standard flow** activés, puis ajoutez cette **Valid redirect URI** :
+`https://studio.example.org/mviewerstudio/auth/callback`.
+Adaptez le domaine et le préfixe à votre installation. Le code utilise HTTPS pour
+le callback ; le reverse proxy doit transmettre le domaine et le protocole publics.
+L'issuer doit être accessible depuis le conteneur et le navigateur.
+
+Un visiteur non connecté est redirigé de `/mviewerstudio/index.html` vers
+`/mviewerstudio/auth/login`, puis vers Keycloak. Après connexion, il revient dans
+Studio. Les API renvoient un statut 401 avec `login_url` ; le frontend utilise
+cette URL pour relancer la connexion.
+
+Définissez explicitement `MVIEWERSTUDIO_AUTH_MODE=authlib` : la valeur historique
+`MVIEWERSTUDIO_AUTH_TYPE=keycloak` sélectionne le mode proxy. Le tag Docker
+`mviewerstudio:keycloak` ne configure pas l'authentification. Dans Compose, un
+fichier `.env` seul ne transmet pas ces variables : utilisez `environment:` ou
+`env_file:` et recréez le conteneur après modification.
+
 ## Permissions Docker à préparer manuellement
 
 Le conteneur ne modifie pas automatiquement les propriétaires ni les permissions.
@@ -89,8 +122,19 @@ L’image publiée doit intégrer les droits de lecture du code nécessaires à 
 | `MVIEWERSTUDIO_AUTHLIB_SCOPE` | Portées OAuth2/OIDC demandées lors de la connexion. | `openid profile email` |
 | `OIDC_END_SESSION_ENDPOINT` | URL facultative remplaçant le point de terminaison de déconnexion OAuth2/OIDC du backend. Si elle est vide, mviewerstudio utilise celui découvert dans les métadonnées de l’émetteur Authlib. | `https://locus-test2.udcpp.priv/account/logout/` |
 | `MVIEWERSTUDIO_AUTHLIB_GROUPS_CLAIM` | Nom facultatif du claim contenant les groupes ou rôles, ou liste d’alias séparés par des virgules. Si ce champ est vide, mviewerstudio utilise les claims standards tels que `roles`, `groups`, `group_list_all`. | `member_of` |
+| `MVIEWERSTUDIO_AUTHLIB_CLAIMS_MAPPING` | Objet JSON associant les champs utilisateur à des chemins dans les claims bruts. Voir l’exemple ci-dessous. | `{"organization":"organization[0]"}` |
 | `MVIEWERSTUDIO_AUTHLIB_ALLOWED_GROUPS` | Liste facultative des groupes autorisés à accéder à mviewerstudio, séparés par des virgules ou des points-virgules. Si elle est vide, tout utilisateur authentifié peut accéder à l’application. | `UMRLISA,MVIEWER_ADMIN` |
 | `MVIEWERSTUDIO_AUTHLIB_ANONYMOUS_REDIRECT_URL` | URL facultative de redirection des utilisateurs anonymes dans les anciens parcours. | `https://example.org/` |
+
+### Mapping des claims Authlib
+
+```dotenv
+MVIEWERSTUDIO_AUTHLIB_CLAIMS_MAPPING='{"organization":"organization[0]","roles":"realm_access.roles"}'
+```
+
+Avec `organization: ["public", {"public": {}}]`, le chemin `organization[0]` donne `public`. Si le claim est une chaîne, utilisez `"organization":"organization"`. Les chemins acceptent les clés imbriquées (`profile.organization`), les indices de liste (`organization[0]`) et les clés entre crochets (`profile["organization"]`). Aucune expression Python n’est exécutée.
+
+Champs configurables : `preferred_username`, `email`, `name`, `given_name`, `family_name`, `organization`, `roles`, `sub`. Les champs omis gardent leur normalisation habituelle. Un chemin absent donne `null` (ou `[]` pour les rôles) ; une organisation absente utilise `DEFAULT_ORG`. Un mapping invalide provoque une erreur de configuration lors de la connexion. Redémarrez le service après modification et reconnectez-vous pour renouveler les claims en session.
 
 ## Configuration par défaut
 
