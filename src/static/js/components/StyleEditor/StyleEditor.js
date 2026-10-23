@@ -342,6 +342,7 @@ StyleEditor.prototype.setActiveMode = function (mode) {
   this.customStyle.element.classList.toggle("d-none", mode !== STYLE_MODES.CUSTOM);
   this.styleSelector.element.classList.toggle("d-none", mode !== STYLE_MODES.EXISTING);
   this.tmsStyle.element.classList.toggle("d-none", mode !== STYLE_MODES.EXISTING);
+  this.legendSelector.element.hidden = mode === STYLE_MODES.CUSTOM;
 };
 
 /**

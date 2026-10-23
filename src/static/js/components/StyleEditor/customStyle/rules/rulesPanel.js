@@ -5,6 +5,7 @@ import {
   DEFAULT_STROKE,
   DEFAULT_SYMBOL,
   DEFAULT_SIZE_COLOR,
+  MAX_STYLE_RULES,
   STYLE_TYPES,
 } from "../../constants.js";
 import { createField } from "./fields.js";
@@ -59,7 +60,7 @@ export default class RulesPanel {
 
   /** @returns {boolean} Indique si le style autorise une règle supplémentaire. */
   canAddRule() {
-    if (this.type === "simple") return false;
+    if (this.type === "simple" || this.rules.length >= MAX_STYLE_RULES) return false;
 
     const definition = STYLE_TYPES.find((item) => item.value === this.type);
 

@@ -50,6 +50,8 @@ export const STYLE_GEOMETRIES = {
   MultiSurface: "Polygon",
 };
 
+export const MAX_STYLE_RULES = 10;
+
 export const STYLE_TYPES = [
   {
     value: "simple",
@@ -91,7 +93,7 @@ export const STYLE_TYPES = [
     label: "style_editor.type.categorized",
     description: "style_editor.type.categorized.description",
     geom: ["Point", "Polygon", "LineString"],
-    maxClasses: 10,
+    maxClasses: MAX_STYLE_RULES,
     styleProp: ["field", "randomColor"],
     img: "img/styler/style_categ.png",
   },
