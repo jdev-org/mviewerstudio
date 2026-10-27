@@ -184,9 +184,9 @@ StyleEditor.prototype.saveToLayer = async function (layer, name, mapId) {
 };
 
 /**
- * Charge les valeurs WFS du champ choisi et remplit les règles de classification.
- * @param {CustomEvent} event Paramètres du calcul et fonction de mise à jour des règles.
- * @returns {Promise<void>} Actualise les règles ou affiche l'erreur dans le panneau.
+ * Classify the selected field using authenticated CSV data or WFS features.
+ * @param {CustomEvent} event Classification settings and rule update callback.
+ * @returns {Promise<void>} Update the rules or display an error in the panel.
  */
 StyleEditor.prototype.calculate = async function (event) {
   const {
@@ -213,27 +213,45 @@ StyleEditor.prototype.calculate = async function (event) {
 
   try {
     const layer = config.temp.layers[layerId];
-    if (!layer || !layer.wfs_url) {
-      throw new Error(mviewer.tr("style_editor.error.no_wfs"));
+    let data;
+    if (layer && layer.type === "csv") {
+      if (!Array.isArray(layer.csvData)) {
+        throw new Error(mviewer.tr("style_editor.error.csv_not_loaded"));
+      }
+      data = layer.csvData;
+      if (!styleProp.includes("randomColor")) {
+        data = data.map((record) => {
+          let value = record[field];
+          if (typeof value === "string") {
+            value = value.trim();
+            if (value === "") value = null;
+            else value = +value.replace(",", ".");
+          }
+          return { [field]: value };
+        });
+      }
+    } else {
+      if (!layer || !layer.wfs_url) {
+        throw new Error(mviewer.tr("style_editor.error.no_wfs"));
+      }
+      const url = ogc.urlToObject(layer.wfs_url, {
+        SERVICE: "WFS",
+        VERSION: "1.0.0",
+        REQUEST: "GETFEATURE",
+        OUTPUTFORMAT: "application/json",
+        TYPENAME: layerId,
+        PROPERTYNAME: field,
+      });
+      const response = await fetch(url.toString());
+      if (!response.ok) {
+        throw new Error(mviewer.tr("style_editor.error.load_values"));
+      }
+      const collection = await response.json();
+      if (!Array.isArray(collection.features)) {
+        throw new Error(mviewer.tr("style_editor.error.invalid_data"));
+      }
+      data = collection.features.map((feature) => feature.properties);
     }
-
-    const url = ogc.urlToObject(layer.wfs_url, {
-      SERVICE: "WFS",
-      VERSION: "1.0.0",
-      REQUEST: "GETFEATURE",
-      OUTPUTFORMAT: "application/json",
-      TYPENAME: layerId,
-      PROPERTYNAME: field,
-    });
-    const response = await fetch(url.toString());
-    if (!response.ok) {
-      throw new Error(mviewer.tr("style_editor.error.load_values"));
-    }
-    const collection = await response.json();
-    if (!Array.isArray(collection.features)) {
-      throw new Error(mviewer.tr("style_editor.error.invalid_data"));
-    }
-    const data = collection.features.map((feature) => feature.properties);
     let rules;
 
     if (styleProp.includes("randomColor")) {

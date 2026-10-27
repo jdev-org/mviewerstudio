@@ -1,5 +1,6 @@
 {
   "fr": {
+    "style_editor.error.csv_not_loaded": "Saisissez une clé API Grist valide puis attendez le chargement des données avant de calculer les classes.",
     "style_editor.labels.settings": "Paramètres des étiquettes",
     "style_editor.labels.field": "Champ à étiqueter",
     "style_editor.labels.scale": "Échelle d’affichage",
@@ -734,6 +735,7 @@
     "xmleditor.btn.text": "Éditeur XML"
   },
   "en": {
+    "style_editor.error.csv_not_loaded": "Enter a valid Grist API key and wait for the data to load before calculating classes.",
     "style_editor.labels.settings": "Label settings",
     "style_editor.labels.field": "Label field",
     "style_editor.labels.scale": "Display scale",

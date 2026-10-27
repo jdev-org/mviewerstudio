@@ -836,10 +836,14 @@ var mv = (function () {
       if (["wms", "csv"].includes(layer.type)) {
         let defaultStyleMode = "existing";
         if (layer.type === "csv" || layer.customsld) defaultStyleMode = "custom";
+        const layerData = config.temp.layers[layerid];
+        let fields = [];
+        if (layerData) fields = Object.keys(layerData.fields || {});
         document.querySelector("#layer-style-editor .style-editor").dispatchEvent(
           new CustomEvent("loadOptions", {
             detail: {
               layerId: layerid,
+              fields,
               geometry: layer.customStyle ? layer.customStyle.geometry : "Point",
               styles: [],
               stylesLoading: layer.type === "wms",
@@ -925,6 +929,9 @@ var mv = (function () {
 
       if (isGristCsvLayer) {
         // Grist layers are stored as authenticated CSV endpoints.
+        if (!config.temp.layers[layerid]) config.temp.layers[layerid] = {};
+        config.temp.layers[layerid].type = "csv";
+        delete config.temp.layers[layerid].csvData;
         [...document.querySelectorAll("#mod-layerOptions .layerOption-csv")].forEach(
           (e) => e.classList.remove("d-none")
         );
@@ -980,7 +987,26 @@ var mv = (function () {
           .then((csv) => {
             // PapaParse preserves the table headers used by the preview component.
             const data = Papa.parse(csv, { header: true, skipEmptyLines: true });
+            if (document.getElementById("mod-layerOptions").dataset.layerid !== layerid) {
+              return;
+            }
             previewContainer._gristLayerData = data;
+            const fields = data.meta.fields || [];
+            if (!config.temp.layers[layerid]) config.temp.layers[layerid] = {};
+            config.temp.layers[layerid].csvData = data.data;
+            config.temp.layers[layerid].fields = Object.fromEntries(
+              fields.map((field) => [field, {}])
+            );
+            const styleEditor = document.querySelector(
+              "#layer-style-editor .style-editor"
+            );
+            if (styleEditor) {
+              styleEditor.dispatchEvent(
+                new CustomEvent("showFields", {
+                  detail: { layerId: layerid, fields },
+                })
+              );
+            }
             const Table = mv.components.table;
             const preview = new Table({
               data,
