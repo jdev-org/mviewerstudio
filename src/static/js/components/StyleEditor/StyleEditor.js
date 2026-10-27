@@ -4,6 +4,7 @@ import {
   STYLE_EDITOR_EVENTS,
   STYLE_TYPES,
   DEFAULT_SYMBOL,
+  CLASSIFICATION_LIMITS,
 } from "./constants.js";
 import CustomStyle from "./customStyle/CustomStyle.js";
 import StyleSelector from "./styleSelector/styleSelector.js";
@@ -228,8 +229,12 @@ StyleEditor.prototype.calculate = async function (event) {
 
     if (styleProp.includes("randomColor")) {
       const values = categorize(data, field);
-      if (values.length > 10) {
-        throw new Error(mviewer.tr("style_editor.error.too_many_categories"));
+      if (values.length > CLASSIFICATION_LIMITS.categories.max) {
+        throw new Error(
+          mviewer
+            .tr("style_editor.error.too_many_categories")
+            .replace("{max}", CLASSIFICATION_LIMITS.categories.max)
+        );
       }
       rules = values.map((value) => ({ name: `${value}`, value }));
     } else {

@@ -24,6 +24,11 @@ export const CLASSIFICATION_TOOLTIPS = {
   classes: "style_editor.tooltip.classes",
 };
 
+export const CLASSIFICATION_LIMITS = {
+  classes: { recommended: 5, max: 7 },
+  categories: { recommended: 7, max: 10 },
+};
+
 export const STYLE_CHOICES = [
   {
     mode: STYLE_MODES.EXISTING,
@@ -50,7 +55,7 @@ export const STYLE_GEOMETRIES = {
   MultiSurface: "Polygon",
 };
 
-export const MAX_STYLE_RULES = 10;
+export const MAX_STYLE_RULES = CLASSIFICATION_LIMITS.categories.max;
 
 export const STYLE_TYPES = [
   {
@@ -63,6 +68,7 @@ export const STYLE_TYPES = [
   },
   {
     value: "analyse",
+    maxClasses: CLASSIFICATION_LIMITS.classes.max,
     label: "style_editor.type.analyse",
     description: "style_editor.type.analyse.description",
     geom: ["Point", "Polygon", "LineString"],
@@ -72,6 +78,7 @@ export const STYLE_TYPES = [
   },
   {
     value: "proportionalCircles",
+    maxClasses: CLASSIFICATION_LIMITS.classes.max,
     label: "style_editor.type.proportionalCircles",
     description: "style_editor.type.proportionalCircles.description",
     geom: ["Point"],
@@ -81,6 +88,7 @@ export const STYLE_TYPES = [
   },
   {
     value: "proportionalColoredCircles",
+    maxClasses: CLASSIFICATION_LIMITS.classes.max,
     label: "style_editor.type.proportionalColoredCircles",
     description: "style_editor.type.proportionalColoredCircles.description",
     geom: ["Point"],
@@ -101,7 +109,7 @@ export const STYLE_TYPES = [
     value: "cluster",
     label: "style_editor.type.cluster",
     description: "style_editor.type.cluster.description",
-    geom: ["Point", "Polygon", "LineString"],
+    geom: ["Point"],
     styleProp: ["field", "distance"],
     img: "img/styler/style_cluster_regroup.png",
   },

@@ -1,6 +1,7 @@
 import {
   CLASSIFICATION_METHODS,
   CLASSIFICATION_TOOLTIPS,
+  CLASSIFICATION_LIMITS,
   DEFAULT_COLOR_SCALE,
   DEFAULT_FILL,
   DEFAULT_CLUSTER_DISTANCE,
@@ -33,7 +34,7 @@ export default class MethodsPanel {
       field: "",
       legend: "",
       method: methods[0].value,
-      classes: 5,
+      classes: CLASSIFICATION_LIMITS.classes.recommended,
       maxSize: DEFAULT_SYMBOL.maxSize,
       color: styleProp.includes("ramps") ? DEFAULT_COLOR_SCALE : DEFAULT_FILL.color,
       distance: DEFAULT_CLUSTER_DISTANCE,
@@ -75,7 +76,7 @@ export default class MethodsPanel {
           title.textContent =
             mviewer.tr("style_editor.classification.category_field") + " ";
           new Tooltip({
-            message: mviewer.tr(CLASSIFICATION_TOOLTIPS.categories),
+            message: this.getClassificationTooltip("categories"),
           }).appendTo(title);
         }
       }
@@ -98,12 +99,13 @@ export default class MethodsPanel {
             label: "style_editor.classification.classes",
             type: "number",
             min: 1,
-            max: 7,
+            max: STYLE_TYPES.find((definition) => definition.value === this.type)
+              .maxClasses,
           },
           this.state.classes
         );
         const tooltip = new Tooltip({
-          message: mviewer.tr(CLASSIFICATION_TOOLTIPS.classes),
+          message: this.getClassificationTooltip("classes"),
           classes: "ms-1",
         });
         field.insertBefore(tooltip.render(), field.querySelector("input"));
@@ -199,6 +201,19 @@ export default class MethodsPanel {
     this.element.replaceChildren(this.card.setItems([fields]));
 
     return this.element;
+  }
+
+  /** Formate une infobulle avec les limites définies dans les constantes.
+   * @param {string} kind Type de limites : classes ou categories.
+   * @returns {string} Texte traduit avec les nombres recommandés et maximums.
+   */
+  getClassificationTooltip(kind) {
+    const limits = CLASSIFICATION_LIMITS[kind];
+
+    return mviewer
+      .tr(CLASSIFICATION_TOOLTIPS[kind])
+      .replace("{recommended}", limits.recommended)
+      .replace("{max}", limits.max);
   }
 
   /** @returns {HTMLElement} Liste de palettes et option d'inversion. */

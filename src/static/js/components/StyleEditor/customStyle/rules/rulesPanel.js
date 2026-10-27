@@ -315,6 +315,10 @@ export default class RulesPanel {
         definition.type = "number";
 
         definition.step = "any";
+
+        if (name === "min") definition.max = rule.max;
+
+        if (name === "max") definition.min = rule.min;
       }
 
       const field = createField(definition, rule[name]);
@@ -334,14 +338,58 @@ export default class RulesPanel {
       cell.appendChild(input);
 
       input.addEventListener("change", () => {
+        if (input.type === "number") {
+          const updatedRule = { ...rule, [name]: input.valueAsNumber };
+
+          if (!this.isRuleRangeValid(updatedRule, index)) {
+            input.setCustomValidity(mviewer.tr("style_editor.error.class_range"));
+          }
+
+          const valid = input.reportValidity();
+
+          input.setCustomValidity("");
+
+          if (!valid) {
+            input.value = rule[name];
+
+            return;
+          }
+        }
+
         rule[name] = input.value;
 
         if (input.type === "number") {
           rule[name] = input.valueAsNumber;
+
+          if (name === "min") {
+            row.querySelector('[name="max"]').min = rule.min;
+          } else {
+            row.querySelector('[name="min"]').max = rule.max;
+          }
         }
 
         this.update();
       });
+    });
+  }
+
+  /** Vérifie l'ordre et l'absence de recouvrement d'une classe modifiée.
+   * Les bornes communes sont autorisées : le filtre exclut la borne basse partagée.
+   * @param {Object} rule Classe contenant les bornes proposées.
+   * @param {number} index Position de la classe modifiée.
+   * @returns {boolean} Indique si l'intervalle respecte toutes les autres classes.
+   */
+  isRuleRangeValid(rule, index) {
+    if (!Number.isFinite(rule.min) || !Number.isFinite(rule.max)) return false;
+
+    if (rule.min >= rule.max) return false;
+
+    return this.rules.every((other, otherIndex) => {
+      if (otherIndex < index) return other.max <= rule.min;
+
+      if (otherIndex > index) return rule.max <= other.min;
+
+      return true;
     });
   }
 
