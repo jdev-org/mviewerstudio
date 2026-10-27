@@ -132,6 +132,7 @@ CustomStyle.prototype.getValue = function () {
   if (panels.colorClassification) {
     value.colorClassification = panels.colorClassification.getValue();
   }
+  if (this.labels) value.labels = this.labels.getValue();
   return value;
 };
 

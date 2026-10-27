@@ -1,9 +1,12 @@
+import { createLabelRule } from "./labels.js";
 import {
   DEFAULT_FILL,
   DEFAULT_STROKE,
   DEFAULT_SYMBOL,
   STYLE_GEOMETRIES,
   STYLE_TYPES,
+  DEFAULT_SLD_VERSION,
+  SLD_SCHEMA_LOCATIONS,
 } from "../../components/StyleEditor/constants.js";
 
 /**
@@ -194,25 +197,35 @@ export const createGeoStylerStyle = (configuration, name = "") => {
       addRule(rule);
     }
   });
+  const labelRule = createLabelRule(configuration.labels);
+  if (labelRule) rules.push(labelRule);
   return createEmptyGeoStylerObject(name, rules);
 };
 
 /**
- * Sérialise un style GeoStyler avec la bibliothèque chargée dans index.html.
- * @param {Object} style Style GeoStyler contenant name et rules.
- * @param {Object} [options={}] Options de SldStyleParser, dont sldVersion.
- * @param {string} [options.layerName] Nom technique WMS pour NamedLayer/Name.
- * @returns {Promise<string>} Document SLD.
- * @throws {Error} Si la bibliothèque manque ou si la conversion échoue.
+ * Serialize a GeoStyler style as SLD 1.1.0 with SE 1.1 symbolizers by default.
+ * @param {Object} style GeoStyler style containing name and rules.
+ * @param {Object} [options={}] SldStyleParser options, including sldVersion.
+ * @param {string} [options.layerName] Technical WMS name for NamedLayer/Name.
+ * @returns {Promise<string>} SLD document referencing its official schema.
+ * @throws {Error} If the parser is unavailable or serialization fails.
  */
 export const geoStylerToSld = async (style, options = {}) => {
   const { layerName, ...parserOptions } = options;
-  const parser = new globalThis.GeoStylerSLDParser.SldStyleParser(parserOptions);
+  const sldVersion = parserOptions.sldVersion || DEFAULT_SLD_VERSION;
+  const parser = new globalThis.GeoStylerSLDParser.SldStyleParser({
+    ...parserOptions,
+    sldVersion,
+  });
   const { output, errors } = await parser.writeStyle(style);
   if (errors && errors.length > 0) {
     throw new Error(errors.map((error) => error.message || error).join("\n"));
   }
   if (!output) throw new Error("SLD conversion produced no output.");
+  const sld = output.replace(
+    /xsi:schemaLocation="[^"]*"/,
+    `xsi:schemaLocation="http://www.opengis.net/sld ${SLD_SCHEMA_LOCATIONS[sldVersion]}"`
+  );
   if (layerName) {
     const xmlLayerName = layerName.replace(
       /[<>&"']/g,
@@ -221,11 +234,11 @@ export const geoStylerToSld = async (style, options = {}) => {
           character
         ]
     );
-    // Seul le nom de la couche est remplacé ; UserStyle garde le libellé du style.
-    return output.replace(
+    // Preserve the readable style name when replacing the technical layer name.
+    return sld.replace(
       /(<NamedLayer>\s*<(?:se:)?Name>)[\s\S]*?(<\/(?:se:)?Name>)/,
       (match, opening, closing) => `${opening}${xmlLayerName}${closing}`
     );
   }
-  return output;
+  return sld;
 };

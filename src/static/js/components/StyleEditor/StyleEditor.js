@@ -10,6 +10,7 @@ import CustomStyle from "./customStyle/CustomStyle.js";
 import StyleSelector from "./styleSelector/styleSelector.js";
 import TmsStyle from "./tmsStyle/tmsStyle.js";
 import LegendSelector from "../legendSelector/legendSelector.js";
+import StylerLabels from "./labels/stylerLabels.js";
 import { analyse, categorize } from "../../utils/styler/methods.js";
 import {
   createColorRampScales,
@@ -34,6 +35,7 @@ const StyleEditor = function (options = {}) {
   this.element.className = "style-editor";
   this.customStyle = new CustomStyle({ ...options, state: options.customStyle });
   this.customStyle.geoStylerStyle = structuredClone(options.geoStylerStyle || null);
+  this.createLabels();
   this.styleSelector = new StyleSelector(options);
   this.tmsStyle = new TmsStyle();
   this.legendSelector = new LegendSelector();
@@ -54,7 +56,10 @@ const StyleEditor = function (options = {}) {
         event.preventDefault();
         return;
       }
-      const inputs = [...this.customStyle.element.querySelectorAll("input, select")];
+      const inputs = [
+        ...this.customStyle.element.querySelectorAll("input, select"),
+        ...this.labels.element.querySelectorAll("input, select"),
+      ];
       if (!inputs.every((input) => input.reportValidity())) {
         event.preventDefault();
         return;
@@ -89,6 +94,8 @@ StyleEditor.prototype.loadCustomStyle = async function () {
     this.options.geometry = saved.configuration.geometry;
     this.customStyle = new CustomStyle({ ...this.options, state: saved.configuration });
     this.customStyle.geoStylerStyle = structuredClone(saved.geoStylerStyle);
+    if (saved.configuration.labels) this.createLabels();
+    this.customStyle.labels = this.labels;
     this.loadingCustomStyle = false;
     this.render();
   } catch (error) {
@@ -105,6 +112,7 @@ StyleEditor.prototype.loadCustomStyle = async function () {
 StyleEditor.prototype.updateLoadStatus = function () {
   const failed = this.styleLoadError !== null;
   this.customStyle.element.inert = this.loadingCustomStyle || failed;
+  this.labels.element.inert = this.loadingCustomStyle || failed;
   this.customStyle.element.setAttribute("aria-busy", this.loadingCustomStyle);
   const status = this.element.querySelector("[data-style-load-status]");
   if (!status) return;
@@ -136,6 +144,7 @@ StyleEditor.prototype.setGeometry = function (geometry) {
   this.options.geometry = styleGeometry;
   this.options.customStyle = state;
   this.customStyle = new CustomStyle({ ...this.options, state });
+  this.customStyle.labels = this.labels;
   this.render();
 };
 
@@ -317,6 +326,7 @@ StyleEditor.prototype.reset = function (options = {}) {
     state: this.options.customStyle,
   });
   this.customStyle.geoStylerStyle = structuredClone(this.options.geoStylerStyle || null);
+  this.createLabels();
   this.activeMode =
     this.options.styleMode ||
     (this.options.customsld ? STYLE_MODES.CUSTOM : STYLE_MODES.EXISTING);
@@ -348,6 +358,7 @@ StyleEditor.prototype.setActiveMode = function (mode) {
   this.styleSelector.element.classList.toggle("d-none", mode !== STYLE_MODES.EXISTING);
   this.tmsStyle.element.classList.toggle("d-none", mode !== STYLE_MODES.EXISTING);
   this.legendSelector.element.hidden = mode === STYLE_MODES.CUSTOM;
+  this.labels.element.hidden = mode !== STYLE_MODES.CUSTOM;
 };
 
 /**
@@ -366,7 +377,8 @@ StyleEditor.prototype.render = function () {
     this.styleSelector.render(),
     this.tmsStyle.render(),
     this.customStyle.render(),
-    this.legendSelector.render()
+    this.legendSelector.render(),
+    this.labels.render()
   );
 
   this.element.querySelectorAll("[data-style-mode]").forEach((button) => {
@@ -399,6 +411,19 @@ StyleEditor.prototype.setLayerId = function (layerId) {
 StyleEditor.prototype.setFields = function (fields) {
   this.options.fields = fields;
   this.customStyle.setFields(fields);
+  this.labels.setFields(fields);
+};
+
+/** Initialize labels from the editor options and attach them to the style to save.
+ * @returns {void}
+ */
+StyleEditor.prototype.createLabels = function () {
+  let scales = this.options.labelScales;
+  if (!scales && typeof _conf !== "undefined") scales = _conf.labelScales;
+  let state = {};
+  if (this.options.customStyle) state = this.options.customStyle.labels;
+  this.labels = new StylerLabels({ fields: this.options.fields, state, scales });
+  this.customStyle.labels = this.labels;
 };
 
 export default StyleEditor;

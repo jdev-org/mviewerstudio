@@ -1,3 +1,4 @@
+import { restoreLabels } from "./labels.js";
 import {
   DEFAULT_FILL,
   DEFAULT_STROKE,
@@ -89,9 +90,13 @@ const restoreClassifications = (filter) => {
  * @param {Object} style Style GeoStyler lu dans le SLD.
  * @returns {Object} Configuration de CustomStyle.
  */
-export const geoStylerToConfiguration = (style) => {
+export const geoStylerToConfiguration = (style, labelScales) => {
   if (!style.rules || style.rules.length === 0) throw new Error("The SLD has no rules.");
-  const entries = style.rules.map((rule) => {
+  const graphicRules = style.rules.filter((rule) =>
+    rule.symbolizers.some((symbolizer) => symbolizer.kind !== "Text")
+  );
+  if (!graphicRules.length) throw new Error("The SLD has no graphic rules.");
+  const entries = graphicRules.map((rule) => {
     if (rule.symbolizers.length !== 1) throw new Error("Unsupported SLD rule.");
     const { geometry, ...graphics } = restoreSymbolizer(rule.symbolizers[0]);
     return {
@@ -114,6 +119,10 @@ export const geoStylerToConfiguration = (style) => {
     }
   }
   const configuration = { type, geometry, rules: [] };
+  const labelRule = style.rules.find((rule) =>
+    rule.symbolizers.some((symbolizer) => symbolizer.kind === "Text")
+  );
+  if (labelRule) configuration.labels = restoreLabels(labelRule, labelScales);
   if (first) configuration.field = first.field;
   const combined = entries[0].classifications.length === 2;
   if (combined) {
@@ -189,5 +198,8 @@ export const loadSldStyle = async (sld) => {
     throw new Error(errors.map((error) => error.message || error).join("\n"));
   }
   if (!output) throw new Error("SLD conversion produced no output.");
-  return { geoStylerStyle: output, configuration: geoStylerToConfiguration(output) };
+  return {
+    geoStylerStyle: output,
+    configuration: geoStylerToConfiguration(output, _conf.labelScales),
+  };
 };

@@ -1,3 +1,9 @@
+export const DEFAULT_SLD_VERSION = "1.1.0";
+export const SLD_SCHEMA_LOCATIONS = {
+  "1.0.0": "https://schemas.opengis.net/sld/1.0.0/StyledLayerDescriptor.xsd",
+  "1.1.0": "https://schemas.opengis.net/sld/1.1.0/StyledLayerDescriptor.xsd",
+};
+
 export const STYLE_MODES = {
   EXISTING: "existing",
   CUSTOM: "custom",
