@@ -11,6 +11,7 @@ import {
   getGristTableUrl,
   getOrCreateWorkspace,
 } from "../../../utils/grist/utils.js";
+import { getGristColumnType, getGristCellValue } from "../../../utils/grist/importTypes.js";
 
 /**
  * Parse a successful Grist API response as JSON.
@@ -131,15 +132,16 @@ const getHeaders = (rows, data) => {
  * @returns {*} Cell value.
  */
 const getCellValue = (row, header, index) => {
+  let value = row;
   if (Array.isArray(row)) {
-    return row[index] || "";
+    value = row[index];
+  } else if (row && typeof row === "object") {
+    value = row[header];
   }
-
-  if (row && typeof row === "object") {
-    return row[header] || "";
+  if (value === null || value === undefined) {
+    return "";
   }
-
-  return row || "";
+  return value;
 };
 
 /**
@@ -376,6 +378,9 @@ export const sendParsedFileToGrist = async (
     gristApiKey
   );
   const columnIds = getUniqueGristIds(headers, "column");
+  const columnTypes = headers.map((header, index) =>
+    getGristColumnType(rows.map((row) => getCellValue(row, header, index)))
+  );
 
   await postTablesToDoc(
     gristConfig.apiUrl,
@@ -386,7 +391,7 @@ export const sendParsedFileToGrist = async (
           id: tableId,
           columns: columnIds.map((columnId, index) => ({
             id: columnId,
-            fields: { label: headers[index] },
+            fields: { label: headers[index], type: columnTypes[index] },
           })),
         },
       ],
@@ -426,7 +431,9 @@ export const sendParsedFileToGrist = async (
     {
       records: rows.map((row) => ({
         fields: actualColumnIds.reduce((record, columnId, index) => {
-          record[columnId] = getCellValue(row, headers[index], index);
+          record[columnId] = getGristCellValue(
+            getCellValue(row, headers[index], index), columnTypes[index]
+          );
           return record;
         }, {}),
       })),

@@ -45,17 +45,39 @@ const readCsvData = (content) =>
     });
   });
 
+/**
+ * Map the first XLSX sheet directly to named rows without converting cell values.
+ * Use unique headers so duplicate or empty names do not overwrite cells.
+ * @param {File} file Workbook to read.
+ * @returns {Promise<Object>} Named rows and column metadata for preview and import.
+ */
 const readExcelData = async (file) => {
   if (!window.readXlsxFile) {
     throw new Error("read-excel-file is not available");
   }
-  if (!window.Papa) {
-    throw new Error("PapaParse is not available");
-  }
-
   const sheets = await window.readXlsxFile(file, { sheets: [1], trim: false });
-  const content = window.Papa.unparse(sheets[0].data);
-  return readCsvData(content);
+  const [headerRow = [], ...rows] = sheets[0].data;
+  const usedHeaders = new Set();
+  const fields = headerRow.map((header, index) => {
+    let name = `column_${index + 1}`;
+    if (header !== null && header !== undefined && header !== "") {
+      name = `${header}`;
+    }
+    let uniqueName = name;
+    let suffix = 1;
+    while (usedHeaders.has(uniqueName)) {
+      uniqueName = `${name}_${suffix}`;
+      suffix += 1;
+    }
+    usedHeaders.add(uniqueName);
+    return uniqueName;
+  });
+
+  const data = rows
+    .filter((row) => row.some((value) => value !== null && value !== undefined && value !== ""))
+    .map((row) => Object.fromEntries(fields.map((field, index) => [field, row[index]])));
+
+  return { data, meta: { fields } };
 };
 
 /**
