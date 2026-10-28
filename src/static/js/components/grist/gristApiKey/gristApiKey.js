@@ -1,3 +1,4 @@
+import { createGristApiError } from "../../../utils/grist/apiError.js";
 /**
  * Simple Grist API key form block.
  *
@@ -73,9 +74,9 @@ GristApiKey.prototype.fetchKeyFromGristAPI = function () {
     headers: {
       Accept: "text/plain",
     },
-  }).then((response) => {
+  }).then(async (response) => {
     if (!response.ok) {
-      throw new Error("Network response was not ok");
+      throw await createGristApiError(response);
     }
     return response.text();
   });
@@ -110,7 +111,7 @@ GristApiKey.prototype.loadApiKey = function () {
       this.onInvalidApiKey();
       input.readOnly = false;
       input.focus();
-      this.showAlert("warning", mviewer.tr("grist.api_key.auto_fetch_failed"));
+      this.showAlert("warning", error.message || mviewer.tr("grist.api_key.auto_fetch_failed"));
       console.warn("Error fetching Grist API key:", error);
     });
 };
@@ -187,9 +188,9 @@ GristApiKey.prototype.validateApiKey = function () {
   }
 
   getUserOrgs(this.gristInstanceUrl, apiKey)
-    .then((response) => {
+    .then(async (response) => {
       if (!response.ok) {
-        throw new Error("Invalid Grist API key");
+        throw await createGristApiError(response);
       }
 
       this.showAlert("success", mviewer.tr("grist.api_key.valid"));
@@ -200,7 +201,7 @@ GristApiKey.prototype.validateApiKey = function () {
     .catch((error) => {
       clearStoredGristApiKey();
       this.onInvalidApiKey();
-      this.showAlert("danger", mviewer.tr("grist.api_key.invalid"));
+      this.showAlert("danger", error.message || mviewer.tr("grist.api_key.invalid"));
       console.error("Error validating Grist API key:", error);
     })
     .finally(() => {

@@ -1,3 +1,4 @@
+import { createGristApiError } from "./apiError.js";
 import {
   BAN_GEOCODING_FIELDS,
   GRIST_LOCATION_SWITCH_IDS,
@@ -204,9 +205,7 @@ const getBanGeocodingStatus = (rows, sourceRows = []) => {
  */
 const readGristJson = async (response) => {
   if (!response.ok) {
-    throw new Error(
-      mviewer.tr("grist.import.request_failed").replace("{status}", () => response.status)
-    );
+    throw await createGristApiError(response);
   }
 
   return response.json();
@@ -246,12 +245,7 @@ const ensureGristGeocodingColumns = async (gristConfig, sourceData, apiKey) => {
     );
 
     if (!response.ok && response.status !== 400) {
-      throw new Error(
-        mviewer
-          .tr("grist.geocoding.column_failed")
-          .replace("{column}", () => column)
-          .replace("{status}", () => response.status)
-      );
+      throw await createGristApiError(response);
     }
   }
 };

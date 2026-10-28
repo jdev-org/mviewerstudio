@@ -1,3 +1,4 @@
+import { createGristApiError } from "../../../utils/grist/apiError.js";
 import { getTableRecords } from "../../../utils/grist/requests.js";
 import { getGristConfig } from "../../../utils/grist/utils.js";
 
@@ -10,7 +11,7 @@ import { getGristConfig } from "../../../utils/grist/utils.js";
  */
 const readJson = async (response) => {
   if (!response.ok) {
-    throw new Error(`Grist request failed with status ${response.status}`);
+    throw await createGristApiError(response);
   }
 
   return response.json();

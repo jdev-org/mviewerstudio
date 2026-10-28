@@ -1,3 +1,4 @@
+import { createGristApiError } from "../../../utils/grist/apiError.js";
 import {
   createWorkspaceDoc,
   getDocTables,
@@ -22,9 +23,7 @@ import { getGristColumnType, getGristCellValue } from "../../../utils/grist/impo
  */
 const readJson = async (response) => {
   if (!response.ok) {
-    throw new Error(
-      mviewer.tr("grist.import.request_failed").replace("{status}", () => response.status)
-    );
+    throw await createGristApiError(response);
   }
 
   return response.json();

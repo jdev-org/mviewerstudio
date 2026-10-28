@@ -1,3 +1,4 @@
+import { createGristApiError } from "../../../utils/grist/apiError.js";
 /**
  * Import type selector for the Grist import step.
  *
@@ -103,7 +104,7 @@ const getHeaders = (rows, data) => {
 
 const readJson = async (response) => {
   if (!response.ok) {
-    throw new Error(`Grist request failed with status ${response.status}`);
+    throw await createGristApiError(response);
   }
 
   return response.json();
@@ -128,6 +129,8 @@ const importGristArea = function (activeType = "file", options = {}) {
   this.onColumnsChange = options.onColumnsChange || function () {};
   this.element = document.createElement("div");
   this.element.className = "import-type-buttons";
+  this.documentStatus = document.createElement("p");
+  this.documentStatus.className = "text-danger d-none";
   const refreshButtonTemplate = document.createElement("template");
   refreshButtonTemplate.innerHTML = `
     <button type="button" class="btn btn-primary mt-3">
@@ -268,6 +271,8 @@ const importGristArea = function (activeType = "file", options = {}) {
  */
 importGristArea.prototype.loadDocumentOptions = function (select) {
   if (!this.documentOptionsPromise) {
+    this.documentStatus.textContent = "";
+    this.documentStatus.classList.add("d-none");
     this.documentOptionsPromise = listDocs(this.apiKey)
       .then((documents) => [
         { label: mviewer.tr("grist.import.document_create"), value: "create" },
@@ -279,6 +284,8 @@ importGristArea.prototype.loadDocumentOptions = function (select) {
           .filter((option) => option.label && option.value),
       ])
       .catch((error) => {
+        this.documentStatus.textContent = error.message;
+        this.documentStatus.classList.remove("d-none");
         console.error("Error loading Grist documents:", error);
         return [{ label: mviewer.tr("grist.import.document_create"), value: "create" }];
       });
@@ -603,6 +610,7 @@ importGristArea.prototype.updateFilePreview = function () {
   }
 
   previewContainer.appendChild(this.refreshButton);
+  previewContainer.appendChild(this.documentStatus);
   previewContainer.appendChild(this.documentNameSelect.render());
   if (this.documentNameSelect.getValue() === "create") {
     previewContainer.appendChild(this.documentNameInput.render());

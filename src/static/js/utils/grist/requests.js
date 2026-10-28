@@ -1,3 +1,4 @@
+import { createGristApiError } from "./apiError.js";
 // Preserve the gateway session when calling the same-origin Grist proxy.
 /**
  * Build the authorization headers used by Grist API requests.
@@ -115,9 +116,9 @@ export const getDescribeWorkspace = (instanceUrl, workspaceId, apiKey) => {
  */
 export const getWorkspaceDocsList = (instanceUrl, workspaceId, apiKey) => {
   return getDescribeWorkspace(instanceUrl, workspaceId, apiKey)
-    .then((response) => {
+    .then(async (response) => {
       if (!response.ok) {
-        throw new Error(`Grist request failed with status ${response.status}`);
+        throw await createGristApiError(response);
       }
 
       return response.json();

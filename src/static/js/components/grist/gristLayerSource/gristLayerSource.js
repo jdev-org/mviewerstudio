@@ -1,3 +1,4 @@
+import { createGristApiError } from "../../../utils/grist/apiError.js";
 import { getDocTables, getTableRecords } from "../../../utils/grist/requests.js";
 import { getGristTableUrl } from "../../../utils/grist/utils.js";
 
@@ -19,17 +20,6 @@ import { getGristTableUrl } from "../../../utils/grist/utils.js";
 const GristLayerSource = function (options) {
   Object.assign(this, options);
 };
-
-/**
- * Return a translated adapter error while allowing the source to be reused in
- * contexts where the application translation service has not loaded yet.
- *
- * @param {string} key Translation key.
- * @param {string} fallback Default error message.
- * @returns {string} Localized error message.
- */
-const getSourceError = (key, fallback) =>
-  typeof mviewer !== "undefined" && mviewer.tr ? mviewer.tr(key) : fallback;
 
 /**
  * Return the Grist table identity expected by shared localisation utilities.
@@ -55,9 +45,7 @@ GristLayerSource.prototype.getSourceData = async function () {
   );
 
   if (!response.ok) {
-    throw new Error(
-      `${getSourceError("modal.layer.grist.workflow.table_load_error", "Impossible de lire la table Grist")} (${response.status}).`
-    );
+    throw await createGristApiError(response);
   }
 
   const payload = await response.json();

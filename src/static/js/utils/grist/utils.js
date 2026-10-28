@@ -1,3 +1,4 @@
+import { createGristApiError } from "./apiError.js";
 import {
   createOrgWorkspace,
   getOrgWorkspaces,
@@ -139,7 +140,7 @@ export const getGristCsvTableInfo = (url) => {
  */
 const readJson = async (response) => {
   if (!response.ok) {
-    throw new Error(`Grist request failed with status ${response.status}`);
+    throw await createGristApiError(response);
   }
 
   return response.json();

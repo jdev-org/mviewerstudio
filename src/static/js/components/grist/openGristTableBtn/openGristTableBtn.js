@@ -1,3 +1,4 @@
+import { createGristApiError } from "../../../utils/grist/apiError.js";
 import { getDocTables } from "../../../utils/grist/requests.js";
 import { getGristTableUrl } from "../../../utils/grist/utils.js";
 
@@ -65,9 +66,9 @@ OpenGristTableBtn.prototype.getTableUrl = function () {
   }
 
   return getDocTables(this.apiUrl, this.docId, this.apiKey)
-    .then((response) => {
+    .then(async (response) => {
       if (!response.ok) {
-        throw new Error(`Grist request failed with status ${response.status}`);
+        throw await createGristApiError(response);
       }
 
       return response.json();
