@@ -128,6 +128,14 @@ const importGristArea = function (activeType = "file", options = {}) {
   this.onColumnsChange = options.onColumnsChange || function () {};
   this.element = document.createElement("div");
   this.element.className = "import-type-buttons";
+  const refreshButtonTemplate = document.createElement("template");
+  refreshButtonTemplate.innerHTML = `
+    <button type="button" class="btn btn-primary mt-3">
+      ${mviewer.tr("grist.import.refresh")}
+    </button>
+  `;
+  this.refreshButton = refreshButtonTemplate.content.firstElementChild;
+  this.refreshButton.addEventListener("click", () => this.refreshGristLists());
 
   this.documentNameSelect = new Select({
     label: mviewer.tr("grist.import.document_label"),
@@ -280,10 +288,34 @@ importGristArea.prototype.loadDocumentOptions = function (select) {
     select.setOptions(options);
     select.setDisabled(false);
     this.fileDocumentName = select.getValue();
+    if (this.fileDocumentName === "create") {
+      this.fileDocumentName = this.documentNameInput.getValue();
+    }
     this.updateGristWizardNextButtonForFile();
 
     return options;
   });
+};
+
+/**
+ * Reload available Grist documents and tables, bypassing cached document options.
+ * Disable the refresh action until both lists have finished loading.
+ *
+ * @returns {Promise<void>} Resolves once both lists have been refreshed.
+ */
+importGristArea.prototype.refreshGristLists = async function () {
+  this.refreshButton.disabled = true;
+  this.documentNameSelect.setDisabled(true);
+  this.documentOptionsPromise = null;
+
+  try {
+    await Promise.all([
+      this.loadDocumentOptions(this.documentNameSelect),
+      this.listGristTables.load(),
+    ]);
+  } finally {
+    this.refreshButton.disabled = false;
+  }
 };
 
 importGristArea.prototype.setActiveType = function (type) {
@@ -570,6 +602,7 @@ importGristArea.prototype.updateFilePreview = function () {
     return;
   }
 
+  previewContainer.appendChild(this.refreshButton);
   previewContainer.appendChild(this.documentNameSelect.render());
   if (this.documentNameSelect.getValue() === "create") {
     previewContainer.appendChild(this.documentNameInput.render());
