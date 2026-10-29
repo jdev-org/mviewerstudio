@@ -53,6 +53,7 @@ Cette partie est dédiée aux personnes qui ont vocation à déployer et configu
    doc_tech/what_is_oauth2
    doc_tech/how_to_geonode
    doc_tech/how_to_keycloak
+   doc_tech/how_to_georchestra
 
 
 Documentation contributeur

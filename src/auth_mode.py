@@ -15,8 +15,7 @@ _PROXY_MODE_ALIASES = {
 _PUBLIC_MODE_ALIASES = {"anonymous", AUTH_MODE_PUBLIC}
 _LEGACY_PROXY_AUTH_TYPES = {"georchestra", "keycloak", "oidc"} | _PROXY_MODE_ALIASES
 
-_PROXY_IDENTITY_HEADERS = (
-    "sec-username",
+_OIDC_IDENTITY_HEADERS = (
     "X-Forwarded-User",
     "X-Auth-Request-User",
     "X-Forwarded-Preferred-Username",
@@ -32,7 +31,11 @@ def _normalize_mode(value: str | None) -> str:
 
 
 def has_proxy_identity_headers() -> bool:
-    return any(request.headers.get(header_name) for header_name in _PROXY_IDENTITY_HEADERS)
+    return bool(request.headers.get("sec-username")) or has_oidc_identity_headers()
+
+
+def has_oidc_identity_headers() -> bool:
+    return any(request.headers.get(header_name) for header_name in _OIDC_IDENTITY_HEADERS)
 
 
 def is_authlib_configured() -> bool:

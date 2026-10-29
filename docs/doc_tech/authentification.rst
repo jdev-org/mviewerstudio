@@ -75,4 +75,4 @@ Avec ``MVIEWERSTUDIO_AUTH_MODE=proxy`` et ``MVIEWERSTUDIO_AUTH_TYPE=keycloak``, 
 
 ``OAUTH2_PROXY_OIDC_ISSUER_URL`` et ``OAUTH2_PROXY_CLIENT_ID`` servent à construire la déconnexion du mode proxy historique ; ils ne remplacent pas les variables ``MVIEWERSTUDIO_AUTHLIB_*`` en mode Authlib. ``OIDC_END_SESSION_ENDPOINT`` et ``OIDC_POST_LOGOUT_REDIRECT_URI`` sont également utilisés par le mode proxy.
 
-En mode ``georchestra``, mviewerstudio lit les anciens en-têtes ``sec-*`` fournis par le security-proxy geOrchestra puis les convertit vers son modèle utilisateur interne normalisé.
+Avec ``MVIEWERSTUDIO_AUTH_MODE=proxy`` et ``MVIEWERSTUDIO_AUTH_TYPE=georchestra``, Studio lit les en-têtes ``sec-*`` fournis par geOrchestra Gateway ou par le security-proxy historique. Si des en-têtes d'identité OIDC contiennent aussi un identifiant utilisateur, l'adaptateur OIDC est prioritaire. Le guide :ref:`how_to_georchestra` détaille les en-têtes attendus, les règles d'accès et la configuration de ``logout_url`` pour terminer la session Gateway.
