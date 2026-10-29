@@ -10,6 +10,7 @@ Seule l'image Docker du backend Python est maintenue ; le backend PHP est abando
 - [Authentification et variables associées](../docs/doc_tech/authentification.rst)
 - [Configuration Keycloak et exemple Compose](../docs/doc_tech/how_to_keycloak.rst)
 - [Configuration GeoNode](../docs/doc_tech/how_to_geonode.rst)
+- [Configuration geOrchestra Gateway](../docs/doc_tech/how_to_georchestra.rst)
 
 Les procédures de connexion, de gestion des groupes et de déconnexion sont décrites dans ces guides.
 

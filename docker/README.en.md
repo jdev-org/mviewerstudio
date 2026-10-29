@@ -11,6 +11,7 @@ The following guides are available in French:
 - [Authentication and related variables](../docs/doc_tech/authentification.rst)
 - [Keycloak configuration and Compose example](../docs/doc_tech/how_to_keycloak.rst)
 - [GeoNode configuration](../docs/doc_tech/how_to_geonode.rst)
+- [geOrchestra Gateway configuration](../docs/doc_tech/how_to_georchestra.rst)
 
 These guides cover login, group access control, and logout configuration.
 
