@@ -3,43 +3,20 @@
 ## Image
 Only python Dockerfile will be maintained (PHP backend is fully deprecated).
 
-## Keycloak without oauth2-proxy
+## Documentation
 
-Studio supports direct OIDC login through Authlib. Pass these variables to the
-container through Compose `environment:` or `docker run --env-file`:
+The following guides are available in French:
 
-```dotenv
-MVIEWERSTUDIO_AUTH_MODE=authlib
-MVIEWERSTUDIO_AUTHLIB_ISSUER=https://sso.example.org/realms/my-realm
-MVIEWERSTUDIO_AUTHLIB_CLIENT_ID=mviewerstudio
-MVIEWERSTUDIO_AUTHLIB_CLIENT_SECRET=replace-with-client-secret
-MVIEWERSTUDIO_AUTHLIB_SCOPE=openid profile email
-MVIEWERSTUDIO_URL_PATH_PREFIX=mviewerstudio
-SECRET_KEY=replace-with-a-long-stable-random-key
-```
+- [Docker installation and deployment](../docs/doc_tech/install_docker.rst)
+- [Authentication and related variables](../docs/doc_tech/authentification.rst)
+- [Keycloak configuration and Compose example](../docs/doc_tech/how_to_keycloak.rst)
+- [GeoNode configuration](../docs/doc_tech/how_to_geonode.rst)
 
-In Keycloak, enable **Client authentication** and **Standard flow** for the OIDC
-client, then set its **Valid redirect URI** to
-`https://studio.example.org/mviewerstudio/auth/callback`.
-Adapt the domain and prefix to your deployment. The callback uses HTTPS; the
-reverse proxy must forward the public host and protocol. The issuer must be
-reachable by both the container and the browser.
-
-Anonymous visitors to `/mviewerstudio/index.html` are redirected through
-`/mviewerstudio/auth/login` to Keycloak, then returned to Studio after login.
-APIs return 401 with `login_url`, which the frontend uses to restart login.
-
-Set `MVIEWERSTUDIO_AUTH_MODE=authlib` explicitly: the legacy setting
-`MVIEWERSTUDIO_AUTH_TYPE=keycloak` selects proxy authentication. The image tag
-`mviewerstudio:keycloak` does not configure authentication. A Compose `.env` file
-alone does not pass these variables into the container: use `environment:` or
-`env_file:` and recreate the container after changes.
+These guides cover login, group access control, and logout configuration.
 
 ## Manual Docker permissions
 
-Run the commands below from the repository root. The container does not change
-ownership or permissions automatically. Compose uses `MVIEWERSTUDIO_UID` and
-`MVIEWERSTUDIO_GID` for both build arguments and runtime `user:` (default: `1000:1000`).
+Run the commands below from the repository root. The container does not change ownership or permissions automatically. Compose uses `MVIEWERSTUDIO_UID` and `MVIEWERSTUDIO_GID` for both build arguments and runtime `user:` (default: `1000:1000`).
 
 For an existing installation using `999:999`, add these lines to `.env`:
 
@@ -56,10 +33,7 @@ sudo chown -R 999:999 apps/store apps/public
 sudo chmod -R u+rwX apps/store apps/public
 ```
 
-Adapt the host paths to the mounts for `EXPORT_CONF_FOLDER` and
-`MVIEWERSTUDIO_PUBLISH_PATH`. Parent directories must allow traversal by this user.
-Recursive commands affect existing files: preserve their owners if access already
-works. Named volumes also need permissions matching the selected IDs.
+Adapt the host paths to the mounts for `EXPORT_CONF_FOLDER` and `MVIEWERSTUDIO_PUBLISH_PATH`. Parent directories must allow traversal by this user. Recursive commands affect existing files: preserve their owners if access already works. Named volumes also need permissions matching the selected IDs.
 
 For SFTP, check the account's actual IDs on the host:
 
@@ -68,9 +42,7 @@ id sftp_account
 ls -ldn apps/store apps/public
 ```
 
-The GID may differ from the UID. For chrooted SFTP, keep the chroot root directory
-owned by root and not writable by the SFTP account. Apply data permissions only
-to its data subdirectories.
+The GID may differ from the UID. For chrooted SFTP, keep the chroot root directory owned by root and not writable by the SFTP account. Apply data permissions only to its data subdirectories.
 
 ### Build-time and runtime IDs
 
@@ -86,9 +58,7 @@ Override these IDs at runtime without rebuilding:
 docker run --rm --user 1001:1002 -v "$PWD/apps:/home/mvuser/apps" mviewerstudio:local
 ```
 
-Runtime `--user` or Compose `user:` takes precedence over the image default.
-The `UID` and `GID` environment variables alone do not select the runtime user.
-Prepare data permissions for the IDs actually used at runtime.
+Runtime `--user` or Compose `user:` takes precedence over the image default. The `UID` and `GID` environment variables alone do not select the runtime user. Prepare data permissions for the IDs actually used at runtime.
 
 To download a published image and start it without building, set `.env` and run:
 
@@ -97,39 +67,22 @@ docker compose pull mviewerstudio
 docker compose up -d --no-build --pull never --force-recreate mviewerstudio
 ```
 
-The published image must include support for reading the application with a
-custom UID. Once it does, changing IDs only requires recreating the container.
+The published image must include support for reading the application with a custom UID. Once it does, changing IDs only requires recreating the container.
 
 ## Environment variables
 
 | Variable | Description | Example |
 | --- | --- | --- |
+| `DEFAULT_ORG` | Organization used when claims do not provide one. | `ARNIA` |
+| `LOG_LEVEL` | Logging level (default: `INFO`). | `INFO` |
+| `MVIEWERSTUDIO_PROXY_WHITE_LIST` | Comma-separated domains allowed by the internal OGC proxy. | `geobretagne.fr,ows.region-bretagne.fr` |
 | `EXPORT_CONF_FOLDER` | Staging folder where Studio stores draft configs and work in progress. | `/home/mvuser/apps/store` |
 | `CONF_PATH_FROM_MVIEWER` | URL path used by mviewer to access draft map files. | `apps/store` |
 | `MVIEWERSTUDIO_PUBLISH_PATH` | Production folder where Studio copies map files when a config is published. | `/home/mvuser/apps/public` |
 | `CONF_PUBLISH_PATH_FROM_MVIEWER` | URL path used by mviewer to access published map files. | `apps/public` |
 | `MVIEWERSTUDIO_URL_PATH_PREFIX` | Serves Studio under a non-root path, see [#271](https://github.com/mviewer/mviewerstudio/pull/271). | `mviewerstudio` |
-| `MVIEWERSTUDIO_AUTH_MODE` | Authentication mode. Use `authlib` for direct OAuth2/OIDC login handled by mviewerstudio. | `authlib` |
-| `MVIEWERSTUDIO_AUTHLIB_ISSUER` | OIDC issuer URL used to derive discovery metadata when `MVIEWERSTUDIO_AUTHLIB_METADATA_URL` is not set. | `https://geonode.example.com/o` |
-| `MVIEWERSTUDIO_AUTHLIB_METADATA_URL` | Explicit OIDC discovery metadata URL. | `https://geonode.example.com/.well-known/openid-configuration` |
-| `MVIEWERSTUDIO_AUTHLIB_CLIENT_ID` | OAuth2/OIDC client ID used by mviewerstudio. | `mviewerstudio` |
-| `MVIEWERSTUDIO_AUTHLIB_CLIENT_SECRET` | OAuth2/OIDC client secret used by mviewerstudio. | `change-me` |
-| `MVIEWERSTUDIO_AUTHLIB_SCOPE` | Requested OAuth2/OIDC scopes during login. | `openid profile email` |
-| `OIDC_END_SESSION_ENDPOINT` | Optional OAuth2/OIDC logout endpoint override used by the backend logout route. If empty, mviewerstudio uses the endpoint discovered from the Authlib issuer metadata. | `https://locus-test2.udcpp.priv/account/logout/` |
-| `MVIEWERSTUDIO_AUTHLIB_GROUPS_CLAIM` | Optional claim name, or comma-separated claim aliases, containing user groups or roles. If empty, mviewerstudio falls back to standard claims such as `roles`, `groups`, `group_list_all`. | `member_of` |
-| `MVIEWERSTUDIO_AUTHLIB_CLAIMS_MAPPING` | JSON object mapping user fields to paths in raw claims. See the example below. | `{"organization":"organization[0]"}` |
-| `MVIEWERSTUDIO_AUTHLIB_ALLOWED_GROUPS` | Optional comma- or semicolon-separated list of groups allowed to access mviewerstudio. If empty, any authenticated user can access. | `UMRLISA,MVIEWER_ADMIN` |
-| `MVIEWERSTUDIO_AUTHLIB_ANONYMOUS_REDIRECT_URL` | Optional redirect target for anonymous users in legacy flows. | `https://example.org/` |
 
-### Authlib claims mapping
-
-```dotenv
-MVIEWERSTUDIO_AUTHLIB_CLAIMS_MAPPING='{"organization":"organization[0]","roles":"realm_access.roles"}'
-```
-
-For `organization: ["jdev", {"jdev": {}}]`, `organization[0]` returns `jdev`. For a string claim, use `"organization":"organization"`. Paths support nested keys (`profile.organization`), list indexes (`organization[0]`), and bracketed keys (`profile["organization"]`). Python expressions are never executed.
-
-Supported fields: `preferred_username`, `email`, `name`, `given_name`, `family_name`, `organization`, `roles`, `sub`. Unmapped fields retain their default normalization. Missing paths return `null` (`[]` for roles); a missing organization uses `DEFAULT_ORG`. Invalid mappings raise a configuration error during login. Restart the service after changes and log in again to refresh session claims.
+Session and authentication variables, including claims mapping, are documented in the [Authentication guide](../docs/doc_tech/authentification.rst).
 
 ## Default configuration
 
@@ -138,8 +91,7 @@ The default configuration (env vars defined in the dockerfile and json config fi
 - `apps/store` and `apps/public` have been prepared manually for the configured UID and GID
 - it is using `src/static/config.json`, which you will probably want to adapt to your own environment.
 
-
-It is also configured to serve the frontend (static files) with gunicorn, which is usually not recommended. Later versions might use an nginx container to serve the frontend.
+ It is also configured to serve the frontend (static files) with gunicorn, which is usually not recommended. Later versions might use an nginx container to serve the frontend.
 
 ## Configuration : use docker network system
 
@@ -185,8 +137,7 @@ To use this internal Docker route, update config_docker_network.json with the Do
 
 This configuration is appropriate for container-to-container communication.
 
-If the same config file is also used by the browser UI, public links may point to http://mviewer:8080/..., which is not reachable from a user workstation.
-In that case, keep a separate config for Docker-internal use and another one for public/browser-facing URLs.
+If the same config file is also used by the browser UI, public links may point to http://mviewer:8080/..., which is not reachable from a user workstation. In that case, keep a separate config for Docker-internal use and another one for public/browser-facing URLs.
 
 ## Build mviewerstudio image
 
