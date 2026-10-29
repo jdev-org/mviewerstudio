@@ -428,10 +428,12 @@ def complete_authlib_login():
 
 def build_authlib_logout_redirect() -> str:
     """Build a provider logout URL from OIDC discovery metadata when available."""
-    redirect_uri = request.host_url.rstrip("/")
-    if redirect_uri.startswith("http://"):
-        redirect_uri = "https://" + redirect_uri.split("://", 1)[1]
-    redirect_uri = redirect_uri + app_root_path()
+    redirect_uri = current_app.config.get("OIDC_POST_LOGOUT_REDIRECT_URI", "").strip()
+    if not redirect_uri:
+        redirect_uri = request.host_url.rstrip("/")
+        if redirect_uri.startswith("http://"):
+            redirect_uri = "https://" + redirect_uri.split("://", 1)[1]
+        redirect_uri = redirect_uri + app_root_path()
     try:
         current_app.logger.info("Building logout redirect: post_logout_redirect_uri=%s", redirect_uri)
     except Exception:
