@@ -19,14 +19,21 @@ const getFileExtension = (file) => {
   return extension.toLowerCase();
 };
 
-const readFileAsText = (file) =>
-  new Promise((resolve, reject) => {
-    const reader = new FileReader();
-
-    reader.addEventListener("load", () => resolve(reader.result || ""));
-    reader.addEventListener("error", () => reject(reader.error));
-    reader.readAsText(file, "UTF-8");
-  });
+/**
+ * Decode a text file as strict UTF-8, falling back to Windows-1252.
+ * The UTF-8 decoder also removes its optional byte order mark.
+ * @param {File} file CSV or TXT file to read.
+ * @returns {Promise<string>} Decoded file content.
+ * @throws {Error} When reading the file bytes fails.
+ */
+const readFileAsText = async (file) => {
+  const buffer = await file.arrayBuffer();
+  try {
+    return new TextDecoder("utf-8", { fatal: true }).decode(buffer);
+  } catch {
+    return new TextDecoder("windows-1252").decode(buffer);
+  }
+};
 
 const readCsvData = (content) =>
   new Promise((resolve, reject) => {
