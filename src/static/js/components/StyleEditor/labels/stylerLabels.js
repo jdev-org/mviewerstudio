@@ -117,6 +117,42 @@ StylerLabels.prototype.createSwitch = function () {
     },
   });
   this.element = this.switch.render();
+  this.createAccordion();
+};
+
+/** Rend le titre repliable sans lier l'ouverture du panneau à l'activation des étiquettes.
+ * @returns {void} Conserve le switch et les champs déjà montés.
+ */
+StylerLabels.prototype.createAccordion = function () {
+  const title = this.element.querySelector(".switch-card-title");
+  const content = this.element.querySelector("[data-switch-card-content]");
+  const collapseId = `${this.id}-collapse`;
+  const button = document.createElement("button");
+  button.type = "button";
+  button.id = `${this.id}-heading`;
+  button.className = "switch-card-title accordion-button p-0 shadow-none";
+  button.textContent = mviewer.tr("style_editor.labels.settings");
+  const icon = document.createElement("i");
+  icon.className = "ri-arrow-down-s-line styler-labels-toggle-icon";
+  icon.setAttribute("aria-hidden", "true");
+  button.appendChild(icon);
+  button.setAttribute("data-bs-toggle", "collapse");
+  button.setAttribute("data-bs-target", `#${collapseId}`);
+  button.setAttribute("aria-expanded", "true");
+  button.setAttribute("aria-controls", collapseId);
+  title.replaceWith(button);
+
+  const collapse = document.createElement("div");
+  collapse.id = collapseId;
+  collapse.className = "collapse show";
+  collapse.setAttribute("role", "region");
+  collapse.setAttribute("aria-labelledby", button.id);
+  content.replaceWith(collapse);
+  collapse.appendChild(content);
+  // Le libellé accessible du switch reste indépendant du bouton de dépliage.
+  this.switch
+    .getInput()
+    .setAttribute("aria-label", mviewer.tr("style_editor.labels.enabled"));
 };
 
 /** Store the value entered in a form field.

@@ -267,3 +267,28 @@
 @media (max-width: 576px) {
 	.style-fields { grid-template-columns: 1fr; }
 }
+
+.custom-style-preview {
+	margin-top: 10px;
+}
+
+.styler-labels .accordion-button {
+	background: transparent;
+	color: inherit;
+	font-size: 16px;
+	font-weight: 700;
+}
+
+.styler-labels .accordion-button::after {
+	display: none;
+}
+
+.styler-labels-toggle-icon {
+	margin-left: auto;
+	font-size: 22px;
+	line-height: 1;
+}
+
+.styler-labels .accordion-button[aria-expanded="true"] .styler-labels-toggle-icon {
+	transform: rotate(180deg);
+}
