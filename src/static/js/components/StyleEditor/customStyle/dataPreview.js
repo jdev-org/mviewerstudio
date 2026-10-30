@@ -4,22 +4,49 @@ import { DATA_PREVIEW_LIMIT } from "../constants.js";
 import { createGeoStylerStyle, geoStylerToSld } from "../../../utils/styler/style.js";
 import { getPreviewFeatures } from "./previewFeatures.js";
 
+let previewId = 0;
+
 /** Carte des données de la couche active, sans requête supplémentaire pour les CSV. */
 export default class DataPreview {
   /** @param {Object} options Options de la couche éditée, dont layerId et url. */
   constructor(options) {
     this.options = options;
     this.element = document.createElement("section");
-    this.element.className = "custom-style-preview";
-    const title = document.createElement("h5");
-    title.textContent = mviewer.tr("style_editor.preview.title");
+    this.element.className = "custom-style-preview accordion";
+    previewId += 1;
+    const titleId = `style-preview-title-${previewId}`;
+    const collapseId = `style-preview-collapse-${previewId}`;
+    this.element.innerHTML = `
+      <div class="accordion-item">
+        <h5 class="accordion-header" id="${titleId}">
+          <button class="accordion-button collapsed" type="button"
+            data-bs-toggle="collapse" data-bs-target="#${collapseId}"
+            aria-expanded="false" aria-controls="${collapseId}"></button>
+        </h5>
+        <div id="${collapseId}" class="accordion-collapse collapse"
+          role="region" aria-labelledby="${titleId}">
+          <div class="accordion-body"></div>
+        </div>
+      </div>
+    `;
+    const title = mviewer.tr("style_editor.preview.title");
+    this.element.querySelector(".accordion-button").textContent = title;
     this.mapPreview = new MapPreview({
-      title: title.textContent,
+      title,
       controls: [new ol.control.Zoom(), new ol.control.Attribution()],
     });
     this.status = document.createElement("p");
     this.status.setAttribute("role", "status");
-    this.element.append(title, this.status, this.mapPreview.render());
+    this.element
+      .querySelector(".accordion-body")
+      .append(this.status, this.mapPreview.render());
+    this.element
+      .querySelector(".accordion-collapse")
+      .addEventListener("shown.bs.collapse", () => {
+        // Attendre la fin de l'animation pour cadrer la carte avec sa taille visible.
+        this.mapPreview.map.updateSize();
+        if (this.mapPreview.pendingFit) this.mapPreview.fitLayer();
+      });
     this.update();
   }
 
