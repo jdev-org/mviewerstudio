@@ -2,6 +2,7 @@ import ListStyleTypeSelector from "./listStyleTypeSelector.js";
 import ListCard from "../../listCard/listCard.js";
 import ClassificationPanel from "./ClassificationPanel.js";
 import AccordionClassificationPanel from "./accordionClassificationPanel.js";
+import DataPreview from "./dataPreview.js";
 import { STYLE_TYPES } from "../constants.js";
 import { createGeoStylerStyle, geoStylerToSld } from "../../../utils/styler/style.js";
 import { sendSldFile, sendJsonStyleStyle } from "../../../utils/styler/requests.js";
@@ -12,7 +13,9 @@ let customStyleId = 0;
  * Conteneur de l'éditeur de style personnalisé.
  * @returns {void}
  */
-const CustomStyle = function ({ geometry = "Point", fields = [], state = null } = {}) {
+const CustomStyle = function (options = {}) {
+  const { geometry = "Point", fields = [], state = null } = options;
+  this.options = options;
   this.geometry = geometry;
   this.fields = fields;
   this.state = state;
@@ -79,6 +82,7 @@ CustomStyle.prototype.showType = function (type) {
   if (panels.colorClassification) {
     this.content.appendChild(panels.colorClassification.render());
   }
+  if (this.preview) this.preview.refreshStyle();
 };
 
 /**
@@ -141,6 +145,12 @@ CustomStyle.prototype.getValue = function () {
  * @returns {HTMLElement} Élément du composant.
  */
 CustomStyle.prototype.render = function () {
+  if (!this.preview) {
+    // Les panneaux doivent exister avant que la carte demande la configuration du style.
+    this.showType(this.styleTypeSelector.value);
+    // Lire le formulaire à chaque rafraîchissement pour inclure les étiquettes et les règles modifiées.
+    this.preview = new DataPreview({ ...this.options, getStyle: () => this.getValue() });
+  }
   this.card.setItems([this.styleTypeSelector.render(), this.content]);
   this.showType(this.styleTypeSelector.value);
   return this.element;

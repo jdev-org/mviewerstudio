@@ -16,6 +16,7 @@ import UrlCard from "./components/common/url-card/url-card.js";
 import ListCard from "./components/listCard/listCard.js";
 import StyleEditor from "./components/StyleEditor/StyleEditor.js";
 import LegendSelector from "./components/legendSelector/legendSelector.js";
+import MapPreview from "./components/map/map.js";
 
 // Grist components
 import GristApiKey from "./components/grist/gristApiKey/gristApiKey.js";
@@ -59,6 +60,7 @@ mv.components.urlCard = UrlCard;
 mv.components.listCard = ListCard;
 mv.components.styleEditor = StyleEditor;
 mv.components.legendSelector = LegendSelector;
+mv.components.map = MapPreview;
 
 // Grist components
 mv.components.grist.gristApiKey = GristApiKey;

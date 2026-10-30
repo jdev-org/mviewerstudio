@@ -19,6 +19,7 @@ import {
 import { calculateCircleSizes } from "../../utils/styler/circleSizes.js";
 import { getStyleGeometry } from "../../utils/styler/style.js";
 import { loadSldStyle } from "../../utils/styler/readStyle.js";
+import GristStyleSource from "./customStyle/gristStyleSource.js";
 
 /**
  * Sélecteur du mode de création d'un style de couche.
@@ -41,20 +42,33 @@ const StyleEditor = function (options = {}) {
   this.legendSelector = new LegendSelector();
   this.layerId = options.layerId || null;
   this.element.addEventListener("calculate", (event) => this.calculate(event));
+  const refreshPreviewStyle = () => {
+    if (this.customStyle.preview) this.customStyle.preview.refreshStyle();
+  };
+  this.element.addEventListener("input", refreshPreviewStyle);
+  this.element.addEventListener("change", refreshPreviewStyle);
+  this.element.addEventListener("update", refreshPreviewStyle);
   this.element.addEventListener(STYLE_EDITOR_EVENTS.LOAD_OPTIONS, (event) => {
     this.reset(event.detail);
   });
   this.element.addEventListener(STYLE_EDITOR_EVENTS.SHOW_FIELDS, (event) => {
-    // Les réponses WFS peuvent arriver après la sélection d'une autre couche.
+    // Les réponses WFS ou Grist peuvent arriver après la sélection d'une autre couche.
     if (event.detail.layerId !== this.layerId) return;
 
     this.setFields(event.detail.fields);
     this.setGeometry(event.detail.geometry);
-    if (event.detail.feature) this.labels.preview.setFeature(event.detail.feature);
+    if (event.detail.feature !== undefined) {
+      this.labels.preview.setFeature(event.detail.feature);
+    }
+    if (this.customStyle.preview) this.customStyle.preview.update();
   });
   this.element.addEventListener(STYLE_EDITOR_EVENTS.SAVE, (event) => {
     // Un SLD illisible ou un formulaire incomplet ne doit pas écraser le style enregistré.
     if (this.activeMode === STYLE_MODES.CUSTOM) {
+      if (this.gristSource && !this.gristSource.ready) {
+        event.preventDefault();
+        return;
+      }
       if (this.loadingCustomStyle || this.styleLoadError) {
         event.preventDefault();
         return;
@@ -97,6 +111,7 @@ StyleEditor.prototype.loadCustomStyle = async function () {
     this.options.customStyle = saved.configuration;
     this.options.geoStylerStyle = saved.geoStylerStyle;
     this.options.geometry = saved.configuration.geometry;
+    if (this.customStyle && this.customStyle.preview) this.customStyle.preview.destroy();
     this.customStyle = new CustomStyle({ ...this.options, state: saved.configuration });
     this.customStyle.geoStylerStyle = structuredClone(saved.geoStylerStyle);
     if (saved.configuration.labels) this.createLabels();
@@ -148,6 +163,7 @@ StyleEditor.prototype.setGeometry = function (geometry) {
   }
   this.options.geometry = styleGeometry;
   this.options.customStyle = state;
+  if (this.customStyle.preview) this.customStyle.preview.destroy();
   this.customStyle = new CustomStyle({ ...this.options, state });
   this.customStyle.labels = this.labels;
   this.render();
@@ -315,7 +331,10 @@ StyleEditor.prototype.calculate = async function (event) {
       }
     });
     // Un résultat tardif ne doit pas remplacer les règles d'un panneau reconstruit entre-temps.
-    if (this.layerId === layerId && this.customStyle === customStyle) setRules(rules);
+    if (this.layerId === layerId && this.customStyle === customStyle) {
+      setRules(rules);
+      if (customStyle.preview) customStyle.preview.refreshStyle();
+    }
   } catch (error) {
     message.textContent = error.message;
     message.classList.remove("d-none");
@@ -340,6 +359,10 @@ StyleEditor.prototype.reset = function (options = {}) {
   this.styleLoadError = null;
   // Un rafraîchissement WMS conserve les options ; un changement de couche efface l'ancien style.
   if (options.layerId && options.layerId !== this.layerId) {
+    this.options.type = null;
+    this.options.url = null;
+    this.options.isGrist = false;
+    this.gristSource = null;
     this.options.fields = [];
     this.options.customStyle = null;
     this.options.geoStylerStyle = null;
@@ -351,6 +374,7 @@ StyleEditor.prototype.reset = function (options = {}) {
   if (options.customsld && !options.styleMode)
     this.options.styleMode = STYLE_MODES.CUSTOM;
   this.layerId = this.options.layerId || null;
+  if (this.customStyle.preview) this.customStyle.preview.destroy();
   this.customStyle = new CustomStyle({
     ...this.options,
     state: this.options.customStyle,
@@ -384,11 +408,25 @@ StyleEditor.prototype.setActiveMode = function (mode) {
     button.classList.toggle("active", isActive);
     button.setAttribute("aria-pressed", isActive);
   });
-  this.customStyle.element.classList.toggle("d-none", mode !== STYLE_MODES.CUSTOM);
+  this.updateCustomVisibility();
   this.styleSelector.element.classList.toggle("d-none", mode !== STYLE_MODES.EXISTING);
   this.tmsStyle.element.classList.toggle("d-none", mode !== STYLE_MODES.EXISTING);
   this.legendSelector.element.hidden = mode === STYLE_MODES.CUSTOM;
-  this.labels.element.hidden = mode !== STYLE_MODES.CUSTOM;
+};
+
+/** Affiche la saisie Grist séparément et attend ses données avant de montrer l'éditeur.
+ * @returns {void}
+ */
+StyleEditor.prototype.updateCustomVisibility = function () {
+  const customMode = this.activeMode === STYLE_MODES.CUSTOM;
+  let visible = customMode;
+  if (this.gristSource) {
+    this.gristSource.element.hidden = !customMode;
+    visible = customMode && this.gristSource.ready;
+  }
+  this.customStyle.element.classList.toggle("d-none", !visible);
+  this.labels.element.hidden = !visible;
+  if (this.customStyle.preview) this.customStyle.preview.element.hidden = !visible;
 };
 
 /**
@@ -409,8 +447,10 @@ StyleEditor.prototype.render = function () {
     this.tmsStyle.render(),
     this.customStyle.render(),
     this.legendSelector.render(),
-    this.labels.render()
+    this.labels.render(),
+    this.customStyle.preview.render()
   );
+  this.renderGristSource();
 
   this.element.querySelectorAll("[data-style-mode]").forEach((button) => {
     button.addEventListener("click", () => this.setActiveMode(button.dataset.styleMode));
@@ -418,6 +458,47 @@ StyleEditor.prototype.render = function () {
   this.setActiveMode(this.activeMode);
   this.updateLoadStatus();
   return this.element;
+};
+
+/** Monte la saisie de clé Grist dans une div sœur du panneau personnalisé.
+ * @returns {void}
+ */
+StyleEditor.prototype.renderGristSource = function () {
+  const { type, url, isGrist, layerId } = this.options;
+  if (type !== "csv" || (!isGrist && !/\/api\/docs\/[^/]+\/download\/csv/.test(url))) {
+    this.gristSource = null;
+    return;
+  }
+  if (
+    !this.gristSource ||
+    this.gristSource.url !== url ||
+    this.gristSourceLayerId !== layerId
+  ) {
+    this.gristSourceLayerId = layerId;
+    const source = new GristStyleSource({
+      url,
+      onReadyChange: () => this.updateCustomVisibility(),
+      onLoad: (data) => {
+        // Une réponse d'un ancien panneau ne doit pas modifier la couche désormais active.
+        if (this.gristSource !== source || this.layerId !== layerId) return;
+        const layer = config.temp.layers[layerId] || {};
+        const fields = data.meta.fields || [];
+        layer.type = "csv";
+        layer.csvData = data.data;
+        layer.fields = Object.fromEntries(fields.map((field) => [field, {}]));
+        config.temp.layers[layerId] = layer;
+        let feature = null;
+        if (data.data.length) {
+          feature = { type: "Feature", geometry: null, properties: data.data[0] };
+        }
+        this.setFields(fields);
+        this.labels.preview.setFeature(feature);
+        if (this.customStyle.preview) this.customStyle.preview.update();
+      },
+    });
+    this.gristSource = source;
+  }
+  this.element.insertBefore(this.gristSource.render(), this.customStyle.element);
 };
 
 /**
@@ -459,10 +540,16 @@ StyleEditor.prototype.createLabels = function () {
   let state = {};
   if (this.options.customStyle) state = this.options.customStyle.labels;
   let feature = null;
-  // Réutiliser l'entité WFS déjà chargée évite une nouvelle requête pour la preview.
+  // Réutiliser les données WFS ou Grist déjà chargées évite une requête pour la preview.
   if (this.options.layerId && typeof config !== "undefined") {
     const layer = config.temp.layers[this.options.layerId];
-    if (layer && layer.features && layer.features.length) feature = layer.features[0];
+    if (layer && layer.type === "csv") {
+      if (Array.isArray(layer.csvData) && layer.csvData.length) {
+        feature = { type: "Feature", geometry: null, properties: layer.csvData[0] };
+      }
+    } else if (layer && layer.features && layer.features.length) {
+      feature = layer.features[0];
+    }
   }
   this.labels = new StylerLabels({ fields: this.options.fields, state, scales, feature });
   this.customStyle.labels = this.labels;

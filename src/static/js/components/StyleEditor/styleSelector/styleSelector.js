@@ -65,6 +65,7 @@ StyleSelector.prototype.loadStyles = function () {
     layer = mv.getLayerById(this.options.layerId);
   }
   const selectedStyles = (layer.style || "").split(",");
+  // L'ordre des alias correspond aux styles sélectionnés, pas à celui des GetCapabilities.
   const aliases = (layer.stylesalias || "").split(",");
   const list = this.element.querySelector(`#${STYLE_SELECTOR_IDS.list}`);
 

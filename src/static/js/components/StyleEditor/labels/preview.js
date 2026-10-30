@@ -66,7 +66,7 @@ export default class LabelPreview {
   }
 
   /**
-   * Use a WFS sample feature for the selected label field and refresh the preview.
+   * Use a WFS or Grist sample feature for the selected field and refresh the preview.
    * @param {Object|null} feature GeoJSON feature, or null to restore sample text.
    * @returns {void}
    */

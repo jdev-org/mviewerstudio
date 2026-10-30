@@ -843,6 +843,13 @@ var mv = (function () {
           new CustomEvent("loadOptions", {
             detail: {
               layerId: layerid,
+              type: layer.type,
+              url: layer.url,
+              xfield: layer.xfield,
+              yfield: layer.yfield,
+              geojsonField: layer.geojsonField,
+              srs: layer.srs,
+              isGrist: layer.isGrist,
               fields,
               geometry: layer.customStyle ? layer.customStyle.geometry : "Point",
               styles: [],
@@ -880,31 +887,40 @@ var mv = (function () {
             return describeLayer;
           })
           .then(({ wfs_url, typeName }) =>
-            ogc.getFeatures(wfs_url, { TYPENAME: typeName || layerid, MAXFEATURES: 1 }, (data) => {
-              if (!data || !Array.isArray(data.features)) return;
-              if (!config.temp.layers[layerid]) config.temp.layers[layerid] = {};
-              const layerData = config.temp.layers[layerid];
-              layerData.features = data.features;
-              const feature = data.features.find((item) => item.geometry);
-              if (feature) {
-                layerData.geometryType = feature.geometry.type;
+            ogc.getFeatures(
+              wfs_url,
+              { TYPENAME: typeName || layerid, MAXFEATURES: 1 },
+              (data) => {
+                if (!data || !Array.isArray(data.features)) return;
+                if (!config.temp.layers[layerid]) config.temp.layers[layerid] = {};
+                const layerData = config.temp.layers[layerid];
+                layerData.features = data.features;
+                layerData.featuresProjection = new ol.format.GeoJSON()
+                  .readProjection(data)
+                  .getCode();
+                const feature = data.features.find((item) => item.geometry);
+                if (feature) {
+                  layerData.geometryType = feature.geometry.type;
+                }
+                if (data.features.length) {
+                  document
+                    .querySelector("#layer-style-editor .style-editor")
+                    .dispatchEvent(
+                      new CustomEvent("showFields", {
+                        detail: {
+                          layerId: layerid,
+                          fields: Object.keys(layerData.fields || {}),
+                          geometry: layerData.geometryType,
+                          feature: data.features[0],
+                        },
+                      })
+                    );
+                }
+                mv.createDispatchEvent("wfsFeaturesReady", {
+                  features: layerData.features,
+                });
               }
-              if (data.features.length) {
-                document.querySelector("#layer-style-editor .style-editor").dispatchEvent(
-                  new CustomEvent("showFields", {
-                    detail: {
-                      layerId: layerid,
-                      fields: Object.keys(layerData.fields || {}),
-                      geometry: layerData.geometryType,
-                      feature: data.features[0],
-                    },
-                  })
-                );
-              }
-              mv.createDispatchEvent("wfsFeaturesReady", {
-                features: layerData.features,
-              });
-            })
+            )
           );
       }
 
@@ -1004,9 +1020,14 @@ var mv = (function () {
               "#layer-style-editor .style-editor"
             );
             if (styleEditor) {
+              // La preview des étiquettes attend les propriétés d'une entité GeoJSON.
+              let feature = null;
+              if (data.data.length) {
+                feature = { type: "Feature", geometry: null, properties: data.data[0] };
+              }
               styleEditor.dispatchEvent(
                 new CustomEvent("showFields", {
-                  detail: { layerId: layerid, fields },
+                  detail: { layerId: layerid, fields, feature },
                 })
               );
             }

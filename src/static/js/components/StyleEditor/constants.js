@@ -1,4 +1,5 @@
 export const DEFAULT_SLD_VERSION = "1.1.0";
+export const DATA_PREVIEW_LIMIT = 15;
 export const SLD_SCHEMA_LOCATIONS = {
   "1.0.0": "https://schemas.opengis.net/sld/1.0.0/StyledLayerDescriptor.xsd",
   "1.1.0": "https://schemas.opengis.net/sld/1.1.0/StyledLayerDescriptor.xsd",
