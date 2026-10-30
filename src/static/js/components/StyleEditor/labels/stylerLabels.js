@@ -3,6 +3,7 @@ import { createField } from "../customStyle/rules/fields.js";
 import Select from "../../select/select.js";
 import Switch from "../../switch/switch.js";
 import Tooltip from "../../tooltip/tooltip.js";
+import LabelPreview from "./preview.js";
 
 let labelsId = 0;
 
@@ -11,8 +12,14 @@ let labelsId = 0;
  * @param {Object} [options={}] Available fields, saved state and configurable scale presets.
  * @returns {void}
  */
-const StylerLabels = function ({ fields = [], state = {}, scales = LABEL_SCALES } = {}) {
+const StylerLabels = function ({
+  fields = [],
+  state = {},
+  scales = LABEL_SCALES,
+  feature = null,
+} = {}) {
   this.state = { ...DEFAULT_LABELS, ...state };
+  this.feature = feature;
   if (state.radius === undefined && state.strokeWidth !== undefined) {
     this.state.radius = state.strokeWidth;
   }
@@ -49,6 +56,8 @@ StylerLabels.prototype.createContent = function () {
     this.content.appendChild(field);
   });
   this.content.appendChild(this.createScaleSelect());
+  this.preview = new LabelPreview({ style: this.state, feature: this.feature });
+  this.content.appendChild(this.preview.render());
 };
 
 /** Build the selector for the field used as label text.
@@ -121,6 +130,7 @@ StylerLabels.prototype.updateState = function (event) {
   if (input.type === "number") value = input.valueAsNumber;
   if (input.type === "checkbox") value = input.checked;
   this.state[input.dataset.label] = value;
+  this.preview.update(this.state);
   this.updateEnabled();
 };
 

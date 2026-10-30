@@ -45,12 +45,15 @@ const StyleEditor = function (options = {}) {
     this.reset(event.detail);
   });
   this.element.addEventListener(STYLE_EDITOR_EVENTS.SHOW_FIELDS, (event) => {
+    // Les réponses WFS peuvent arriver après la sélection d'une autre couche.
     if (event.detail.layerId !== this.layerId) return;
 
     this.setFields(event.detail.fields);
     this.setGeometry(event.detail.geometry);
+    if (event.detail.feature) this.labels.preview.setFeature(event.detail.feature);
   });
   this.element.addEventListener(STYLE_EDITOR_EVENTS.SAVE, (event) => {
+    // Un SLD illisible ou un formulaire incomplet ne doit pas écraser le style enregistré.
     if (this.activeMode === STYLE_MODES.CUSTOM) {
       if (this.loadingCustomStyle || this.styleLoadError) {
         event.preventDefault();
@@ -65,6 +68,7 @@ const StyleEditor = function (options = {}) {
         return;
       }
     }
+    // Le déclencheur de l'événement attend cette promesse avant de poursuivre la sauvegarde.
     event.detail.promise = this.saveToLayer(
       event.detail.layer,
       event.detail.name,
@@ -81,6 +85,7 @@ const StyleEditor = function (options = {}) {
  * @returns {Promise<void>} Restaure le formulaire ou affiche l'erreur de lecture.
  */
 StyleEditor.prototype.loadCustomStyle = async function () {
+  // Ce jeton permet à reset() ou à un nouveau chargement d'invalider la réponse en cours.
   const request = {};
   this.styleLoadRequest = request;
   this.loadingCustomStyle = true;
@@ -169,6 +174,7 @@ StyleEditor.prototype.saveToLayer = async function (layer, name, mapId) {
     layer.sld = saved.sld.filepath;
     layer.customsld = true;
     layer.jsonStyle = saved.json.filepath;
+    // La couche d'origine est sauvegardée, mais le formulaire a pu changer pendant l'appel.
     if (this.customStyle === customStyle) {
       this.options.customStyle = structuredClone(layer.customStyle);
       this.options.geoStylerStyle = structuredClone(layer.geoStylerStyle);
@@ -184,9 +190,9 @@ StyleEditor.prototype.saveToLayer = async function (layer, name, mapId) {
 };
 
 /**
- * Classify the selected field using authenticated CSV data or WFS features.
- * @param {CustomEvent} event Classification settings and rule update callback.
- * @returns {Promise<void>} Update the rules or display an error in the panel.
+ * Classifie le champ choisi à partir des données CSV authentifiées ou des entités WFS.
+ * @param {CustomEvent} event Paramètres de classification et fonction de mise à jour des règles.
+ * @returns {Promise<void>} Actualise les règles ou affiche l'erreur dans le panneau.
  */
 StyleEditor.prototype.calculate = async function (event) {
   const {
@@ -219,6 +225,7 @@ StyleEditor.prototype.calculate = async function (event) {
         throw new Error(mviewer.tr("style_editor.error.csv_not_loaded"));
       }
       data = layer.csvData;
+      // Les catégories conservent leur texte ; les analyses numériques acceptent la virgule décimale.
       if (!styleProp.includes("randomColor")) {
         data = data.map((record) => {
           let value = record[field];
@@ -234,6 +241,7 @@ StyleEditor.prototype.calculate = async function (event) {
       if (!layer || !layer.wfs_url) {
         throw new Error(mviewer.tr("style_editor.error.no_wfs"));
       }
+      // La classification utilise toutes les valeurs du champ, au-delà de l'entité de preview.
       const url = ogc.urlToObject(layer.wfs_url, {
         SERVICE: "WFS",
         VERSION: "1.0.0",
@@ -266,6 +274,7 @@ StyleEditor.prototype.calculate = async function (event) {
       rules = values.map((value) => ({ name: `${value}`, value }));
     } else {
       const boundaries = analyse(data, field, method, classes);
+      // Une série constante produit une seule borne : la dupliquer crée une classe min = max.
       if (boundaries.length === 1) boundaries.push(boundaries[0]);
       rules = boundaries.slice(1).map((max, index) => ({
         name: `${boundaries[index]} – ${max}`,
@@ -297,6 +306,7 @@ StyleEditor.prototype.calculate = async function (event) {
           maxSize: sizes[index],
         };
       }
+      // Dans le style combiné, les règles de taille laissent la couleur à l'autre classification.
       if (ruleMode === "size") return;
       if (geometry === "LineString") {
         rule.stroke = { color: colors[index] };
@@ -304,6 +314,7 @@ StyleEditor.prototype.calculate = async function (event) {
         rule.fill = { color: colors[index] };
       }
     });
+    // Un résultat tardif ne doit pas remplacer les règles d'un panneau reconstruit entre-temps.
     if (this.layerId === layerId && this.customStyle === customStyle) setRules(rules);
   } catch (error) {
     message.textContent = error.message;
@@ -327,6 +338,7 @@ StyleEditor.prototype.reset = function (options = {}) {
   this.styleLoadRequest = null;
   this.loadingCustomStyle = false;
   this.styleLoadError = null;
+  // Un rafraîchissement WMS conserve les options ; un changement de couche efface l'ancien style.
   if (options.layerId && options.layerId !== this.layerId) {
     this.options.fields = [];
     this.options.customStyle = null;
@@ -391,6 +403,7 @@ StyleEditor.prototype.render = function () {
     </button>
   `
   ).join("")}</div><p role="status" data-style-load-status></p>`;
+  // Réutiliser les éléments des composants conserve leurs valeurs et leurs écouteurs.
   this.element.append(
     this.styleSelector.render(),
     this.tmsStyle.render(),
@@ -417,6 +430,11 @@ StyleEditor.prototype.appendTo = function (target) {
   return this.element;
 };
 
+/**
+ * Change la couche active et reconstruit ses panneaux via le chargement des options.
+ * @param {string} layerId Identifiant de la couche à éditer.
+ * @returns {void}
+ */
 StyleEditor.prototype.setLayerId = function (layerId) {
   this.reset({ layerId });
 };
@@ -432,7 +450,7 @@ StyleEditor.prototype.setFields = function (fields) {
   this.labels.setFields(fields);
 };
 
-/** Initialize labels from the editor options and attach them to the style to save.
+/** Initialise les étiquettes et les rattache au style à sauvegarder.
  * @returns {void}
  */
 StyleEditor.prototype.createLabels = function () {
@@ -440,7 +458,13 @@ StyleEditor.prototype.createLabels = function () {
   if (!scales && typeof _conf !== "undefined") scales = _conf.labelScales;
   let state = {};
   if (this.options.customStyle) state = this.options.customStyle.labels;
-  this.labels = new StylerLabels({ fields: this.options.fields, state, scales });
+  let feature = null;
+  // Réutiliser l'entité WFS déjà chargée évite une nouvelle requête pour la preview.
+  if (this.options.layerId && typeof config !== "undefined") {
+    const layer = config.temp.layers[this.options.layerId];
+    if (layer && layer.features && layer.features.length) feature = layer.features[0];
+  }
+  this.labels = new StylerLabels({ fields: this.options.fields, state, scales, feature });
   this.customStyle.labels = this.labels;
 };
 

@@ -879,8 +879,8 @@ var mv = (function () {
             ogc.getFieldsFromWMS(describeLayer, layerid, themeid);
             return describeLayer;
           })
-          .then(({ wfs_url }) =>
-            ogc.getFeatures(wfs_url, { TYPENAME: layerid, MAXFEATURES: 1 }, (data) => {
+          .then(({ wfs_url, typeName }) =>
+            ogc.getFeatures(wfs_url, { TYPENAME: typeName || layerid, MAXFEATURES: 1 }, (data) => {
               if (!data || !Array.isArray(data.features)) return;
               if (!config.temp.layers[layerid]) config.temp.layers[layerid] = {};
               const layerData = config.temp.layers[layerid];
@@ -888,12 +888,15 @@ var mv = (function () {
               const feature = data.features.find((item) => item.geometry);
               if (feature) {
                 layerData.geometryType = feature.geometry.type;
+              }
+              if (data.features.length) {
                 document.querySelector("#layer-style-editor .style-editor").dispatchEvent(
                   new CustomEvent("showFields", {
                     detail: {
                       layerId: layerid,
                       fields: Object.keys(layerData.fields || {}),
-                      geometry: feature.geometry.type,
+                      geometry: layerData.geometryType,
+                      feature: data.features[0],
                     },
                   })
                 );

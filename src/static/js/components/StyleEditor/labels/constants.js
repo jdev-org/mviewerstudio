@@ -29,6 +29,12 @@ export const DEFAULT_LABELS = {
   scale: "regional",
 };
 
+export const LABEL_PREVIEW = {
+  svgNamespace: "http://www.w3.org/2000/svg",
+  height: 64,
+  text: "Aa",
+};
+
 export const LABEL_FIELDS = [
   { name: "font", label: "style_editor.labels.font", type: "text" },
   { name: "size", label: "style_editor.labels.size", type: "number", min: 1, step: 1 },
