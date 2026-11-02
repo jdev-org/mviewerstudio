@@ -12,7 +12,7 @@ let labelsId = 0;
  * @param {Object} [options={}] Available fields, saved state and configurable scale presets.
  * @returns {void}
  */
-const StylerLabels = function ({
+const stylerLabels = function ({
   fields = [],
   state = {},
   scales = LABEL_SCALES,
@@ -41,7 +41,7 @@ const StylerLabels = function ({
 /** Build the form containing appearance settings and selectors.
  * @returns {void}
  */
-StylerLabels.prototype.createContent = function () {
+stylerLabels.prototype.createContent = function () {
   this.content = document.createElement("fieldset");
   this.content.className = "style-fields mt-3";
   this.content.innerHTML = `
@@ -63,7 +63,7 @@ StylerLabels.prototype.createContent = function () {
 /** Build the selector for the field used as label text.
  * @returns {HTMLElement} Selector container and its label.
  */
-StylerLabels.prototype.createFieldSelect = function () {
+stylerLabels.prototype.createFieldSelect = function () {
   this.fieldSelect = new Select({
     id: `${this.id}-field`,
     label: mviewer.tr("style_editor.labels.field"),
@@ -80,7 +80,7 @@ StylerLabels.prototype.createFieldSelect = function () {
 /** Build the scale selector and its help tooltip.
  * @returns {HTMLElement} Selector container and its label.
  */
-StylerLabels.prototype.createScaleSelect = function () {
+stylerLabels.prototype.createScaleSelect = function () {
   this.scaleSelect = new Select({
     id: `${this.id}-scale`,
     label: mviewer.tr("style_editor.labels.scale"),
@@ -104,7 +104,7 @@ StylerLabels.prototype.createScaleSelect = function () {
 /** Build the switch card containing the label settings.
  * @returns {void}
  */
-StylerLabels.prototype.createSwitch = function () {
+stylerLabels.prototype.createSwitch = function () {
   this.switch = new Switch({
     id: `${this.id}-enabled`,
     label: mviewer.tr("style_editor.labels.enabled"),
@@ -123,7 +123,7 @@ StylerLabels.prototype.createSwitch = function () {
 /** Rend le titre repliable sans lier l'ouverture du panneau à l'activation des étiquettes.
  * @returns {void} Conserve le switch et les champs déjà montés.
  */
-StylerLabels.prototype.createAccordion = function () {
+stylerLabels.prototype.createAccordion = function () {
   const title = this.element.querySelector(".switch-card-title");
   const content = this.element.querySelector("[data-switch-card-content]");
   const collapseId = `${this.id}-collapse`;
@@ -159,7 +159,7 @@ StylerLabels.prototype.createAccordion = function () {
  * @param {Event} event Input or change event emitted by a field.
  * @returns {void}
  */
-StylerLabels.prototype.updateState = function (event) {
+stylerLabels.prototype.updateState = function (event) {
   const input = event.target;
   if (!input.dataset.label) return;
   let value = input.value;
@@ -173,7 +173,7 @@ StylerLabels.prototype.updateState = function (event) {
 /** Show and enable settings only while labels are enabled.
  * @returns {void}
  */
-StylerLabels.prototype.updateEnabled = function () {
+stylerLabels.prototype.updateEnabled = function () {
   this.content.disabled = !this.state.enabled;
   this.content.classList.toggle("d-none", !this.state.enabled);
   this.element
@@ -186,7 +186,7 @@ StylerLabels.prototype.updateEnabled = function () {
  * @param {string[]} fields Available field names.
  * @returns {void}
  */
-StylerLabels.prototype.setFields = function (fields) {
+stylerLabels.prototype.setFields = function (fields) {
   const names = [...fields];
   if (this.state.field && !names.includes(this.state.field)) names.push(this.state.field);
   this.fieldSelect.setOptions(names.map((name) => ({ label: name, value: name })));
@@ -196,7 +196,7 @@ StylerLabels.prototype.setFields = function (fields) {
 /** Return a copy of the settings and selected zoom limits.
  * @returns {Object} Label configuration.
  */
-StylerLabels.prototype.getValue = function () {
+stylerLabels.prototype.getValue = function () {
   const scale = this.scales.find((item) => item.value === this.state.scale);
   const value = { ...this.state };
   if (scale) {
@@ -209,8 +209,8 @@ StylerLabels.prototype.getValue = function () {
 /** Return the form while preserving entered values.
  * @returns {HTMLElement} Component element.
  */
-StylerLabels.prototype.render = function () {
+stylerLabels.prototype.render = function () {
   return this.element;
 };
 
-export default StylerLabels;
+export default stylerLabels;

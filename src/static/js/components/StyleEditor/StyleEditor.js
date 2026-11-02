@@ -10,7 +10,7 @@ import CustomStyle from "./customStyle/CustomStyle.js";
 import StyleSelector from "./styleSelector/styleSelector.js";
 import TmsStyle from "./tmsStyle/tmsStyle.js";
 import LegendSelector from "../legendSelector/legendSelector.js";
-import StylerLabels from "./labels/stylerLabels.js";
+import stylerLabels from "./labels/stylerLabels.js";
 import { analyse, categorize } from "../../utils/styler/methods.js";
 import {
   createColorRampScales,
@@ -551,7 +551,7 @@ StyleEditor.prototype.createLabels = function () {
       feature = layer.features[0];
     }
   }
-  this.labels = new StylerLabels({ fields: this.options.fields, state, scales, feature });
+  this.labels = new stylerLabels({ fields: this.options.fields, state, scales, feature });
   this.customStyle.labels = this.labels;
 };
 
