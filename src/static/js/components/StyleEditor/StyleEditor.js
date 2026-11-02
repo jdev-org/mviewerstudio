@@ -26,7 +26,7 @@ import GristStyleSource from "./customStyle/gristStyleSource.js";
  * @param {Object} [options={}] Options de la couche : geometry, fields et layerId.
  * @returns {void}
  */
-const StyleEditor = function (options = {}) {
+const styleEditor = function (options = {}) {
   this.options = { ...options };
   this.activeMode =
     options.styleMode || (options.customsld ? STYLE_MODES.CUSTOM : STYLE_MODES.EXISTING);
@@ -98,7 +98,7 @@ const StyleEditor = function (options = {}) {
  * Précharge le SLD Studio et ignore les réponses d'une couche quittée entre-temps.
  * @returns {Promise<void>} Restaure le formulaire ou affiche l'erreur de lecture.
  */
-StyleEditor.prototype.loadCustomStyle = async function () {
+styleEditor.prototype.loadCustomStyle = async function () {
   // Ce jeton permet à reset() ou à un nouveau chargement d'invalider la réponse en cours.
   const request = {};
   this.styleLoadRequest = request;
@@ -129,7 +129,7 @@ StyleEditor.prototype.loadCustomStyle = async function () {
 /** Affiche le chargement ou son erreur et protège le formulaire pendant la lecture.
  * @returns {void}
  */
-StyleEditor.prototype.updateLoadStatus = function () {
+styleEditor.prototype.updateLoadStatus = function () {
   const failed = this.styleLoadError !== null;
   this.customStyle.element.inert = this.loadingCustomStyle || failed;
   this.labels.element.inert = this.loadingCustomStyle || failed;
@@ -149,7 +149,7 @@ StyleEditor.prototype.updateLoadStatus = function () {
  * @param {string} geometry Type de géométrie GML ou GeoJSON.
  * @returns {void} Reconstruit les panneaux lorsque la géométrie change.
  */
-StyleEditor.prototype.setGeometry = function (geometry) {
+styleEditor.prototype.setGeometry = function (geometry) {
   const styleGeometry = getStyleGeometry(geometry);
   if (!styleGeometry || styleGeometry === this.customStyle.geometry) return;
 
@@ -176,7 +176,7 @@ StyleEditor.prototype.setGeometry = function (geometry) {
  * @param {string} mapId Identifiant de la carte.
  * @returns {Promise<void>} Actualise la couche après la sauvegarde des deux fichiers.
  */
-StyleEditor.prototype.saveToLayer = async function (layer, name, mapId) {
+styleEditor.prototype.saveToLayer = async function (layer, name, mapId) {
   const mode = this.activeMode;
   if (mode === STYLE_MODES.CUSTOM && (this.loadingCustomStyle || this.styleLoadError)) {
     throw new Error(mviewer.tr("style_editor.error.load_sld"));
@@ -210,7 +210,7 @@ StyleEditor.prototype.saveToLayer = async function (layer, name, mapId) {
  * @param {CustomEvent} event Paramètres de classification et fonction de mise à jour des règles.
  * @returns {Promise<void>} Actualise les règles ou affiche l'erreur dans le panneau.
  */
-StyleEditor.prototype.calculate = async function (event) {
+styleEditor.prototype.calculate = async function (event) {
   const {
     field,
     method,
@@ -353,7 +353,7 @@ StyleEditor.prototype.calculate = async function (event) {
  * @param {string|null} [options.layerId] Identifiant de la couche.
  * @returns {void} Recharge le contenu et restaure le mode enregistré sur la couche.
  */
-StyleEditor.prototype.reset = function (options = {}) {
+styleEditor.prototype.reset = function (options = {}) {
   this.styleLoadRequest = null;
   this.loadingCustomStyle = false;
   this.styleLoadError = null;
@@ -397,7 +397,7 @@ StyleEditor.prototype.reset = function (options = {}) {
  * @param {string} mode Mode sélectionné.
  * @returns {void}
  */
-StyleEditor.prototype.setActiveMode = function (mode) {
+styleEditor.prototype.setActiveMode = function (mode) {
   if (mode === STYLE_MODES.CUSTOM && this.layerId) {
     const layer = config.temp.layers[this.layerId];
     if (layer && layer.fields) this.setFields(Object.keys(layer.fields));
@@ -417,7 +417,7 @@ StyleEditor.prototype.setActiveMode = function (mode) {
 /** Affiche la saisie Grist séparément et attend ses données avant de montrer l'éditeur.
  * @returns {void}
  */
-StyleEditor.prototype.updateCustomVisibility = function () {
+styleEditor.prototype.updateCustomVisibility = function () {
   const customMode = this.activeMode === STYLE_MODES.CUSTOM;
   let visible = customMode;
   if (this.gristSource) {
@@ -433,7 +433,7 @@ StyleEditor.prototype.updateCustomVisibility = function () {
  * Construit les boutons et leurs événements de sélection.
  * @returns {HTMLElement} Élément du composant.
  */
-StyleEditor.prototype.render = function () {
+styleEditor.prototype.render = function () {
   this.element.innerHTML = `<div class="import-type-buttons__actions">${STYLE_CHOICES.map(
     (choice) => `
     <button type="button" class="import-type-buttons__button" data-style-mode="${choice.mode}" id="${choice.id}">
@@ -463,7 +463,7 @@ StyleEditor.prototype.render = function () {
 /** Monte la saisie de clé Grist dans une div sœur du panneau personnalisé.
  * @returns {void}
  */
-StyleEditor.prototype.renderGristSource = function () {
+styleEditor.prototype.renderGristSource = function () {
   const { type, url, isGrist, layerId } = this.options;
   if (type !== "csv" || (!isGrist && !/\/api\/docs\/[^/]+\/download\/csv/.test(url))) {
     this.gristSource = null;
@@ -506,7 +506,7 @@ StyleEditor.prototype.renderGristSource = function () {
  * @param {HTMLElement} target Conteneur de destination.
  * @returns {HTMLElement} Élément du composant.
  */
-StyleEditor.prototype.appendTo = function (target) {
+styleEditor.prototype.appendTo = function (target) {
   target.replaceChildren(this.render());
   return this.element;
 };
@@ -516,7 +516,7 @@ StyleEditor.prototype.appendTo = function (target) {
  * @param {string} layerId Identifiant de la couche à éditer.
  * @returns {void}
  */
-StyleEditor.prototype.setLayerId = function (layerId) {
+styleEditor.prototype.setLayerId = function (layerId) {
   this.reset({ layerId });
 };
 
@@ -525,7 +525,7 @@ StyleEditor.prototype.setLayerId = function (layerId) {
  * @param {string[]} fields Champs disponibles pour la couche active.
  * @returns {void}
  */
-StyleEditor.prototype.setFields = function (fields) {
+styleEditor.prototype.setFields = function (fields) {
   this.options.fields = fields;
   this.customStyle.setFields(fields);
   this.labels.setFields(fields);
@@ -534,7 +534,7 @@ StyleEditor.prototype.setFields = function (fields) {
 /** Initialise les étiquettes et les rattache au style à sauvegarder.
  * @returns {void}
  */
-StyleEditor.prototype.createLabels = function () {
+styleEditor.prototype.createLabels = function () {
   let scales = this.options.labelScales;
   if (!scales && typeof _conf !== "undefined") scales = _conf.labelScales;
   let state = {};
@@ -555,4 +555,4 @@ StyleEditor.prototype.createLabels = function () {
   this.customStyle.labels = this.labels;
 };
 
-export default StyleEditor;
+export default styleEditor;

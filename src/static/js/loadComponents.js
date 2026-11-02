@@ -14,7 +14,7 @@ import Tooltip from "./components/tooltip/tooltip.js";
 import ButtonCard from "./components/buttonCard/buttonCard.js";
 import UrlCard from "./components/common/url-card/url-card.js";
 import ListCard from "./components/listCard/listCard.js";
-import StyleEditor from "./components/StyleEditor/StyleEditor.js";
+import styleEditor from "./components/StyleEditor/StyleEditor.js";
 import LegendSelector from "./components/legendSelector/legendSelector.js";
 import MapPreview from "./components/map/map.js";
 
@@ -58,7 +58,7 @@ mv.components.tooltip = Tooltip;
 mv.components.buttonCard = ButtonCard;
 mv.components.urlCard = UrlCard;
 mv.components.listCard = ListCard;
-mv.components.styleEditor = StyleEditor;
+mv.components.styleEditor = styleEditor;
 mv.components.legendSelector = LegendSelector;
 mv.components.map = MapPreview;
 
@@ -88,7 +88,7 @@ mv.utils.grist.refGeo = gristRefGeo;
 const styleEditorTarget = document.getElementById("layer-style-editor");
 if (styleEditorTarget) {
   const renderStyleEditor = () => {
-    new StyleEditor().appendTo(styleEditorTarget);
+    new styleEditor().appendTo(styleEditorTarget);
   };
 
   if (mviewer.translationsReady) {
