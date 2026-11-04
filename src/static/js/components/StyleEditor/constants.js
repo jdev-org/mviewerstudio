@@ -1,5 +1,6 @@
 export const DEFAULT_SLD_VERSION = "1.1.0";
 export const DATA_PREVIEW_LIMIT = 15;
+export const DATA_PREVIEW_GEOMETRY_NAME = "__stylePreviewGeometry";
 export const SLD_SCHEMA_LOCATIONS = {
   "1.0.0": "https://schemas.opengis.net/sld/1.0.0/StyledLayerDescriptor.xsd",
   "1.1.0": "https://schemas.opengis.net/sld/1.1.0/StyledLayerDescriptor.xsd",
@@ -125,7 +126,8 @@ export const STYLE_TYPES = [
 export const DEFAULT_FILL = { color: "#9e5698", opacity: 1 };
 export const DEFAULT_COLOR_SCALE = "Purples";
 export const DEFAULT_SIZE_COLOR = "#808080";
-export const DEFAULT_CLUSTER_DISTANCE = 40;
+export const DEFAULT_CLUSTER_DISTANCE = 5;
+export const DEFAULT_CLUSTER_FILL = { ...DEFAULT_FILL, color: "#ffa500" };
 export const RULE_PREVIEW = {
   width: 80,
   height: 48,
@@ -145,6 +147,8 @@ export const DEFAULT_SYMBOL = {
   shape: "circle",
   externalGraphic: "",
 };
+// Les tailles stockées sont des diamètres : rayons de 5 à 30 px.
+export const DEFAULT_CLUSTER_SYMBOL = { ...DEFAULT_SYMBOL, minSize: 10, maxSize: 60 };
 export const FILL_FIELDS = [
   { name: "color", label: "style_editor.field.color", type: "color" },
   {

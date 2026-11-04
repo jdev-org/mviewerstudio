@@ -2,7 +2,7 @@
  * Extrait un échantillon GeoJSON des données WFS ou des lignes CSV/Grist.
  * @param {Object} layer Données et paramètres de localisation de la couche.
  * @param {number} limit Nombre maximal de géométries.
- * @returns {Object[]} Entités GeoJSON conservant les propriétés du tableau.
+ * @returns {Object[]} Entités GeoJSON avec les attributs du tableau, sans la colonne GeoJSON.
  */
 export function getPreviewFeatures(layer, limit) {
   const features = [];
@@ -45,10 +45,14 @@ export function getPreviewFeatures(layer, limit) {
       if (!coordinates.every(Number.isFinite)) continue;
       geometries = [{ type: "Point", coordinates }];
     }
+    const properties = { ...row };
+    if (layer.geojsonField) {
+      delete properties[layer.geojsonField];
+    }
     for (const geometry of geometries) {
       if (!geometry || !geometry.type) continue;
       // Les filtres SLD portent sur les colonnes Grist, même si la cellule contient un Feature.
-      features.push({ type: "Feature", geometry, properties: row });
+      features.push({ type: "Feature", geometry, properties });
       // Limiter les géométries affichées : une seule ligne peut contenir une FeatureCollection.
       if (features.length === limit) return features;
     }

@@ -1,6 +1,6 @@
 import MapPreview from "../../map/map.js";
 import { MAP_DEFAULTS } from "../../map/constants.js";
-import { DATA_PREVIEW_LIMIT } from "../constants.js";
+import { DATA_PREVIEW_LIMIT, DATA_PREVIEW_GEOMETRY_NAME } from "../constants.js";
 import { createGeoStylerStyle, geoStylerToSld } from "../../../utils/styler/style.js";
 import { getPreviewFeatures } from "./previewFeatures.js";
 
@@ -65,7 +65,8 @@ export default class DataPreview {
     // Les coordonnées CSV utilisent le SRS configuré, indépendamment des métadonnées WFS.
     if (layer.type === "csv") dataProjection = layer.srs;
     const source = new ol.source.Vector({
-      features: new ol.format.GeoJSON().readFeatures(
+      // La colonne CSV « geometry » doit rester un attribut, sans écraser la géométrie OL.
+      features: new ol.format.GeoJSON({ geometryName: DATA_PREVIEW_GEOMETRY_NAME }).readFeatures(
         { type: "FeatureCollection", features },
         {
           // Reprojeter à la lecture crée des géométries de preview sans modifier le cache.
