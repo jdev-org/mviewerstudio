@@ -4,6 +4,8 @@ import {
   DEFAULT_FILL,
   DEFAULT_STROKE,
   DEFAULT_SYMBOL,
+  DEFAULT_CLUSTER_FILL,
+  DEFAULT_CLUSTER_SYMBOL,
   DEFAULT_SIZE_COLOR,
   MAX_STYLE_RULES,
   STYLE_TYPES,
@@ -44,17 +46,19 @@ export default class RulesPanel {
 
   /** @returns {Object} Nouvelle règle indépendante. */
   createRule() {
+    const fill = this.type === "cluster" ? DEFAULT_CLUSTER_FILL : DEFAULT_FILL;
+    const symbol = this.type === "cluster" ? DEFAULT_CLUSTER_SYMBOL : DEFAULT_SYMBOL;
     return {
       name: mviewer.tr("style_editor.rule.new"),
       value: "",
       min: 0,
       max: 1,
       fill: {
-        ...DEFAULT_FILL,
-        color: this.ruleMode === "size" ? DEFAULT_SIZE_COLOR : DEFAULT_FILL.color,
+        ...fill,
+        color: this.ruleMode === "size" ? DEFAULT_SIZE_COLOR : fill.color,
       },
       stroke: { ...DEFAULT_STROKE },
-      symbol: { ...DEFAULT_SYMBOL },
+      symbol: { ...symbol },
     };
   }
 
@@ -81,13 +85,16 @@ export default class RulesPanel {
   prepareRule(rule) {
     const copy = structuredClone(rule);
     const defaults = this.createRule();
+    if (this.type === "cluster") {
+      copy.symbol = { ...copy.symbol, shape: DEFAULT_SYMBOL.shape, externalGraphic: "" };
+    }
 
     return {
       ...defaults,
       ...copy,
       fill: { ...defaults.fill, ...copy.fill },
       stroke: { ...DEFAULT_STROKE, ...copy.stroke },
-      symbol: { ...DEFAULT_SYMBOL, ...copy.symbol },
+      symbol: { ...defaults.symbol, ...copy.symbol },
     };
   }
 
@@ -250,6 +257,7 @@ export default class RulesPanel {
     preview.addEventListener("click", () => {
       this.config.open({
         geometry: this.geometry,
+        type: this.type,
         ruleMode: this.ruleMode,
         rule,
         onSave: (updatedRule) => {

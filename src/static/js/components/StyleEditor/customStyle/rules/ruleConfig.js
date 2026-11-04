@@ -11,10 +11,10 @@ export default class RuleConfig {
   }
 
   /** Ouvre une copie de la règle ; seule la validation transmet les changements.
-   * @param {Object} options Géométrie, règle et callback onSave.
+   * @param {Object} options Géométrie, type de style, règle et callback onSave.
    */
-  open({ geometry, rule, ruleMode = "all", onSave }) {
-    const panel = new RuleConfigPanel({ geometry, rule, ruleMode });
+  open({ geometry, type, rule, ruleMode = "all", onSave }) {
+    const panel = new RuleConfigPanel({ geometry, type, rule, ruleMode });
     const readRule = () => {
       const values = panel.getValue();
       if (values.symbol) values.symbol = { ...rule.symbol, ...values.symbol };

@@ -6,7 +6,7 @@ import { SYMBOL_FIELDS, DEFAULT_SYMBOL } from "../../constants.js";
 
 /** Cartes de configuration adaptées à la géométrie. */
 export default class RuleConfigPanel {
-  constructor({ geometry = "Point", rule = {}, ruleMode = "all" } = {}) {
+  constructor({ geometry = "Point", type = "simple", rule = {}, ruleMode = "all" } = {}) {
     this.element = document.createElement("div");
 
     this.panels = {};
@@ -25,7 +25,7 @@ export default class RuleConfigPanel {
     if (geometry !== "LineString") this.panels.fill = new Fill(rule.fill);
 
     if (geometry === "Point" && ruleMode !== "color")
-      this.panels.symbol = new SymbolPanel(rule.symbol);
+      this.panels.symbol = new SymbolPanel(rule.symbol, type);
   }
 
   /** @returns {HTMLElement} Cartes de paramètres. */

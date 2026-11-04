@@ -4,6 +4,7 @@ import {
   CLASSIFICATION_LIMITS,
   DEFAULT_COLOR_SCALE,
   DEFAULT_FILL,
+  DEFAULT_CLUSTER_FILL,
   DEFAULT_CLUSTER_DISTANCE,
   DEFAULT_SYMBOL,
   STYLE_TYPES,
@@ -29,6 +30,7 @@ export default class MethodsPanel {
 
     this.methods = methods;
     this.styleProp = styleProp;
+    const fill = type === "cluster" ? DEFAULT_CLUSTER_FILL : DEFAULT_FILL;
 
     this.state = {
       field: "",
@@ -36,7 +38,7 @@ export default class MethodsPanel {
       method: methods[0].value,
       classes: CLASSIFICATION_LIMITS.classes.recommended,
       maxSize: DEFAULT_SYMBOL.maxSize,
-      color: styleProp.includes("ramps") ? DEFAULT_COLOR_SCALE : DEFAULT_FILL.color,
+      color: styleProp.includes("ramps") ? DEFAULT_COLOR_SCALE : fill.color,
       distance: DEFAULT_CLUSTER_DISTANCE,
       reverseColors: false,
       ...state,
