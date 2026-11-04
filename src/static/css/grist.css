@@ -1072,3 +1072,13 @@ STYLE FOR GRIST IMPORT
 	pointer-events: none;
 	opacity: 0.6;
 }
+
+#newlayer-grist-footer {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+#newlayer-grist-footer [data-refresh-grist-lists] {
+	margin-left: auto;
+}

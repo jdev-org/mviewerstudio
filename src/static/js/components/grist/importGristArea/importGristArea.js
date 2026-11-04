@@ -14,6 +14,7 @@ import SpinnerGrow from "../../spinnergrow/spinnergrow.js";
 import Input from "../../input/input.js";
 import Select from "../../select/select.js";
 import OpenGristTableBtn from "../openGristTableBtn/openGristTableBtn.js";
+import RefreshGristListsButton from "../refreshGristListsButton/refreshGristListsButton.js";
 import readUploadedFile from "../../../utils/grist/readUploadedFile.js";
 import { getTableRecords } from "../../../utils/grist/requests.js";
 import {
@@ -172,9 +173,6 @@ const importGristArea = function (activeType = "file", options = {}) {
   const filePreviewTemplate = document.createElement("template");
   filePreviewTemplate.innerHTML = `
     <div data-upload-file-content>
-      <button type="button" class="btn btn-primary mt-3" data-refresh-grist-lists>
-        ${mviewer.tr("grist.import.refresh")}
-      </button>
       <p class="text-danger d-none" data-grist-document-status></p>
       <div data-file-document-select></div>
       <div data-file-document-name></div>
@@ -185,8 +183,9 @@ const importGristArea = function (activeType = "file", options = {}) {
   `;
   this.filePreviewContent = filePreviewTemplate.content.firstElementChild;
   this.documentStatus = this.filePreviewContent.querySelector("[data-grist-document-status]");
-  this.refreshButton = this.filePreviewContent.querySelector("[data-refresh-grist-lists]");
-  this.refreshButton.addEventListener("click", () => this.refreshGristLists());
+  this.refreshButton = new RefreshGristListsButton({
+    onRefresh: () => this.refreshGristLists(),
+  });
 
   this.documentNameSelect = new Select({
     label: mviewer.tr("grist.import.document_label"),
@@ -360,7 +359,7 @@ importGristArea.prototype.loadDocumentOptions = function (select) {
  * @returns {Promise<void>} Resolves once both lists have been refreshed.
  */
 importGristArea.prototype.refreshGristLists = async function () {
-  this.refreshButton.disabled = true;
+  this.refreshButton.setDisabled(true);
   this.documentNameSelect.setDisabled(true);
   this.documentOptionsPromise = null;
 
@@ -370,7 +369,7 @@ importGristArea.prototype.refreshGristLists = async function () {
       this.listGristTables.load(),
     ]);
   } finally {
-    this.refreshButton.disabled = false;
+    this.refreshButton.setDisabled(false);
   }
 };
 

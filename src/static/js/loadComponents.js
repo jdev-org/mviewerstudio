@@ -27,6 +27,7 @@ import GristRefGeoArea from "./components/grist/gristRefGeoArea/gristRefGeoArea.
 import GristResult from "./components/grist/results/results.js";
 import ConfirmAction from "./components/grist/confirmAction/configmAction.js";
 import RefreshGristDataBtn from "./components/grist/refreshGristDataBtn/refreshGristDataBtn.js";
+import RefreshGristListsButton from "./components/grist/refreshGristListsButton/refreshGristListsButton.js";
 import importGristArea from "./components/grist/importGristArea/importGristArea.js";
 import ListGristTables from "./components/grist/listGristTables/listGristTables.js";
 import OpenGristTableBtn from "./components/grist/openGristTableBtn/openGristTableBtn.js";
@@ -71,6 +72,7 @@ mv.components.grist.gristRefGeoArea = GristRefGeoArea;
 mv.components.grist.results = GristResult;
 mv.components.grist.confirmAction = ConfirmAction;
 mv.components.grist.refreshGristDataBtn = RefreshGristDataBtn;
+mv.components.grist.refreshGristListsButton = RefreshGristListsButton;
 mv.components.grist.importGristArea = importGristArea;
 mv.components.grist.listGristTables = ListGristTables;
 mv.components.grist.openGristTableBtn = OpenGristTableBtn;

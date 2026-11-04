@@ -307,6 +307,11 @@ const initGristImportArea = (apiKey) => {
   const nextButton = document.getElementById(GRIST_WIZARD_NEXT_BUTTON_ID);
   if (nextButton) {
     nextButton.dataset.apiKeyReady = "true";
+    const previousRefreshButton = nextButton.parentElement.querySelector("[data-refresh-grist-lists]");
+    if (previousRefreshButton) {
+      previousRefreshButton.remove();
+    }
+    nextButton.insertAdjacentElement("afterend", importGristArea.refreshButton.render());
   }
   setGristWizardStep(2);
 };
