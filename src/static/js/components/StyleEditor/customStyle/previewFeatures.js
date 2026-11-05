@@ -1,3 +1,5 @@
+import { REFERENTIAL_GEOMETRY_FIELDS } from "../constants.js";
+
 /**
  * Extrait un échantillon GeoJSON des données WFS ou des lignes CSV/Grist.
  * @param {Object} layer Données et paramètres de localisation de la couche.
@@ -48,6 +50,9 @@ export function getPreviewFeatures(layer, limit) {
     const properties = { ...row };
     if (layer.geojsonField) {
       delete properties[layer.geojsonField];
+      delete properties[layer.gristGeometryField];
+      delete properties[layer.gristCentroidField];
+      delete properties[REFERENTIAL_GEOMETRY_FIELDS.Point];
     }
     for (const geometry of geometries) {
       if (!geometry || !geometry.type) continue;

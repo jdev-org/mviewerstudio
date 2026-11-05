@@ -1,5 +1,13 @@
 export const DEFAULT_SLD_VERSION = "1.1.0";
 export const DATA_PREVIEW_LIMIT = 15;
+export const REFERENTIAL_GEOMETRY_FIELDS = {
+  Polygon: "geometry",
+  Point: "geometry_centroid",
+};
+export const REPRESENTATION_SUPPORT_LABELS = {
+  Polygon: "style_editor.support.polygons",
+  Point: "style_editor.support.centroids",
+};
 export const DATA_PREVIEW_GEOMETRY_NAME = "__stylePreviewGeometry";
 export const SLD_SCHEMA_LOCATIONS = {
   "1.0.0": "https://schemas.opengis.net/sld/1.0.0/StyledLayerDescriptor.xsd",
@@ -15,6 +23,7 @@ export const STYLE_EDITOR_EVENTS = {
   LOAD_OPTIONS: "loadOptions",
   SHOW_FIELDS: "showFields",
   SAVE: "saveStyle",
+  GEOMETRY_CHANGE: "styleGeometryChange",
 };
 
 export const STYLE_SELECTOR_IDS = {

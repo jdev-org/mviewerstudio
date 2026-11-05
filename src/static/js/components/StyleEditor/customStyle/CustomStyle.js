@@ -1,9 +1,10 @@
+import { getRepresentationSupports } from "../../../utils/styler/referential.js";
 import ListStyleTypeSelector from "./listStyleTypeSelector.js";
 import ListCard from "../../listCard/listCard.js";
 import ClassificationPanel from "./ClassificationPanel.js";
 import AccordionClassificationPanel from "./accordionClassificationPanel.js";
 import DataPreview from "./dataPreview.js";
-import { STYLE_TYPES } from "../constants.js";
+import { STYLE_TYPES, STYLE_EDITOR_EVENTS, STYLE_MODES } from "../constants.js";
 import { createGeoStylerStyle, geoStylerToSld } from "../../../utils/styler/style.js";
 import { sendSldFile, sendJsonStyleStyle } from "../../../utils/styler/requests.js";
 
@@ -16,7 +17,22 @@ let customStyleId = 0;
 const CustomStyle = function (options = {}) {
   const { geometry = "Point", fields = [], state = null } = options;
   this.options = options;
+  this.supports = getRepresentationSupports(options);
   this.geometry = geometry;
+  if (this.supports.length && !state) {
+    this.geometry = "Polygon";
+    if (
+      options.geojsonField === this.supports[1].geojsonField ||
+      options.id === this.supports[1].layerName
+    )
+      this.geometry = "Point";
+  }
+  if (state) this.geometry = state.geometry;
+  if (
+    this.supports.length &&
+    !this.supports.some((support) => support.geometry === this.geometry)
+  )
+    this.geometry = "Polygon";
   this.fields = fields;
   this.state = state;
   this.geoStylerStyle = null;
@@ -26,8 +42,15 @@ const CustomStyle = function (options = {}) {
     classes: "custom-style",
   });
   this.element = this.card.element;
-  this.styleTypeSelector = new ListStyleTypeSelector(geometry);
-  if (state) this.styleTypeSelector.value = state.type;
+  this.styleTypeSelector = new ListStyleTypeSelector(this.geometry, this.supports);
+  if (
+    state &&
+    this.styleTypeSelector.types.some(
+      (type) => type.value === state.type && type.geometry === this.geometry
+    )
+  ) {
+    this.styleTypeSelector.value = state.type;
+  }
   this.content = document.createElement("div");
   customStyleId += 1;
   this.content.id = `style-classifications-${customStyleId}`;
@@ -41,11 +64,24 @@ const CustomStyle = function (options = {}) {
  * @returns {void}
  */
 CustomStyle.prototype.showType = function (type) {
-  if (!this.panels[type]) {
+  const geometryChanged = this.geometry !== this.styleTypeSelector.geometry;
+  const resetStyle =
+    geometryChanged &&
+    this.options.type === "csv" &&
+    this.options.styleMode !== STYLE_MODES.EXISTING;
+  if (resetStyle) {
+    // Seul le style personnalisé CSV repart de zéro ; les panneaux WMS restent disponibles.
+    this.panels = {};
+    this.state = null;
+    this.geoStylerStyle = null;
+  }
+  this.geometry = this.styleTypeSelector.geometry;
+  const panelKey = `${this.geometry}:${type}`;
+  if (!this.panels[panelKey]) {
     const options = { type, fields: this.fields, geometry: this.geometry };
     if (type === "proportionalColoredCircles") {
       const definition = STYLE_TYPES.find((item) => item.value === "proportionalCircles");
-      this.panels[type] = new AccordionClassificationPanel({
+      this.panels[panelKey] = new AccordionClassificationPanel({
         ...options,
         parentId: this.content.id,
         expanded: true,
@@ -56,7 +92,7 @@ CustomStyle.prototype.showType = function (type) {
         ruleMode: "size",
         title: "style_editor.classification.circle_sizes",
       });
-      this.panels[type].colorClassification = new AccordionClassificationPanel({
+      this.panels[panelKey].colorClassification = new AccordionClassificationPanel({
         ...options,
         parentId: this.content.id,
         type: "analyse",
@@ -64,25 +100,36 @@ CustomStyle.prototype.showType = function (type) {
         title: "style_editor.classification.circle_colors",
       });
     } else {
-      this.panels[type] = new ClassificationPanel(options);
+      this.panels[panelKey] = new ClassificationPanel(options);
     }
-    if (this.state && this.state.type === type) {
-      this.restoreClassification(this.panels[type], this.state);
+    if (this.state && this.state.type === type && this.state.geometry === this.geometry) {
+      this.restoreClassification(this.panels[panelKey], this.state);
       if (this.state.colorClassification) {
         this.restoreClassification(
-          this.panels[type].colorClassification,
+          this.panels[panelKey].colorClassification,
           this.state.colorClassification
         );
       }
     }
   }
-  const panels = this.panels[type];
+  const panels = this.panels[panelKey];
   this.content.classList.toggle("accordion", panels.colorClassification !== undefined);
   this.content.replaceChildren(panels.render());
   if (panels.colorClassification) {
     this.content.appendChild(panels.colorClassification.render());
   }
-  if (this.preview) this.preview.refreshStyle();
+  if (resetStyle) {
+    this.element.dispatchEvent(
+      new CustomEvent(STYLE_EDITOR_EVENTS.GEOMETRY_CHANGE, {
+        detail: { geometry: this.geometry },
+        bubbles: true,
+      })
+    );
+  }
+  if (this.preview) {
+    if (geometryChanged) this.preview.update();
+    else this.preview.refreshStyle();
+  }
 };
 
 /**
@@ -96,6 +143,7 @@ CustomStyle.prototype.restoreClassification = function (panel, value) {
   delete state.type;
   delete state.geometry;
   delete state.colorClassification;
+  delete state.referentialLayer;
   panel.methods.state = { ...panel.methods.state, ...structuredClone(state) };
   const fields = [...this.fields];
   if (value.field && !fields.includes(value.field)) fields.push(value.field);
@@ -127,7 +175,7 @@ CustomStyle.prototype.save = async function (mapId, name, layerName) {
  */
 CustomStyle.prototype.getValue = function () {
   const type = this.styleTypeSelector.value;
-  const panels = this.panels[type];
+  const panels = this.panels[`${this.geometry}:${type}`];
   const value = {
     type,
     geometry: this.geometry,
@@ -136,6 +184,8 @@ CustomStyle.prototype.getValue = function () {
   if (panels.colorClassification) {
     value.colorClassification = panels.colorClassification.getValue();
   }
+  const support = this.supports.find((item) => item.geometry === this.geometry);
+  if (support) value.referentialLayer = support.layerName;
   if (this.labels) value.labels = this.labels.getValue();
   return value;
 };
@@ -149,7 +199,12 @@ CustomStyle.prototype.render = function () {
     // Les panneaux doivent exister avant que la carte demande la configuration du style.
     this.showType(this.styleTypeSelector.value);
     // Lire le formulaire à chaque rafraîchissement pour inclure les étiquettes et les règles modifiées.
-    this.preview = new DataPreview({ ...this.options, getStyle: () => this.getValue() });
+    this.preview = new DataPreview({
+      ...this.options,
+      getStyle: () => this.getValue(),
+      getSupport: () =>
+        this.supports.find((support) => support.geometry === this.geometry),
+    });
   }
   this.card.setItems([this.styleTypeSelector.render(), this.content]);
   this.showType(this.styleTypeSelector.value);

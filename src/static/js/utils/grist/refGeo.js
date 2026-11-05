@@ -417,6 +417,7 @@ const runGristRefGeoJoin = async ({
     updateLayerSelection,
   };
   renderGristRefGeoSpinner(resultContainerId);
+  importGristArea.referential = null;
 
   try {
     const targetTable = importGristArea.getTargetTable();
@@ -425,6 +426,13 @@ const runGristRefGeoJoin = async ({
       importGristArea.apiKey,
       options
     );
+    const referential = getGristReferentials().find(
+      (item) => item.label === options.referentialLabel
+    );
+    importGristArea.referential = referential;
+    importGristArea.matchingField = getSelectedMatchingField(options);
+    importGristArea.geometryField = result.geometry_field || "geometry";
+    importGristArea.centroidField = result.centroid_field || "geometry_centroid";
     renderGristRefGeoResult(result, importGristArea, setWizardStep, options);
   } catch (error) {
     console.error("Error joining with referential:", error);

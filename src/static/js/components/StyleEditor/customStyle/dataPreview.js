@@ -1,7 +1,12 @@
+import { loadReferentialPreview } from "../../../utils/styler/referential.js";
 import MapPreview from "../../map/map.js";
 import { MAP_DEFAULTS } from "../../map/constants.js";
 import { DATA_PREVIEW_LIMIT, DATA_PREVIEW_GEOMETRY_NAME } from "../constants.js";
-import { createGeoStylerStyle, geoStylerToSld } from "../../../utils/styler/style.js";
+import {
+  createGeoStylerStyle,
+  geoStylerToSld,
+  getStyleGeometry,
+} from "../../../utils/styler/style.js";
 import { getPreviewFeatures } from "./previewFeatures.js";
 
 let previewId = 0;
@@ -51,7 +56,7 @@ export default class DataPreview {
   }
 
   /** Reprojette les données vers EPSG:3857 et cadre les géométries disponibles.
-   * @returns {void}
+   * @returns {void|Promise<void>} Actualise la carte après l'éventuelle lecture du référentiel.
    */
   update() {
     let layer = this.options;
@@ -60,13 +65,66 @@ export default class DataPreview {
       // et la projection, qui peuvent être absents de ce cache partiel.
       layer = { ...this.options, ...config.temp.layers[this.options.layerId] };
     }
-    const features = getPreviewFeatures(layer, DATA_PREVIEW_LIMIT);
+    const request = {};
+    this.dataRequest = request;
+    let support;
+    if (this.options.getSupport) support = this.options.getSupport();
+    if (support) {
+      if (layer.type !== "csv") {
+        // Le support courant est déjà chargé : garder ses géométries et leur projection sans rappeler le WFS.
+        const features = getPreviewFeatures(layer, DATA_PREVIEW_LIMIT);
+        if (
+          features.length &&
+          features.every(
+            (feature) => getStyleGeometry(feature.geometry.type) === support.geometry
+          )
+        ) {
+          this.setFeatures(layer, features);
+          return;
+        }
+      }
+      layer = {
+        ...layer,
+        geojsonField: support.geojsonField,
+        srs: support.referential.srs || layer.srs,
+        featuresProjection: support.referential.srs || layer.srs,
+      };
+      const rows = layer.csvData || [];
+      const hasGeometryColumn =
+        Object.hasOwn(layer.fields || {}, support.geojsonField) ||
+        rows.some((row) => Object.hasOwn(row, support.geojsonField));
+      if (layer.type !== "csv" || (!hasGeometryColumn && rows.length)) {
+        this.status.textContent = mviewer.tr("style_editor.loading_referential");
+        return loadReferentialPreview(layer, support)
+          .then((features) => {
+            if (this.dataRequest !== request) return;
+            this.setFeatures(layer, features);
+          })
+          .catch((error) => {
+            if (this.dataRequest !== request) return;
+            this.setFeatures(layer, []);
+            this.status.textContent = error.message;
+          });
+      }
+    }
+    this.setFeatures(layer, getPreviewFeatures(layer, DATA_PREVIEW_LIMIT));
+  }
+
+  /**
+   * Monte l'échantillon courant dans la carte et applique son style.
+   * @param {Object} layer Paramètres de projection de la couche.
+   * @param {Object[]} features Entités GeoJSON à afficher.
+   * @returns {void}
+   */
+  setFeatures(layer, features) {
     let dataProjection = layer.featuresProjection || layer.srs || layer.projection;
     // Les coordonnées CSV utilisent le SRS configuré, indépendamment des métadonnées WFS.
     if (layer.type === "csv") dataProjection = layer.srs;
     const source = new ol.source.Vector({
       // La colonne CSV « geometry » doit rester un attribut, sans écraser la géométrie OL.
-      features: new ol.format.GeoJSON({ geometryName: DATA_PREVIEW_GEOMETRY_NAME }).readFeatures(
+      features: new ol.format.GeoJSON({
+        geometryName: DATA_PREVIEW_GEOMETRY_NAME,
+      }).readFeatures(
         { type: "FeatureCollection", features },
         {
           // Reprojeter à la lecture crée des géométries de preview sans modifier le cache.
@@ -122,6 +180,7 @@ export default class DataPreview {
    */
   destroy() {
     this.styleRequest = null;
+    this.dataRequest = null;
     this.mapPreview.destroy();
   }
 }

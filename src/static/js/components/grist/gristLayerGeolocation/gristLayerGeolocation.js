@@ -46,6 +46,7 @@ export const openGristLayerGeolocation = ({
     data: previewContainer._gristLayerData,
   });
   let addressArea;
+  const previousGeometryField = layer.geojsonField;
   const coordinatesArea = new mvInstance.components.grist.gristCoordinatesArea({
     idPrefix: "layer-grist-geolocation-coordinate",
     columns: gristFields,
@@ -120,7 +121,8 @@ export const openGristLayerGeolocation = ({
             new mvInstance.components.grist.gristRefGeoArea({
               idPrefix: "layer-grist-geolocation-ref",
               fields: gristFields,
-              matchingField: layer.geojsonField,
+              matchingField: layer.gristMatchingField,
+              referential: layer.gristReferential,
               onReferentialChange: (label) => {
                 const referentials = gristConfig.grist_referentials || [];
                 const referential = referentials.find((item) => item.label === label);
@@ -182,16 +184,60 @@ export const openGristLayerGeolocation = ({
       }
 
       if (content.state.geolocType === "referential") {
-        mvInstance.utils.grist.refGeo.runGristRefGeoJoin({
-          importGristArea: gristSource,
-          setWizardStep: setWorkflowStep,
-          triggerButton: nextButton,
-          resultContainerId,
-          matchingFieldId: "layer-grist-geolocation-ref-matching-field",
-          referentialId: "layer-grist-geolocation-ref-referential",
-          outputFormatId: "layer-grist-geolocation-ref-output-format",
-          updateLayerSelection: false,
-        });
+        mvInstance.utils.grist.refGeo
+          .runGristRefGeoJoin({
+            importGristArea: gristSource,
+            setWizardStep: setWorkflowStep,
+            triggerButton: nextButton,
+            resultContainerId,
+            matchingFieldId: "layer-grist-geolocation-ref-matching-field",
+            referentialId: "layer-grist-geolocation-ref-referential",
+            outputFormatId: "layer-grist-geolocation-ref-output-format",
+            updateLayerSelection: false,
+          })
+          .then(() => {
+            // Le flux affiche lui-même les erreurs : une promesse résolue ne garantit pas la réussite.
+            if (!gristSource.referential) return;
+            const referentialChanged =
+              layer.gristReferential !== gristSource.referential.layer_name;
+            const geometryChanged =
+              previousGeometryField !== gristSource.geometryField ||
+              (layer.customStyle && layer.customStyle.geometry !== "Polygon");
+            const isCustomStyle = layer.styleMode === "custom" || !layer.styleMode;
+            const resetStyle =
+              layer.type === "csv" &&
+              isCustomStyle &&
+              (referentialChanged || geometryChanged);
+            layer.gristReferential = gristSource.referential.layer_name;
+            layer.gristMatchingField = gristSource.matchingField;
+            // Grist peut avoir renommé les colonnes ; conserver leurs identifiants réels pour l'export XML.
+            layer.gristGeometryField = gristSource.geometryField;
+            layer.gristCentroidField = gristSource.centroidField;
+            layer.geojsonField = gristSource.geometryField;
+            const editor = document.querySelector("#layer-style-editor .style-editor");
+            if (editor) {
+              let customStyle = layer.customStyle;
+              // Le style personnalisé CSV est réinitialisé ; un style existant reste sélectionné.
+              if (resetStyle) customStyle = null;
+              editor.dispatchEvent(
+                new CustomEvent("loadOptions", {
+                  detail: {
+                    ...layer,
+                    layerId: layer.id,
+                    fields: gristFields,
+                    customStyle,
+                    geoStylerStyle: resetStyle ? null : layer.geoStylerStyle,
+                    sld: resetStyle ? null : layer.sld,
+                    customsld: layer.customsld && !resetStyle,
+                    styleMode: layer.styleMode || "custom",
+                    geometry: "Polygon",
+                    // La jointure vient de modifier Grist : l'ancien CSV ne décrit plus ses géométries.
+                    reloadGristSource: true,
+                  },
+                })
+              );
+            }
+          });
       }
     },
   });

@@ -69,6 +69,10 @@ var mv = (function () {
       yfield: $(layerInfos).attr("yfield"),
       srs: $(layerInfos).attr("srs"),
       geojsonField: $(layerInfos).attr("geojsonField"),
+      gristReferential: $(layerInfos).attr("gristReferential"),
+      gristMatchingField: $(layerInfos).attr("gristMatchingField"),
+      gristGeometryField: $(layerInfos).attr("gristGeometryField"),
+      gristCentroidField: $(layerInfos).attr("gristCentroidField"),
       tooltipcontent: $(layerInfos).attr("tooltipcontent"),
     };
     return layerObject;
@@ -557,7 +561,12 @@ var mv = (function () {
         // Persist the processing output expected by mviewer, and separately
         // preserve the chosen mode so it can be edited again in Studio.
         if (gristLocationMode === "refSwitch") {
-          gristLayer.geojsonField = "geometry";
+          gristLayer.gristReferential = gristTargetTable.gristReferential;
+          gristLayer.gristMatchingField = gristTargetTable.gristMatchingField;
+          gristLayer.gristGeometryField = gristTargetTable.gristGeometryField;
+          gristLayer.gristCentroidField = gristTargetTable.gristCentroidField;
+          gristLayer.geojsonField = gristTargetTable.gristGeometryField || "geometry";
+          if (gristTargetTable.srs) gristLayer.srs = gristTargetTable.srs;
           gristLayer.geolocType = "referential";
         } else if (gristLocationMode === "xySwitch") {
           gristLayer.xfield = $("#newlayer-grist-coordinate-x").val();
@@ -849,6 +858,12 @@ var mv = (function () {
               xfield: layer.xfield,
               yfield: layer.yfield,
               geojsonField: layer.geojsonField,
+              gristReferential: layer.gristReferential,
+              gristMatchingField: layer.gristMatchingField,
+              gristGeometryField: layer.gristGeometryField,
+              gristCentroidField: layer.gristCentroidField,
+              name: layer.name,
+              id: layer.id,
               srs: layer.srs,
               isGrist: layer.isGrist,
               fields,
@@ -1394,6 +1409,9 @@ var mv = (function () {
       var require_parameters = ["id", "name", "type", "url"];
       require_parameters.forEach(function (p, i) {
         var value = l[p];
+        if (p === "id" && l.type === "wms" && l.customsld && l.gristRepresentationLayer) {
+          value = l.gristRepresentationLayer;
+        }
         if (p == "url") {
           value = mv.escapeXml(value);
         }
@@ -1442,13 +1460,17 @@ var mv = (function () {
         "yfield",
         "srs",
         "geojsonField",
+        "gristReferential",
+        "gristMatchingField",
+        "gristGeometryField",
+        "gristCentroidField",
         "tooltipcontent",
       ];
       optional_parameters.forEach((param) => {
         if (l[param] == undefined) return;
         let value = l[param];
 
-        if (["metadata", "metadata-csw", "legendurl", "sld"].includes(param)) {
+        if (["metadata", "metadata-csw", "legendurl", "sld", "gristReferential", "gristMatchingField", "gristGeometryField", "gristCentroidField"].includes(param)) {
           value = mv.escapeXml(value);
         }
         layer_parameters[param] = `${param}="${value}"`;

@@ -41,7 +41,18 @@ const getActiveGristTargetTable = () => {
     return null;
   }
 
-  return activeImportGristArea.getTargetTable();
+  const table = activeImportGristArea.getTargetTable();
+  if (!table) return null;
+  const referential = activeImportGristArea.referential;
+  if (!referential) return table;
+  return {
+    ...table,
+    gristReferential: referential.layer_name,
+    gristMatchingField: activeImportGristArea.matchingField,
+    gristGeometryField: activeImportGristArea.geometryField,
+    gristCentroidField: activeImportGristArea.centroidField,
+    srs: referential.srs,
+  };
 };
 
 const getGristComponent = (componentName) => {
@@ -307,7 +318,9 @@ const initGristImportArea = (apiKey) => {
   const nextButton = document.getElementById(GRIST_WIZARD_NEXT_BUTTON_ID);
   if (nextButton) {
     nextButton.dataset.apiKeyReady = "true";
-    const previousRefreshButton = nextButton.parentElement.querySelector("[data-refresh-grist-lists]");
+    const previousRefreshButton = nextButton.parentElement.querySelector(
+      "[data-refresh-grist-lists]"
+    );
     if (previousRefreshButton) {
       previousRefreshButton.remove();
     }

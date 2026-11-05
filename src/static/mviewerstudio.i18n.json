@@ -1,5 +1,9 @@
 {
   "fr": {
+    "style_editor.support.polygons": "Polygones",
+    "style_editor.support.centroids": "Centroïdes",
+    "style_editor.loading_referential": "Chargement du support géographique…",
+    "style_editor.error.referential": "Impossible de charger le support géographique du référentiel.",
     "style_editor.error.csv_not_loaded": "Saisissez une clé API Grist valide puis attendez le chargement des données avant de calculer les classes.",
     "style_editor.labels.settings": "Paramètres des étiquettes",
     "style_editor.labels.field": "Champ à étiqueter",
@@ -742,6 +746,10 @@
     "xmleditor.btn.text": "Éditeur XML"
   },
   "en": {
+    "style_editor.support.polygons": "Polygons",
+    "style_editor.support.centroids": "Centroids",
+    "style_editor.loading_referential": "Loading geographic support…",
+    "style_editor.error.referential": "Unable to load the referential geographic support.",
     "style_editor.error.csv_not_loaded": "Enter a valid Grist API key and wait for the data to load before calculating classes.",
     "style_editor.labels.settings": "Label settings",
     "style_editor.labels.field": "Label field",

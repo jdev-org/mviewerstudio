@@ -20,6 +20,7 @@ import { calculateCircleSizes } from "../../utils/styler/circleSizes.js";
 import { getStyleGeometry } from "../../utils/styler/style.js";
 import { loadSldStyle } from "../../utils/styler/readStyle.js";
 import GristStyleSource from "./customStyle/gristStyleSource.js";
+import { prepareGristRepresentation } from "../../utils/styler/referential.js";
 import { clearGristCsv } from "../../utils/grist/csvSource.js";
 
 /**
@@ -49,6 +50,19 @@ const styleEditor = function (options = {}) {
   this.element.addEventListener("input", refreshPreviewStyle);
   this.element.addEventListener("change", refreshPreviewStyle);
   this.element.addEventListener("update", refreshPreviewStyle);
+  this.element.addEventListener(STYLE_EDITOR_EVENTS.GEOMETRY_CHANGE, (event) => {
+    if (this.options.type !== "csv" || this.activeMode !== STYLE_MODES.CUSTOM) return;
+    this.styleLoadRequest = null;
+    this.loadingCustomStyle = false;
+    this.styleLoadError = null;
+    this.options.geometry = event.detail.geometry;
+    this.options.customStyle = null;
+    this.options.geoStylerStyle = null;
+    this.options.customsld = false;
+    this.options.sld = null;
+    this.createLabels();
+    this.render();
+  });
   this.element.addEventListener(STYLE_EDITOR_EVENTS.LOAD_OPTIONS, (event) => {
     this.reset(event.detail);
   });
@@ -146,27 +160,31 @@ styleEditor.prototype.updateLoadStatus = function () {
 
 /**
  * Adapte le style à la géométrie identifiée par le WFS.
- * Un type incompatible est remplacé par une représentation uniforme.
+ * Réinitialise uniquement le style personnalisé CSV ; conserve les styles sélectionnés des autres couches.
  * @param {string} geometry Type de géométrie GML ou GeoJSON.
  * @returns {void} Reconstruit les panneaux lorsque la géométrie change.
  */
 styleEditor.prototype.setGeometry = function (geometry) {
+  if (this.customStyle.supports && this.customStyle.supports.length) return;
   const styleGeometry = getStyleGeometry(geometry);
   if (!styleGeometry || styleGeometry === this.customStyle.geometry) return;
 
-  const state = this.customStyle.getValue();
-  const definition = STYLE_TYPES.find((type) => type.value === state.type);
-  state.geometry = styleGeometry;
-  if (!definition.geom.includes(styleGeometry)) {
-    state.type = "simple";
-    state.rules = state.rules.slice(0, 1);
-    delete state.colorClassification;
+  if (this.options.type !== "csv" || this.activeMode !== STYLE_MODES.CUSTOM) {
+    this.options.geometry = styleGeometry;
+    return;
   }
+
+  this.styleLoadRequest = null;
+  this.loadingCustomStyle = false;
+  this.styleLoadError = null;
   this.options.geometry = styleGeometry;
-  this.options.customStyle = state;
+  this.options.customStyle = null;
+  this.options.geoStylerStyle = null;
+  this.options.customsld = false;
+  this.options.sld = null;
   if (this.customStyle.preview) this.customStyle.preview.destroy();
-  this.customStyle = new CustomStyle({ ...this.options, state });
-  this.customStyle.labels = this.labels;
+  this.customStyle = new CustomStyle({ ...this.options, state: null });
+  this.createLabels();
   this.render();
 };
 
@@ -184,7 +202,42 @@ styleEditor.prototype.saveToLayer = async function (layer, name, mapId) {
   }
   const customStyle = this.customStyle;
   if (mode === STYLE_MODES.CUSTOM) {
-    const saved = await customStyle.save(mapId, name, layer.id);
+    let support;
+    if (customStyle.supports)
+      support = customStyle.supports.find(
+        (item) => item.geometry === customStyle.geometry
+      );
+    let representationFields;
+    if (support && layer.type === "csv") {
+      const data = config.temp.layers[this.layerId] || {};
+      representationFields = await prepareGristRepresentation(
+        layer,
+        data,
+        support,
+        this.gristSource
+      );
+    }
+    let layerName = layer.id;
+    if (support && layer.type === "wms") layerName = support.layerName;
+    const saved = await customStyle.save(mapId, name, layerName);
+    if (support) {
+      layer.gristReferential = support.referential.layer_name;
+      if (layer.type === "csv") {
+        layer.geojsonField = representationFields.geometryField;
+        layer.gristGeometryField = representationFields.polygonField;
+        layer.gristCentroidField = representationFields.centroidField;
+        for (const item of customStyle.supports) {
+          item.geojsonField = representationFields.polygonField;
+          if (item.geometry === "Point")
+            item.geojsonField = representationFields.centroidField;
+        }
+        if (support.referential.srs) layer.srs = support.referential.srs;
+        delete layer.xfield;
+        delete layer.yfield;
+      } else {
+        layer.gristRepresentationLayer = support.layerName;
+      }
+    }
     layer.customStyle = saved.configuration;
     layer.geoStylerStyle = saved.geoStylerStyle;
     layer.styleId = saved.styleId;
@@ -197,6 +250,9 @@ styleEditor.prototype.saveToLayer = async function (layer, name, mapId) {
       this.options.geoStylerStyle = structuredClone(layer.geoStylerStyle);
       this.options.sld = layer.sld;
       this.options.customsld = true;
+      this.options.geojsonField = layer.geojsonField;
+      this.options.gristGeometryField = layer.gristGeometryField;
+      this.options.gristCentroidField = layer.gristCentroidField;
     }
   } else {
     layer.customsld = false;
@@ -378,6 +434,20 @@ styleEditor.prototype.reset = function (options = {}) {
     this.options.customsld = false;
   }
   this.options = { ...this.options, ...options };
+  if (options.layerId && options.layerId !== this.layerId) {
+    for (const field of [
+      "gristReferential",
+      "gristMatchingField",
+      "gristGeometryField",
+      "gristCentroidField",
+      "id",
+      "name",
+      "geojsonField",
+      "srs",
+    ]) {
+      this.options[field] = options[field];
+    }
+  }
   if (options.customsld && !options.styleMode)
     this.options.styleMode = STYLE_MODES.CUSTOM;
   this.layerId = this.options.layerId || null;
@@ -410,6 +480,7 @@ styleEditor.prototype.setActiveMode = function (mode) {
     if (layer && layer.fields) this.setFields(Object.keys(layer.fields));
   }
   this.activeMode = mode;
+  this.customStyle.options.styleMode = mode;
   this.element.querySelectorAll("[data-style-mode]").forEach((button) => {
     const isActive = button.dataset.styleMode === mode;
     button.classList.toggle("active", isActive);
@@ -498,7 +569,13 @@ styleEditor.prototype.renderGristSource = function () {
         if (data.data.length) {
           feature = { type: "Feature", geometry: null, properties: data.data[0] };
         }
-        this.setFields(fields);
+        const geometryFields = [
+          this.options.geojsonField,
+          "geometry_centroid",
+          this.options.gristGeometryField,
+          this.options.gristCentroidField,
+        ];
+        this.setFields(fields.filter((field) => !geometryFields.includes(field)));
         this.labels.preview.setFeature(feature);
         if (this.customStyle.preview) this.customStyle.preview.update();
       },
