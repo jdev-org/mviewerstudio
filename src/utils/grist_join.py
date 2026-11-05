@@ -16,6 +16,7 @@ from .commons import geojson_to_wkt
 WFS_VALUE_CHUNK_SIZE = 300
 GRIST_UPDATE_BATCH_SIZE = 200
 GRIST_GEOMETRY_FIELD = "geometry"
+GRIST_CENTROID_FIELD = "geometry_centroid"
 GRIST_X_FIELD = "x"
 GRIST_Y_FIELD = "y"
 SUPPORTED_OUTPUT_FORMATS = ("geojson", "wkt")
@@ -346,7 +347,7 @@ def build_wfs_payload(referential, values):
     :return: Form payload for a WFS GetFeature request.
     :rtype: dict
     """
-    return {
+    payload = {
         "service": "WFS",
         "version": "2.0.0",
         "request": "GetFeature",
@@ -354,6 +355,9 @@ def build_wfs_payload(referential, values):
         "outputFormat": "application/json",
         "CQL_FILTER": build_cql_filter(referential["join_field"], values),
     }
+    if referential.get("srs"):
+        payload["srsName"] = referential["srs"]
+    return payload
 
 
 def chunk_values(values):
@@ -571,6 +575,34 @@ def get_point_coordinates(geometry):
     return coordinates[0], coordinates[1]
 
 
+def get_referential_preview(payload):
+    """Read configured WFS geometries for a preview without writing to Grist.
+
+    :param dict payload: Referential label, support and up to 15 join values.
+    :return: GeoJSON features with the configured referential join attribute.
+    :raises ValueError: If the support or source values are invalid.
+    """
+    if not isinstance(payload, dict):
+        raise ValueError("Payload invalide.")
+    referential = get_configured_referential(payload.get("referential_label"))
+    support = payload.get("geometry", "Polygon")
+    if support not in ("Point", "Polygon"):
+        raise ValueError("Support géographique invalide.")
+    if support == "Point":
+        if not referential.get("centroide_layer_name"):
+            raise ValueError("Aucune couche de centroïdes configurée.")
+        referential = {**referential, "layer_name": referential["centroide_layer_name"]}
+    values = payload.get("values", [])
+    if not isinstance(values, list) or len(values) > 15:
+        raise ValueError("L’aperçu est limité à 15 valeurs.")
+    if any(not isinstance(value, (str, int, float)) for value in values):
+        raise ValueError("Valeur de jointure invalide.")
+    return {
+        "type": "FeatureCollection",
+        "features": fetch_referential_features(referential, values),
+    }
+
+
 def join_rows_with_referential(payload, authorization_header):
     """
     Join source rows with a geographic referential through filtered WFS calls.
@@ -587,6 +619,17 @@ def join_rows_with_referential(payload, authorization_header):
     doc_id, table_id, matching_field, output_format, referential = (
         validate_join_payload(payload)
     )
+    requested_support = payload.get("geometry_support")
+    if requested_support not in (None, "Polygon", "Point"):
+        raise ValueError("Support géographique invalide.")
+    polygon_field = payload.get("geometry_field", GRIST_GEOMETRY_FIELD)
+    centroid_field = payload.get("centroid_field", GRIST_CENTROID_FIELD)
+    if any(not isinstance(field, str) or not field for field in (polygon_field, centroid_field)):
+        raise ValueError("Colonne GeoJSON invalide.")
+    if requested_support == "Point":
+        if output_format != "geojson" or not referential.get("centroide_layer_name"):
+            raise ValueError("Aucun support centroïde GeoJSON disponible.")
+        referential = {**referential, "layer_name": referential["centroide_layer_name"]}
     records = get_grist_records(api_url, doc_id, table_id, api_key)
     rows = get_rows_from_records(records)
     matching_values = get_matching_values(rows, matching_field)
@@ -628,7 +671,7 @@ def join_rows_with_referential(payload, authorization_header):
             unmatched.append(row)
             continue
 
-        if is_point_geometry(geometry):
+        if is_point_geometry(geometry) and requested_support != "Point":
             x, y = get_point_coordinates(geometry)
             joined_rows.append(
                 {**row, GRIST_X_FIELD: x, GRIST_Y_FIELD: y, "refgeo_found": True}
@@ -642,6 +685,10 @@ def join_rows_with_referential(payload, authorization_header):
             continue
 
         geometry_field = get_geometry_field(output_format)
+        if output_format == "geojson":
+            geometry_field = polygon_field
+            if requested_support == "Point":
+                geometry_field = centroid_field
         geometry_output = get_geometry_output(geometry, output_format)
         joined_rows.append(
             {**row, geometry_field: geometry_output, "refgeo_found": True}
@@ -657,6 +704,7 @@ def join_rows_with_referential(payload, authorization_header):
             }
         )
 
+    resolved_column_ids = {}
     if records_to_patch:
         column_ids = []
         for record in records_to_patch:
@@ -684,4 +732,10 @@ def join_rows_with_referential(payload, authorization_header):
         "output_format": output_format,
         "rows": joined_rows,
         "unmatched": unmatched,
+        "geometry_field": resolved_column_ids.get(
+            polygon_field, polygon_field
+        ),
+        "centroid_field": resolved_column_ids.get(
+            centroid_field, centroid_field
+        ),
     }

@@ -36,7 +36,7 @@ from flask.blueprints import BlueprintSetupState
 from urllib.parse import urlparse
 import requests
 from .utils.git_utils import Git_manager
-from .utils.grist_join import join_rows_with_referential
+from .utils.grist_join import join_rows_with_referential, get_referential_preview
 from datetime import datetime
 
 from werkzeug.exceptions import BadRequest, MethodNotAllowed, Conflict, Unauthorized
@@ -139,6 +139,18 @@ def grist_refgeo_join() -> Response:
         current_app.logger.warning("Grist referential join request failed")
         raise BadRequest("Erreur pendant la jointure référentiel.")
 
+    return jsonify(result)
+
+
+@basic_store.route("/api/grist/refgeo/preview", methods=["POST"])
+def grist_refgeo_preview() -> Response:
+    """Return a read-only sample from a configured geographic referential."""
+    try:
+        result = get_referential_preview(request.get_json() or {})
+    except ValueError as error:
+        raise BadRequest(str(error))
+    except requests.RequestException:
+        raise BadRequest("Erreur pendant le chargement du référentiel.")
     return jsonify(result)
 
 
