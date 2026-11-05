@@ -41,6 +41,7 @@ import * as gristValidation from "./utils/grist/validation.js";
 import * as gristGeocoding from "./utils/grist/geocoding.js";
 import * as gristCoordinates from "./utils/grist/coordinates.js";
 import * as gristRefGeo from "./utils/grist/refGeo.js";
+import * as gristCsv from "./utils/grist/csvSource.js";
 
 mv.components = mv.components || {};
 mv.components.grist = mv.components.grist || {};
@@ -86,6 +87,8 @@ mv.utils.grist.validation = gristValidation;
 mv.utils.grist.geocoding = gristGeocoding;
 mv.utils.grist.coordinates = gristCoordinates;
 mv.utils.grist.refGeo = gristRefGeo;
+// Le code historique de mv.js et le Styler utilisent ainsi le même cache de téléchargement CSV.
+mv.utils.grist.csv = gristCsv;
 
 const styleEditorTarget = document.getElementById("layer-style-editor");
 if (styleEditorTarget) {

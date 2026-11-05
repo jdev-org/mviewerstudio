@@ -20,6 +20,7 @@ import { calculateCircleSizes } from "../../utils/styler/circleSizes.js";
 import { getStyleGeometry } from "../../utils/styler/style.js";
 import { loadSldStyle } from "../../utils/styler/readStyle.js";
 import GristStyleSource from "./customStyle/gristStyleSource.js";
+import { clearGristCsv } from "../../utils/grist/csvSource.js";
 
 /**
  * Sélecteur du mode de création d'un style de couche.
@@ -357,6 +358,12 @@ styleEditor.prototype.reset = function (options = {}) {
   this.styleLoadRequest = null;
   this.loadingCustomStyle = false;
   this.styleLoadError = null;
+  if (options.reloadGristSource) {
+    clearGristCsv(options.url);
+    this.gristSource = null;
+    if (config.temp.layers[options.layerId])
+      delete config.temp.layers[options.layerId].csvData;
+  }
   // Un rafraîchissement WMS conserve les options ; un changement de couche efface l'ancien style.
   if (options.layerId && options.layerId !== this.layerId) {
     this.options.type = null;

@@ -775,6 +775,7 @@ var mv = (function () {
       if (layer.isGrist || layer.url.includes("/download/csv")) {
         layer.type = "csv";
       }
+      if (layer.type === "csv") mv.utils.grist.csv.clearGristCsv(layer.url);
       document.getElementById("layerTypeLabel").append(layer.type);
 
       $("#frm-type").val(layer.type).trigger("change");
@@ -993,19 +994,8 @@ var mv = (function () {
         // Keep the modal responsive while the authenticated CSV request is running.
         previewContainer.innerHTML = `<div class="text-muted">${mviewer.tr("modal.layer.grist.preview.loading")}</div>`;
         // The CSV endpoint is protected by the same API key used by the Grist import flow.
-        fetch(layer.url, {
-          headers: { Authorization: `Bearer ${apiKey}` },
-        })
-          .then((response) => {
-            if (!response.ok) {
-              throw new Error(`Grist request failed with status ${response.status}`);
-            }
-
-            return response.text();
-          })
-          .then((csv) => {
-            // PapaParse preserves the table headers used by the preview component.
-            const data = Papa.parse(csv, { header: true, skipEmptyLines: true });
+        mv.utils.grist.csv.loadGristCsv(layer.url, apiKey)
+          .then((data) => {
             if (document.getElementById("mod-layerOptions").dataset.layerid !== layerid) {
               return;
             }

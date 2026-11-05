@@ -1,5 +1,5 @@
 import GristApiKey from "../../grist/gristApiKey/gristApiKey.js";
-import { createGristApiError } from "../../../utils/grist/apiError.js";
+import { loadGristCsv } from "../../../utils/grist/csvSource.js";
 import SpinnerGrow from "../../spinnergrow/spinnergrow.js";
 
 let sourceId = 0;
@@ -48,6 +48,7 @@ export default class GristStyleSource {
         idPrefix: `style-grist-api-key-${sourceId}`,
         onValidApiKey: (key) => this.load(key),
         onInvalidApiKey: () => {
+          this.validatedApiKey = "";
           this.setKeyValid(false);
           this.keyDetails.open = true;
           this.setReady(false);
@@ -68,6 +69,7 @@ export default class GristStyleSource {
    * @returns {Promise<void>} Actualise les données ou affiche l'erreur de chargement.
    */
   async load(apiKey) {
+    this.validatedApiKey = apiKey;
     this.setKeyValid(true);
     this.keyDetails.open = false;
     this.setReady(false);
@@ -78,16 +80,8 @@ export default class GristStyleSource {
     this.status.className = "text-muted";
     this.status.textContent = mviewer.tr("modal.layer.grist.preview.loading");
     try {
-      const response = await fetch(this.url, {
-        headers: { Authorization: `Bearer ${apiKey}` },
-      });
-      if (!response.ok) throw await createGristApiError(response);
-      const csv = await response.text();
+      const data = await loadGristCsv(this.url, apiKey);
       if (this.request !== request) return;
-      const data = Papa.parse(csv, { header: true, skipEmptyLines: true });
-      if (data.errors && data.errors.length) {
-        throw new Error(mviewer.tr("modal.layer.grist.preview.error"));
-      }
       this.onLoad(data);
       this.setReady(true);
       this.status.textContent = "";
