@@ -536,3 +536,101 @@ Si vous modifiez la position de la fiche d’information après avoir configuré
 .. |suppression| image:: ../_images/user/mviewerstudio_2_suppression.png
               :alt: Supprimer 
 	      :width: 20 pt
+
+Représentation cluster dans l’éditeur de style
+--------------------------------------------
+
+Pour une géométrie ponctuelle, la représentation ``cluster`` regroupe les points proches dans l’aperçu et dans le style exporté.
+La distance saisie dans l’éditeur est exprimée en pixels et devient le paramètre ``cellSize`` de la transformation ``vec:PointStacker``.
+Cette transformation est écrite dans le ``FeatureTypeStyle`` du SLD, avant les règles de symbolisation, en SLD 1.0.0 comme en SLD 1.1.0.
+Les couleurs, contours et tailles des symboles configurés sont conservés.
+Dans le tableau des règles, le composant ``ClusterRule`` remplace les classes de valeurs par une condition sur l’effectif ``count`` :
+
+* tous les points et groupes, sans filtre d’effectif ;
+* un point isolé, avec ``count = 1`` ;
+* un groupe de plusieurs points, avec ``count > 1`` ;
+* un intervalle d’effectifs, avec des bornes entières positives et inclusives.
+
+Les colonnes « Effectif min » et « Effectif max » apparaissent uniquement lorsqu’au moins une règle cluster utilise la condition « Intervalle d’effectif » ; les bornes sont modifiables pour les règles utilisant cette condition.
+Ces conditions sont appliquées dans l’aperçu, exportées comme filtres SLD et restaurées à la réouverture du style.
+Les autres représentations conservent leur contenu : symbole uniforme, valeur de catégorie ou bornes de classes selon le mode choisi.
+Si les étiquettes sont activées, elles affichent ``count`` pour les groupes (``count > 1``) et le champ choisi dans le formulaire pour les points isolés (``count = 1``).
+Sur les sources cluster OpenLayers, les attributs du point isolé sont conservés pour permettre cette lecture.
+
+La sauvegarde conserve la transformation dans le fichier SLD et ses paramètres dans le fichier JSON associé.
+La réouverture du SLD généré restaure la représentation cluster et sa distance de regroupement.
+Sur une couche vectorielle, mviewer lit la transformation pour créer une source cluster ; sur une couche WMS, le serveur doit prendre en charge PointStacker.
+Le regroupement OpenLayers utilise une distance et peut différer de la grille calculée par GeoServer.
+
+Choix de la couche du référentiel
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Dans ``config.json``, ``grist.grist_referentials`` associe ``layer_name`` à la couche du référentiel et ``centroide_layer_name`` à son support ponctuel optionnel.
+Lorsque les deux couches sont configurées, les représentations polygonales utilisent ``layer_name`` et les représentations ponctuelles, dont ``cluster``, utilisent ``centroide_layer_name``.
+Ce choix s’applique à l’aperçu, à la préparation des géométries CSV/Grist et au nom technique de la couche WMS dans le SLD exporté.
+La sélection est conservée à la réouverture du style.
+Un référentiel polygonal sans ``centroide_layer_name`` conserve uniquement ses représentations polygonales ; une couche nativement ponctuelle peut utiliser le mode cluster directement.
+
+Échelles de visibilité par règle
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Cliquez sur le symbole d’une règle pour ouvrir la fenêtre « Personnalisation du style ».
+La section « Échelles de visibilité », ouverte en haut de cette fenêtre, propose un dénominateur minimal et un dénominateur maximal pour chaque règle graphique SLD, pour toutes les représentations, y compris les clusters.
+Ces champs sont indépendants des paramètres d’échelle des étiquettes.
+Saisissez uniquement le dénominateur N de l’échelle 1:N, par exemple ``5000`` pour 1:5 000.
+Un champ vide laisse la borne correspondante sans limite.
+Le minimum est inclus et le maximum est exclu ; le maximum doit être strictement supérieur au minimum.
+Ces paramètres sont appliqués dans l’aperçu, exportés dans les éléments SLD ``MinScaleDenominator`` et ``MaxScaleDenominator``, puis restaurés à la réouverture du style.
+Pour les cercles proportionnels colorés, chaque combinaison de taille et de couleur utilise l’intersection de leurs plages d’échelles.
+
+Classes d’effectifs des clusters
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Les paramètres de la représentation cluster regroupent la distance, l’intervalle de classe, le nombre de classes et le choix d’une palette avec inversion facultative.
+Le bouton « Calculer » crée des règles sur ``count`` sans lire un champ du CSV ni interroger le WFS.
+Par exemple, un intervalle de ``10`` et ``5`` classes créent les plages inclusives ``1–10``, ``11–20``, ``21–30``, ``31–40`` et ``41–50``, avec une couleur de la palette pour chaque règle.
+Le calcul ajoute une dernière règle sans borne supérieure : avec une dernière classe finissant à ``50``, la règle « 51 ou plus » couvre tous les effectifs restants sans chevauchement.
+Chaque plage et chaque symbole restent modifiables dans le tableau des règles.
+Ces paramètres sont conservés dans la configuration du style ; le SLD contient les filtres d’effectifs et les couleurs correspondants.
+
+Conservation du style sauvegardé
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+À la sauvegarde d’un style personnalisé, le front envoie le SLD puis le JSON associé avec le même identifiant.
+Après l’enregistrement du JSON, si le SLD correspondant existe, le répertoire ``styles`` de l’application conserve uniquement cette paire ; les autres fichiers ``.sld`` et ``.json`` sont supprimés.
+Le nettoyage concerne l’ensemble du répertoire de styles de cette application, et non seulement les styles d’une couche.
+Si l’envoi du JSON échoue ou si le SLD correspondant est absent, les anciens styles sont conservés.
+
+Taille initiale des classes de clusters
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Le calcul des classes propose un rayon par défaut compris entre 10 et 40 pixels selon la formule ``rayon = 10 + sqrt(ratio) × (40 − 10)``.
+Les milieux des intervalles sont normalisés entre 0 pour la première classe et 1 pour la dernière afin d’utiliser toute la plage de tailles ; une classe de groupes unique conserve un rayon de 10 pixels.
+Cette formule utilise les effectifs ``count`` des classes ; elle ne somme pas un attribut des points sources.
+Chaque classe reçoit une taille fixe, utilisée dans l’aperçu et exportée dans le SLD ; cette taille reste modifiable dans la personnalisation du symbole.
+
+Le calcul ajoute une règle dédiée aux points isolés (``count = 1``), avec un rayon de 5 pixels modifiable dans la personnalisation du symbole.
+Les intervalles de groupes commencent à ``2`` pour éviter de superposer cette règle aux points isolés ; les autres bornes sont conservées.
+La règle des points isolés s’ajoute aux classes demandées, sauf si un intervalle contient uniquement l’effectif ``1``, auquel cas cette règle le remplace.
+
+Dans les paramètres d’étiquettes d’une représentation cluster, l’option « Afficher l’effectif des groupes (count) » permet de masquer ou d’afficher le nombre de points des groupes.
+Désactiver cette option conserve les étiquettes du champ choisi pour les points isolés.
+L’option est conservée à la sauvegarde et à la réouverture du style.
+
+Pour une règle « 50 ou plus », choisissez la condition « Effectif supérieur ou égal à » puis saisissez ``50`` dans la colonne « Effectif min ».
+Aucune borne maximale n’est appliquée : le filtre SLD généré est ``count >= 50``.
+Ce seuil est conservé à la sauvegarde et à la réouverture du style ; les autres intervalles doivent s’arrêter à ``49`` pour éviter une superposition à partir de ``50``.
+
+À chaque clic sur « Calculer », les règles sont régénérées avec une règle finale « borne maximale + 1 ou plus », dotée de la plus grande taille par défaut et de la dernière couleur de la palette.
+Cette règle complète les intervalles inclusifs et la règle des points isolés, sans s’accumuler au fil des calculs.
+
+La représentation cluster est limitée à 7 règles graphiques au total, règle des points isolés et règle finale « ou plus » comprises.
+Le calcul accepte donc au maximum 5 classes d’effectifs ; l’ajout et la duplication sont désactivés à partir de 7 règles.
+Les règles d’étiquettes ne sont pas comptées dans cette limite.
+
+L’affichage du ``count`` des groupes est indépendant du niveau d’échelle choisi pour les étiquettes et reste contrôlé par l’option « Afficher l’effectif des groupes (count) ».
+Les niveaux Région, Département, Commune et Rue limitent uniquement l’affichage du champ choisi pour les points isolés.
+
+Dans les étiquettes des clusters, « Uniquement le nombre d’entités : Oui » affiche seulement le ``count`` des groupes, indépendamment de l’échelle, sans étiquette sur les points isolés.
+Le choix « Non » permet de sélectionner un champ pour les points isolés et de choisir séparément si le nombre d’entités des groupes doit être affiché.
+Le champ et le niveau d’affichage sont masqués lorsque seul le nombre d’entités est demandé.

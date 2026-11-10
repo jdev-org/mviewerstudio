@@ -134,6 +134,29 @@ def get_layer_style_file(directory, filename: str):
     return file
 
 
+
+def remove_other_layer_styles(directory, filename: str):
+    """Keep the completed SLD/JSON pair and delete older style files in this application.
+
+    :param directory: validated application styles directory
+    :param filename: validated filename of the newly saved JSON document
+    :returns: None; incomplete pairs leave existing styles untouched
+    """
+    json_file = get_layer_style_file(directory, filename)
+    sld_file = get_layer_style_file(directory, json_file.with_suffix(".sld").name)
+    if not json_file.is_file() or not sld_file.is_file():
+        return
+    retained_files = {json_file.name, sld_file.name}
+    for candidate in directory.iterdir():
+        if (
+            candidate.name not in retained_files
+            and candidate.suffix in (".sld", ".json")
+            and not candidate.is_symlink()
+            and candidate.is_file()
+        ):
+            candidate.unlink()
+
+
 def fetch_remote_xml(url: str, timeout: int = 10) -> str:
     """Fetch XML using its declared encoding and return Unicode for the UTF-8 API."""
     if not url:
