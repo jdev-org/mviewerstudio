@@ -27,6 +27,7 @@ from .utils.route_utils import (
     get_xml_root,
     get_layer_styles_directory,
     get_layer_style_file,
+    remove_other_layer_styles,
 )
 import hashlib, uuid
 from .utils.register_utils import from_xml_path
@@ -852,6 +853,7 @@ def readLayerStyle(id) -> Response:
 def saveLayerStyle(id) -> Response:
     """
     Store an application's UTF-8 SLD or associated GeoStyler JSON document.
+    A completed JSON upload keeps only its SLD/JSON pair in the styles directory.
 
     :param id: application UUID
     :returns: JSON filename and public filepath; a new SLD defaults to a unique UUID
@@ -895,6 +897,9 @@ def saveLayerStyle(id) -> Response:
     file = get_layer_style_file(directory, filename)
     directory.mkdir(parents=True, exist_ok=True)
     file.write_text(raw_style, encoding="utf-8")
+    if request.is_json:
+        # The frontend sends SLD first; prune old styles only after its JSON is saved.
+        remove_other_layer_styles(directory, filename)
 
     return jsonify(
         {
