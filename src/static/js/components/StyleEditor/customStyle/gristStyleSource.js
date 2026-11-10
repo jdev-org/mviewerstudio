@@ -1,3 +1,4 @@
+import Accordion from "../../accordion/accordion.js";
 import GristApiKey from "../../grist/gristApiKey/gristApiKey.js";
 import { loadGristCsv } from "../../../utils/grist/csvSource.js";
 import SpinnerGrow from "../../spinnergrow/spinnergrow.js";
@@ -19,19 +20,19 @@ export default class GristStyleSource {
     this.ready = false;
     this.element = document.createElement("div");
     this.element.className = "grist-style-source mb-3";
-    this.keyDetails = document.createElement("details");
-    this.keyDetails.className = "style-config-card mb-3";
-    this.keyDetails.open = true;
-    const summary = document.createElement("summary");
-    summary.textContent = mviewer.tr("grist.api_key.label");
+    this.keyPanel = new Accordion({
+      title: mviewer.tr("grist.api_key.label"),
+      expanded: true,
+    });
     this.validKeyIndicator = document.createElement("span");
     this.validKeyIndicator.className = "text-success ms-2";
     this.validKeyIndicator.textContent = "✓";
     this.validKeyIndicator.setAttribute("role", "img");
     this.validKeyIndicator.setAttribute("aria-label", mviewer.tr("grist.api_key.valid"));
     this.validKeyIndicator.hidden = true;
-    summary.appendChild(this.validKeyIndicator);
-    this.keyDetails.appendChild(summary);
+    this.keyPanel.element
+      .querySelector(".accordion-button")
+      .appendChild(this.validKeyIndicator);
     this.status = document.createElement("p");
     this.status.setAttribute("role", "status");
     this.spinner = new SpinnerGrow({
@@ -50,7 +51,7 @@ export default class GristStyleSource {
         onInvalidApiKey: () => {
           this.validatedApiKey = "";
           this.setKeyValid(false);
-          this.keyDetails.open = true;
+          this.keyPanel.setExpanded(true);
           this.setReady(false);
           this.request = null;
           this.element.setAttribute("aria-busy", "false");
@@ -59,8 +60,8 @@ export default class GristStyleSource {
         },
       }
     );
-    this.keyDetails.appendChild(this.apiKey.render());
-    this.element.append(this.keyDetails, this.spinner.render(), this.status);
+    this.keyPanel.content.appendChild(this.apiKey.render());
+    this.element.append(this.keyPanel.element, this.spinner.render(), this.status);
   }
 
   /**
@@ -71,7 +72,7 @@ export default class GristStyleSource {
   async load(apiKey) {
     this.validatedApiKey = apiKey;
     this.setKeyValid(true);
-    this.keyDetails.open = false;
+    this.keyPanel.setExpanded(false);
     this.setReady(false);
     const request = {};
     this.request = request;
@@ -87,7 +88,7 @@ export default class GristStyleSource {
       this.status.textContent = "";
     } catch (error) {
       if (this.request !== request) return;
-      this.keyDetails.open = true;
+      this.keyPanel.setExpanded(true);
       this.status.className = "text-danger";
       this.status.textContent = error.message;
     } finally {

@@ -23,11 +23,16 @@ export default class ScalePanel extends FieldsPanel {
         this.element.querySelector('[name="max"]').setCustomValidity("");
       });
     });
-    const tooltip = new Tooltip({
-      message: mviewer.tr("style_editor.scale.help"),
-      classes: "ms-2",
-    });
-    tooltip.appendTo(this.element.querySelector("summary"));
+    if (!this.helpTooltip) {
+      const tooltip = new Tooltip({
+        message: mviewer.tr("style_editor.scale.help"),
+        classes: "ms-2 me-3",
+      });
+      const heading = this.element.querySelector(".accordion-header");
+      heading.classList.add("d-flex", "align-items-center");
+      // Keep help outside the collapse button and reuse it across field refreshes.
+      this.helpTooltip = tooltip.appendTo(heading);
+    }
     return this.element;
   }
 

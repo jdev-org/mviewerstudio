@@ -203,22 +203,6 @@
 	max-height: 400px;
 	overflow-y: auto;
 }
-.style-config-card {
-	border: 1px solid #dedede;
-	border-radius: 18px;
-	margin-bottom: 12px;
-	overflow: hidden;
-}
-.style-config-card summary {
-	padding: 16px 20px;
-	color: #343158;
-	font-weight: 700;
-	cursor: pointer;
-}
-.style-config-card .style-fields {
-	padding: 16px 20px 24px;
-	border-top: 1px solid #e5e5e5;
-}
 .style-rule-dialog {
 	width: min(780px, calc(100% - 32px));
 	max-height: 85vh;
@@ -261,34 +245,6 @@
 .style-rules__preview svg { display: block; flex-shrink: 0; }
 .style-rules__toolbar { display: flex; gap: 12px; padding: 12px; }
 .style-rules__toolbar button { border: 0; }
-.accordion-classification-panel > .accordion-header > .accordion-button.collapsed {
-	color: #8a8a8a;
-}
 @media (max-width: 576px) {
 	.style-fields { grid-template-columns: 1fr; }
-}
-
-.custom-style-preview {
-	margin-top: 10px;
-}
-
-.styler-labels .accordion-button {
-	background: transparent;
-	color: inherit;
-	font-size: 16px;
-	font-weight: 700;
-}
-
-.styler-labels .accordion-button::after {
-	display: none;
-}
-
-.styler-labels-toggle-icon {
-	margin-left: auto;
-	font-size: 22px;
-	line-height: 1;
-}
-
-.styler-labels .accordion-button[aria-expanded="true"] .styler-labels-toggle-icon {
-	transform: rotate(180deg);
 }

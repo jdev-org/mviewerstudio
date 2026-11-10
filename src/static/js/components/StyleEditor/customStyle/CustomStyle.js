@@ -4,6 +4,7 @@ import ListCard from "../../listCard/listCard.js";
 import ClassificationPanel from "./ClassificationPanel.js";
 import AccordionClassificationPanel from "./accordionClassificationPanel.js";
 import DataPreview from "./dataPreview.js";
+import LegendPreview from "./legendPreview.js";
 import { STYLE_TYPES, STYLE_EDITOR_EVENTS, STYLE_MODES } from "../constants.js";
 import { createGeoStylerStyle, geoStylerToSld } from "../../../utils/styler/style.js";
 import { sendSldFile, sendJsonStyleStyle } from "../../../utils/styler/requests.js";
@@ -52,6 +53,10 @@ const CustomStyle = function (options = {}) {
     classes: "custom-style",
   });
   this.element = this.card.element;
+  this.legendPreview = new LegendPreview(() => this.getValue());
+  for (const eventName of ["input", "change", "update"]) {
+    this.element.addEventListener(eventName, () => this.legendPreview.update());
+  }
   this.styleTypeSelector = new ListStyleTypeSelector(this.geometry, this.supports);
   if (
     state &&
@@ -147,6 +152,7 @@ CustomStyle.prototype.showType = function (type) {
       })
     );
   }
+  this.legendPreview.update();
   if (this.preview) {
     if (geometryChanged) this.preview.update();
     else this.preview.refreshStyle();

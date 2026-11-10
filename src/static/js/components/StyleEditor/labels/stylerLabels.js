@@ -6,6 +6,7 @@ import {
 } from "./constants.js";
 import { createField } from "../customStyle/rules/fields.js";
 import Select from "../../select/select.js";
+import Accordion from "../../accordion/accordion.js";
 import Switch from "../../switch/switch.js";
 import Tooltip from "../../tooltip/tooltip.js";
 import LabelPreview from "./preview.js";
@@ -36,7 +37,7 @@ const stylerLabels = function ({
   labelsId += 1;
   this.id = `styler-labels-${labelsId}`;
   this.createContent();
-  this.createSwitch();
+  this.createAccordion();
   this.setFields(fields, { preserveSelection: fields.length === 0 });
   this.updateEnabled();
   this.element.addEventListener("input", (event) => this.updateState(event));
@@ -154,58 +155,25 @@ stylerLabels.prototype.createScaleSelect = function () {
   return element;
 };
 
-/** Build the switch card containing the label settings.
+/** Build a Bootstrap accordion with the shared label activation switch.
  * @returns {void}
  */
-stylerLabels.prototype.createSwitch = function () {
-  this.switch = new Switch({
+stylerLabels.prototype.createAccordion = function () {
+  this.panel = new Accordion({
+    title: mviewer.tr("style_editor.labels.settings"),
+    expanded: true,
+    classes: "styler-labels mt-3",
+  });
+  this.element = this.panel.element;
+  this.enabledSwitch = new Switch({
     id: `${this.id}-enabled`,
     label: mviewer.tr("style_editor.labels.enabled"),
     checked: this.state.enabled,
-    classes: "styler-labels mt-3",
-    content: this.content,
-    onChange: (checked) => {
-      this.state.enabled = checked;
-      this.updateEnabled();
-    },
+    classes: "mb-3",
   });
-  this.element = this.switch.render();
-  this.createAccordion();
-};
-
-/** Rend le titre repliable sans lier l'ouverture du panneau à l'activation des étiquettes.
- * @returns {void} Conserve le switch et les champs déjà montés.
- */
-stylerLabels.prototype.createAccordion = function () {
-  const title = this.element.querySelector(".switch-card-title");
-  const content = this.element.querySelector("[data-switch-card-content]");
-  const collapseId = `${this.id}-collapse`;
-  const button = document.createElement("button");
-  button.type = "button";
-  button.id = `${this.id}-heading`;
-  button.className = "switch-card-title accordion-button p-0 shadow-none";
-  button.textContent = mviewer.tr("style_editor.labels.settings");
-  const icon = document.createElement("i");
-  icon.className = "ri-arrow-down-s-line styler-labels-toggle-icon";
-  icon.setAttribute("aria-hidden", "true");
-  button.appendChild(icon);
-  button.setAttribute("data-bs-toggle", "collapse");
-  button.setAttribute("data-bs-target", `#${collapseId}`);
-  button.setAttribute("aria-expanded", "true");
-  button.setAttribute("aria-controls", collapseId);
-  title.replaceWith(button);
-
-  const collapse = document.createElement("div");
-  collapse.id = collapseId;
-  collapse.className = "collapse show";
-  collapse.setAttribute("role", "region");
-  collapse.setAttribute("aria-labelledby", button.id);
-  content.replaceWith(collapse);
-  collapse.appendChild(content);
-  // Le libellé accessible du switch reste indépendant du bouton de dépliage.
-  this.switch
-    .getInput()
-    .setAttribute("aria-label", mviewer.tr("style_editor.labels.enabled"));
+  const toggle = this.enabledSwitch.render();
+  this.enabledSwitch.getInput().dataset.label = "enabled";
+  this.panel.content.append(toggle, this.content);
 };
 
 /** Store the value entered in a form field.
@@ -238,9 +206,6 @@ stylerLabels.prototype.updateEnabled = function () {
   this.updateClusterOptions();
   this.content.disabled = !this.state.enabled;
   this.content.classList.toggle("d-none", !this.state.enabled);
-  this.element
-    .querySelector("[data-switch-card-content]")
-    .classList.toggle("d-none", !this.state.enabled);
 };
 
 /**

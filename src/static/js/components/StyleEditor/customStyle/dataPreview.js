@@ -1,4 +1,5 @@
 import { loadReferentialPreview } from "../../../utils/styler/referential.js";
+import Accordion from "../../accordion/accordion.js";
 import MapPreview from "../../map/map.js";
 import { MAP_DEFAULTS } from "../../map/constants.js";
 import { DATA_PREVIEW_LIMIT, DATA_PREVIEW_GEOMETRY_NAME } from "../constants.js";
@@ -9,33 +10,14 @@ import {
 } from "../../../utils/styler/style.js";
 import { getPreviewFeatures } from "./previewFeatures.js";
 
-let previewId = 0;
-
 /** Carte des données de la couche active, sans requête supplémentaire pour les CSV. */
 export default class DataPreview {
   /** @param {Object} options Options de la couche éditée, dont layerId et url. */
   constructor(options) {
     this.options = options;
-    this.element = document.createElement("section");
-    this.element.className = "custom-style-preview accordion";
-    previewId += 1;
-    const titleId = `style-preview-title-${previewId}`;
-    const collapseId = `style-preview-collapse-${previewId}`;
-    this.element.innerHTML = `
-      <div class="accordion-item">
-        <h5 class="accordion-header" id="${titleId}">
-          <button class="accordion-button collapsed" type="button"
-            data-bs-toggle="collapse" data-bs-target="#${collapseId}"
-            aria-expanded="false" aria-controls="${collapseId}"></button>
-        </h5>
-        <div id="${collapseId}" class="accordion-collapse collapse"
-          role="region" aria-labelledby="${titleId}">
-          <div class="accordion-body"></div>
-        </div>
-      </div>
-    `;
     const title = mviewer.tr("style_editor.preview.title");
-    this.element.querySelector(".accordion-button").textContent = title;
+    this.panel = new Accordion({ title, classes: "custom-style-preview" });
+    this.element = this.panel.element;
     this.mapPreview = new MapPreview({
       title,
       controls: [new ol.control.Zoom(), new ol.control.Attribution()],

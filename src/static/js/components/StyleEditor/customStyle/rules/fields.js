@@ -1,3 +1,5 @@
+import Accordion from "../../../accordion/accordion.js";
+
 /** Construit un champ étiqueté à partir d'une définition et d'une valeur. */
 export function createField(definition, value) {
   const label = document.createElement("label");
@@ -36,18 +38,19 @@ export class FieldsPanel {
 
     this.values = values;
 
-    this.element = document.createElement("details");
-
-    this.element.className = "style-config-card";
-
-    this.element.open = true;
+    this.panel = new Accordion({
+      title: mviewer.tr(title),
+      expanded: true,
+      classes: "style-rule-fields",
+    });
+    this.element = this.panel.element;
   }
 
   /** @returns {HTMLElement} Carte contenant les champs configurés. */
   render() {
-    this.element.innerHTML = `<summary>${mviewer.tr(this.title)}</summary><div class="style-fields"></div>`;
-
-    const content = this.element.querySelector(".style-fields");
+    const content = document.createElement("div");
+    content.className = "style-fields";
+    this.panel.setContent(content);
 
     this.definitions.forEach((definition) => {
       content.appendChild(createField(definition, this.values[definition.name]));

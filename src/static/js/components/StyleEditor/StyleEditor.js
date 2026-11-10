@@ -519,6 +519,7 @@ styleEditor.prototype.updateCustomVisibility = function () {
   this.customStyle.element.classList.toggle("d-none", !visible);
   this.labels.element.hidden = !visible;
   if (this.customStyle.preview) this.customStyle.preview.element.hidden = !visible;
+  this.customStyle.legendPreview.element.hidden = !visible;
 };
 
 /**
@@ -540,7 +541,8 @@ styleEditor.prototype.render = function () {
     this.customStyle.render(),
     this.legendSelector.render(),
     this.labels.render(),
-    this.customStyle.preview.render()
+    this.customStyle.preview.render(),
+    this.customStyle.legendPreview.render()
   );
   this.renderGristSource();
 

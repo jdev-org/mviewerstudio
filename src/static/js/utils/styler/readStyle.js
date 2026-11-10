@@ -28,7 +28,7 @@ const restoreStroke = ({ color, opacity, width, dasharray }) => {
  * @param {Object} symbolizer Symbole Mark, Icon, Line ou Fill lu dans le SLD.
  * @returns {Object} Géométrie et paramètres graphiques.
  */
-const restoreSymbolizer = (symbolizer) => {
+export const restoreSymbolizer = (symbolizer) => {
   const fill = { ...DEFAULT_FILL };
   const symbol = { ...DEFAULT_SYMBOL };
   let geometry = "Point";
