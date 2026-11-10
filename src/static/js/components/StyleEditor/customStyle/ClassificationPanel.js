@@ -1,5 +1,6 @@
 import MethodsPanel from "./rules/methodsPanel.js";
 import RulesPanel from "./rules/rulesPanel.js";
+import ClusterRule from "./rules/clusterRule.js";
 import { STYLE_TYPES, CLASSIFICATION_METHODS } from "../constants.js";
 
 let classificationPanelId = 0;
@@ -14,7 +15,9 @@ export default class ClassificationPanel {
       methods = methods.filter((method) => definition.methods.includes(method.value));
     }
     this.methods = new MethodsPanel({ fields, type, methods, styleProp });
-    this.rules = new RulesPanel({ geometry, type, ruleMode });
+    let RulesComponent = RulesPanel;
+    if (type === "cluster") RulesComponent = ClusterRule;
+    this.rules = new RulesComponent({ geometry, type, ruleMode });
     this.title = title;
     this.element = document.createElement("section");
     classificationPanelId += 1;

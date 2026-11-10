@@ -140,6 +140,19 @@ export default class RulesPanel {
     this.update();
   }
 
+  /** @returns {string[]} Editable properties for this representation. */
+  getRuleFields() {
+    const names = ["name"];
+    if (this.type === "categorized") names.push("value");
+    else if (this.type !== "simple") names.push("min", "max");
+    return names;
+  }
+
+  /** @returns {string[]} Table columns, including representation-specific controls. */
+  getRuleColumns() {
+    return this.getRuleFields();
+  }
+
   /** @returns {HTMLElement} Tableau et barre d'actions. */
   render() {
     this.element.innerHTML = `
@@ -162,20 +175,17 @@ export default class RulesPanel {
       </div>
     `;
 
-    // Les catégories ont une valeur unique ; les classes ont deux bornes.
+    // Each representation supplies the columns relevant to its rules.
     const header = this.element.querySelector("thead tr");
 
-    if (this.type === "categorized") {
-      header.insertAdjacentHTML(
-        "beforeend",
-        `<th>${mviewer.tr("style_editor.rule.value")}</th>`
-      );
-    } else if (this.type !== "simple") {
-      header.insertAdjacentHTML(
-        "beforeend",
-        `<th>${mviewer.tr("style_editor.rule.min")}</th><th>${mviewer.tr("style_editor.rule.max")}</th>`
-      );
-    }
+    this.getRuleColumns()
+      .filter((name) => name !== "name")
+      .forEach((name) => {
+        header.insertAdjacentHTML(
+          "beforeend",
+          `<th data-column="${name}">${mviewer.tr(`style_editor.rule.${name}`)}</th>`
+        );
+      });
 
     header.insertAdjacentHTML(
       "beforeend",
@@ -244,7 +254,12 @@ export default class RulesPanel {
 
     const preview = row.querySelector(".style-rules__preview");
     const previewOptions = { rule, geometry: this.geometry };
-    if (this.type === "proportionalCircles" || this.ruleMode === "size") {
+    if (
+      this.type === "proportionalCircles" ||
+      this.type === "cluster" ||
+      this.ruleMode === "size"
+    ) {
+      // Share the largest diameter across previews to preserve relative circle sizes.
       previewOptions.symbolSize = rule.symbol.maxSize;
       previewOptions.maxSymbolSize = Math.max(
         ...this.rules.map((item) => item.symbol.maxSize)
@@ -308,13 +323,7 @@ export default class RulesPanel {
    * @returns {void}
    */
   appendRuleFields(row, rule, index) {
-    const names = ["name"];
-
-    if (this.type === "categorized") {
-      names.push("value");
-    } else if (this.type !== "simple") {
-      names.push("min", "max");
-    }
+    const names = this.getRuleFields();
 
     names.forEach((name) => {
       const definition = { name, label: `style_editor.rule.${name}`, type: "text" };

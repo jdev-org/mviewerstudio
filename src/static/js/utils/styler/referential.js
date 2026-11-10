@@ -17,7 +17,15 @@ const preparationRequests = new WeakMap();
  */
 export function getStyleReferential(layer) {
   if (typeof _conf === "undefined" || !_conf.grist) return;
-  let names = [layer.layer_name, layer.layername, layer.id, layer.name, layer.layerId];
+  let names = [
+    layer.gristRepresentationLayer,
+    layer.layer_name,
+    layer.layername,
+    layer.id,
+    layer.name,
+    layer.layerId,
+  ];
+  if (layer.customStyle) names.push(layer.customStyle.referentialLayer);
   if (layer.gristReferential) names = [layer.gristReferential];
   return (_conf.grist.grist_referentials || []).find((referential) =>
     names.some(
@@ -44,6 +52,7 @@ export function getRepresentationSupports(layer) {
     let geometry = "Polygon";
     if (
       layer.geojsonField === fields.Point ||
+      layer.gristRepresentationLayer === referential.centroide_layer_name ||
       layer.id === referential.centroide_layer_name ||
       (layer.customStyle && layer.customStyle.geometry === "Point")
     )

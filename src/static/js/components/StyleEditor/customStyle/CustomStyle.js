@@ -20,19 +20,29 @@ const CustomStyle = function (options = {}) {
   this.supports = getRepresentationSupports(options);
   this.geometry = geometry;
   if (this.supports.length && !state) {
-    this.geometry = "Polygon";
-    if (
-      options.geojsonField === this.supports[1].geojsonField ||
-      options.id === this.supports[1].layerName
-    )
-      this.geometry = "Point";
+    const currentLayerName =
+      options.gristRepresentationLayer ||
+      options.layer_name ||
+      options.layername ||
+      options.id;
+    let currentSupport = this.supports.find(
+      (support) => support.layerName === currentLayerName
+    );
+    if (options.geojsonField) {
+      const fieldSupport = this.supports.find(
+        (support) => support.geojsonField === options.geojsonField
+      );
+      if (fieldSupport) currentSupport = fieldSupport;
+    }
+    this.geometry = this.supports[0].geometry;
+    if (currentSupport) this.geometry = currentSupport.geometry;
   }
   if (state) this.geometry = state.geometry;
   if (
     this.supports.length &&
     !this.supports.some((support) => support.geometry === this.geometry)
   )
-    this.geometry = "Polygon";
+    this.geometry = this.supports[0].geometry;
   this.fields = fields;
   this.state = state;
   this.geoStylerStyle = null;
@@ -64,6 +74,16 @@ const CustomStyle = function (options = {}) {
  * @returns {void}
  */
 CustomStyle.prototype.showType = function (type) {
+  let representation = this.styleTypeSelector.types.find(
+    (item) => item.value === type && item.geometry === this.styleTypeSelector.geometry
+  );
+  if (!representation) {
+    representation = this.styleTypeSelector.types.find((item) => item.value === type);
+  }
+  if (!representation) throw new Error(mviewer.tr("style_editor.error.representation"));
+  // Point-only styles select the explicitly configured centroid support.
+  this.styleTypeSelector.geometry = representation.geometry;
+  this.styleTypeSelector.value = representation.value;
   const geometryChanged = this.geometry !== this.styleTypeSelector.geometry;
   const resetStyle =
     geometryChanged &&
@@ -112,6 +132,7 @@ CustomStyle.prototype.showType = function (type) {
       }
     }
   }
+  if (this.labels) this.labels.setClusterMode(type === "cluster");
   const panels = this.panels[panelKey];
   this.content.classList.toggle("accordion", panels.colorClassification !== undefined);
   this.content.replaceChildren(panels.render());

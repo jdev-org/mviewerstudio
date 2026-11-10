@@ -16,6 +16,7 @@ import {
   createColorRampScales,
   crandomColorBClass,
 } from "../../utils/styler/rampColor.js";
+import { createClusterClasses } from "../../utils/styler/cluster.js";
 import { calculateCircleSizes } from "../../utils/styler/circleSizes.js";
 import { getStyleGeometry } from "../../utils/styler/style.js";
 import { loadSldStyle } from "../../utils/styler/readStyle.js";
@@ -253,6 +254,8 @@ styleEditor.prototype.saveToLayer = async function (layer, name, mapId) {
       this.options.geojsonField = layer.geojsonField;
       this.options.gristGeometryField = layer.gristGeometryField;
       this.options.gristCentroidField = layer.gristCentroidField;
+      this.options.gristReferential = layer.gristReferential;
+      this.options.gristRepresentationLayer = layer.gristRepresentationLayer;
     }
   } else {
     layer.customsld = false;
@@ -291,6 +294,17 @@ styleEditor.prototype.calculate = async function (event) {
   message.classList.add("d-none");
 
   try {
+    if (type === "cluster") {
+      // Count belongs to generated clusters, so these classes need no CSV or WFS field.
+      const rules = createClusterClasses(event.detail);
+      const colors = createColorRampScales(color, rules.length, reverseColors);
+      rules.forEach((rule, index) => {
+        rule.fill = { color: colors[index] };
+      });
+      setRules(rules);
+      if (customStyle.preview) customStyle.preview.refreshStyle();
+      return;
+    }
     const layer = config.temp.layers[layerId];
     let data;
     if (layer && layer.type === "csv") {
@@ -613,6 +627,22 @@ styleEditor.prototype.setFields = function (fields) {
   this.options.fields = fields;
   this.customStyle.setFields(fields);
   this.labels.setFields(fields);
+  let feature = null;
+  if (this.layerId && typeof config !== "undefined") {
+    const layer = config.temp.layers[this.layerId];
+    if (
+      layer &&
+      layer.type === "csv" &&
+      Array.isArray(layer.csvData) &&
+      layer.csvData.length
+    ) {
+      feature = { type: "Feature", geometry: null, properties: layer.csvData[0] };
+    } else if (layer && layer.features && layer.features.length) {
+      feature = layer.features[0];
+    }
+  }
+  // Refresh from the active layer rather than keeping the previous source's sample.
+  this.labels.preview.setFeature(feature);
 };
 
 /** Initialise les étiquettes et les rattache au style à sauvegarder.
@@ -636,6 +666,7 @@ styleEditor.prototype.createLabels = function () {
     }
   }
   this.labels = new stylerLabels({ fields: this.options.fields, state, scales, feature });
+  this.labels.setClusterMode(this.customStyle.styleTypeSelector.value === "cluster");
   this.customStyle.labels = this.labels;
 };
 

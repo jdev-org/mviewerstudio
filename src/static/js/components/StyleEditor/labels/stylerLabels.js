@@ -1,4 +1,9 @@
-import { DEFAULT_LABELS, LABEL_FIELDS, LABEL_SCALES } from "./constants.js";
+import {
+  DEFAULT_LABELS,
+  LABEL_FIELDS,
+  LABEL_SCALES,
+  CLUSTER_COUNT_OPTIONS,
+} from "./constants.js";
 import { createField } from "../customStyle/rules/fields.js";
 import Select from "../../select/select.js";
 import Switch from "../../switch/switch.js";
@@ -32,7 +37,7 @@ const stylerLabels = function ({
   this.id = `styler-labels-${labelsId}`;
   this.createContent();
   this.createSwitch();
-  this.setFields(fields);
+  this.setFields(fields, { preserveSelection: fields.length === 0 });
   this.updateEnabled();
   this.element.addEventListener("input", (event) => this.updateState(event));
   this.element.addEventListener("change", (event) => this.updateState(event));
@@ -48,9 +53,57 @@ stylerLabels.prototype.createContent = function () {
     <legend class="visually-hidden">${mviewer.tr("style_editor.labels.settings")}</legend>
   `;
   this.content.appendChild(this.createFieldSelect());
+  this.clusterCountSelect = new Select({
+    id: `${this.id}-show-cluster-count`,
+    label: mviewer.tr("style_editor.labels.show_cluster_count"),
+    value: this.state.showClusterCount ? "true" : "false",
+    options: CLUSTER_COUNT_OPTIONS.map((option) => ({
+      value: option.value,
+      label: mviewer.tr(option.label),
+    })),
+    visible: false,
+  });
+  this.clusterCountOption = this.clusterCountSelect.render();
+  new Tooltip({
+    message: mviewer.tr("style_editor.labels.show_cluster_count_help"),
+    classes: "ms-1",
+  }).appendTo(this.clusterCountOption.querySelector("label"));
+  this.clusterCountSelect.getSelect().dataset.label = "showClusterCount";
+  this.content.appendChild(this.clusterCountOption);
+  this.onlyCountSelect = new Select({
+    id: `${this.id}-only-cluster-count`,
+    label: mviewer.tr("style_editor.labels.only_cluster_count"),
+    value: this.state.onlyClusterCount ? "true" : "false",
+    options: CLUSTER_COUNT_OPTIONS.map((option) => ({
+      value: option.value,
+      label: mviewer.tr(option.label),
+    })),
+    visible: false,
+  });
+  this.onlyCountOption = this.onlyCountSelect.render();
+  new Tooltip({
+    message: mviewer.tr("style_editor.labels.only_cluster_count_help"),
+    classes: "ms-1",
+  }).appendTo(this.onlyCountOption.querySelector("label"));
+  this.onlyCountSelect.getSelect().dataset.label = "onlyClusterCount";
+  this.content.insertBefore(this.onlyCountOption, this.fieldSelect.element);
   LABEL_FIELDS.forEach((definition) => {
-    const field = createField(definition, this.state[definition.name]);
-    const input = field.querySelector("input");
+    let fieldDefinition = definition;
+    if (
+      definition.name === "font" &&
+      !definition.options.some((font) => font.value === this.state.font)
+    ) {
+      // Keep an imported SLD font selectable without changing the shared font list.
+      fieldDefinition = {
+        ...definition,
+        options: [
+          ...definition.options,
+          { label: this.state.font, value: this.state.font },
+        ],
+      };
+    }
+    const field = createField(fieldDefinition, this.state[definition.name]);
+    const input = field.querySelector("input, select");
     input.dataset.label = definition.name;
     input.required = true;
     this.content.appendChild(field);
@@ -165,7 +218,15 @@ stylerLabels.prototype.updateState = function (event) {
   let value = input.value;
   if (input.type === "number") value = input.valueAsNumber;
   if (input.type === "checkbox") value = input.checked;
+  if (["showClusterCount", "onlyClusterCount"].includes(input.dataset.label)) {
+    value = input.value === "true";
+  }
   this.state[input.dataset.label] = value;
+  if (input.dataset.label === "scale") {
+    // A newly selected preset replaces zoom bounds restored from the previous SLD.
+    delete this.state.minZoom;
+    delete this.state.maxZoom;
+  }
   this.preview.update(this.state);
   this.updateEnabled();
 };
@@ -174,6 +235,7 @@ stylerLabels.prototype.updateState = function (event) {
  * @returns {void}
  */
 stylerLabels.prototype.updateEnabled = function () {
+  this.updateClusterOptions();
   this.content.disabled = !this.state.enabled;
   this.content.classList.toggle("d-none", !this.state.enabled);
   this.element
@@ -182,15 +244,43 @@ stylerLabels.prototype.updateEnabled = function () {
 };
 
 /**
- * Update available fields, preserving the saved field while WFS metadata loads.
- * @param {string[]} fields Available field names.
+ * Refresh fields and discard a selection that no longer exists in loaded data.
+ * @param {string[]} fields Current available field names.
+ * @param {Object} [options={}] Whether to retain a saved field during initial metadata loading.
  * @returns {void}
  */
-stylerLabels.prototype.setFields = function (fields) {
+stylerLabels.prototype.setFields = function (fields, { preserveSelection = false } = {}) {
   const names = [...fields];
-  if (this.state.field && !names.includes(this.state.field)) names.push(this.state.field);
+  if (this.state.field && !names.includes(this.state.field)) {
+    if (preserveSelection) names.push(this.state.field);
+    else this.state.field = "";
+  }
   this.fieldSelect.setOptions(names.map((name) => ({ label: name, value: name })));
   this.fieldSelect.setValue(this.state.field);
+  this.preview.update(this.state);
+};
+
+/** Show the count option only for the cluster representation.
+ * @param {boolean} enabled Whether the current representation uses clusters.
+ * @returns {void}
+ */
+stylerLabels.prototype.setClusterMode = function (enabled) {
+  this.clusterMode = enabled;
+  this.updateClusterOptions();
+};
+
+/** Synchronize controls when only group counts are requested.
+ * @returns {void}
+ */
+stylerLabels.prototype.updateClusterOptions = function () {
+  const onlyCount = this.clusterMode && this.state.onlyClusterCount;
+  this.onlyCountOption.classList.toggle("d-none", !this.clusterMode);
+  this.clusterCountOption.classList.toggle("d-none", !this.clusterMode || onlyCount);
+  this.fieldSelect.setVisible(!onlyCount);
+  this.fieldSelect.getSelect().disabled = onlyCount;
+  this.fieldSelect.getSelect().required = !onlyCount;
+  this.scaleSelect.setVisible(!onlyCount);
+  this.scaleSelect.getSelect().disabled = onlyCount;
 };
 
 /** Return a copy of the settings and selected zoom limits.

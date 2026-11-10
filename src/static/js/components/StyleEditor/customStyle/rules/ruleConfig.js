@@ -64,6 +64,8 @@ export default class RuleConfig {
         }
       }
 
+      if (!panel.panels.scaleDenominator.validate()) return;
+
       onSave(readRule());
 
       this.element.close();

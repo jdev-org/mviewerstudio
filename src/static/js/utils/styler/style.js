@@ -1,4 +1,5 @@
 import { createLabelRule } from "./labels.js";
+import { addPointStackerTransformation, createClusterRuleFilter } from "./cluster.js";
 import {
   DEFAULT_FILL,
   DEFAULT_STROKE,
@@ -7,6 +8,9 @@ import {
   STYLE_TYPES,
   DEFAULT_SLD_VERSION,
   SLD_SCHEMA_LOCATIONS,
+  DEFAULT_CLUSTER_DISTANCE,
+  MAX_CLUSTER_RULES,
+  POINT_STACKER,
 } from "../../components/StyleEditor/constants.js";
 
 /**
@@ -135,7 +139,8 @@ export const createGeoStylerRuleObject = (name, symbolizers = [], filter) => {
  * @returns {Array|undefined} Filtre GeoStyler, absent pour un style uniforme.
  */
 const createClassificationFilter = (classification, rule) => {
-  if (!classification.field || classification.type === "cluster") return;
+  if (classification.type === "cluster") return createClusterRuleFilter(rule);
+  if (!classification.field) return;
   if (classification.type === "categorized") {
     return ["==", classification.field, rule.value];
   }
@@ -168,6 +173,16 @@ export const createGeoStylerStyle = (configuration, name = "") => {
       `Style ${configuration.type} is incompatible with geometry ${configuration.geometry}.`
     );
   }
+  if (
+    configuration.type === "cluster" &&
+    configuration.rules.length > MAX_CLUSTER_RULES
+  ) {
+    throw new Error(
+      mviewer
+        .tr("style_editor.error.cluster_rule_limit")
+        .replace("{max}", MAX_CLUSTER_RULES)
+    );
+  }
   const rules = [];
   const addRule = (rule, colorRule, colorClassification) => {
     const options = { ...rule, geometry };
@@ -184,9 +199,34 @@ export const createGeoStylerStyle = (configuration, name = "") => {
         filter = colorFilter;
       }
     }
-    rules.push(
-      createGeoStylerRuleObject(ruleName, [createGeoStylerSymbolizer(options)], filter)
+    const outputRule = createGeoStylerRuleObject(
+      ruleName,
+      [createGeoStylerSymbolizer(options)],
+      filter
     );
+    const scaleDenominator = { ...rule.scaleDenominator };
+    if (colorRule && colorRule.scaleDenominator) {
+      // Crossed size and color rules are visible only within their shared scale range.
+      const colorScale = colorRule.scaleDenominator;
+      if (colorScale.min !== undefined) {
+        scaleDenominator.min = Math.max(scaleDenominator.min || 0, colorScale.min);
+      }
+      if (colorScale.max !== undefined) {
+        scaleDenominator.max = colorScale.max;
+        if (rule.scaleDenominator && rule.scaleDenominator.max !== undefined) {
+          scaleDenominator.max = Math.min(rule.scaleDenominator.max, colorScale.max);
+        }
+      }
+    }
+    if (
+      scaleDenominator.max !== undefined &&
+      scaleDenominator.max <= (scaleDenominator.min || 0)
+    )
+      return;
+    if (Object.keys(scaleDenominator).length) {
+      outputRule.scaleDenominator = scaleDenominator;
+    }
+    rules.push(outputRule);
   };
 
   configuration.rules.forEach((rule) => {
@@ -197,9 +237,42 @@ export const createGeoStylerStyle = (configuration, name = "") => {
       addRule(rule);
     }
   });
-  const labelRule = createLabelRule(configuration.labels);
-  if (labelRule) rules.push(labelRule);
-  return createEmptyGeoStylerObject(name, rules);
+  const labels = configuration.labels;
+  const onlyCount = configuration.type === "cluster" && labels && labels.onlyClusterCount;
+  let labelSettings = labels;
+  if (onlyCount) labelSettings = { ...labels, field: POINT_STACKER.countField };
+  const labelRule = createLabelRule(labelSettings);
+  if (labelRule) {
+    if (configuration.type === "cluster") {
+      // Preserve the selected source field for singletons and use count for groups.
+      if (!onlyCount) {
+        labelRule.filter = ["==", POINT_STACKER.countField, 1];
+        rules.push(labelRule);
+      }
+      if (onlyCount || labels.showClusterCount !== false) {
+        const groupLabelRule = createLabelRule({
+          ...labels,
+          field: POINT_STACKER.countField,
+        });
+        // Group counts remain visible at every scale when their display is enabled.
+        delete groupLabelRule.scaleDenominator;
+        groupLabelRule.filter = [">", POINT_STACKER.countField, 1];
+        rules.push(groupLabelRule);
+      }
+    } else {
+      rules.push(labelRule);
+    }
+  }
+  const style = createEmptyGeoStylerObject(name, rules);
+  if (configuration.type === "cluster") {
+    let distance = DEFAULT_CLUSTER_DISTANCE;
+    if (configuration.distance !== undefined) distance = +configuration.distance;
+    if (!Number.isFinite(distance) || distance < 0) {
+      throw new Error(mviewer.tr("style_editor.error.cluster_distance"));
+    }
+    style.pointStacker = { cellSize: distance };
+  }
+  return style;
 };
 
 /**
@@ -222,10 +295,11 @@ export const geoStylerToSld = async (style, options = {}) => {
     throw new Error(errors.map((error) => error.message || error).join("\n"));
   }
   if (!output) throw new Error("SLD conversion produced no output.");
-  const sld = output.replace(
+  let sld = output.replace(
     /xsi:schemaLocation="[^"]*"/,
     `xsi:schemaLocation="http://www.opengis.net/sld ${SLD_SCHEMA_LOCATIONS[sldVersion]}"`
   );
+  if (style.pointStacker) sld = addPointStackerTransformation(sld, style.pointStacker);
   if (layerName) {
     const xmlLayerName = layerName.replace(
       /[<>&"']/g,

@@ -1,3 +1,5 @@
+import { readPointStackerTransformation } from "../../utils/styler/cluster.js";
+
 /**
  * Fetch an SLD URL when needed and validate XML with the bundled GeoStyler parser.
  * @param {string} sld XML content or a URL relative to the document.
@@ -30,6 +32,8 @@ export async function parseSld(sld) {
     throw new Error(errors.map((error) => error.message || error).join("\n"));
   }
   if (!output) throw new Error("SLD conversion produced no output.");
+  const pointStacker = readPointStackerTransformation(xml);
+  if (pointStacker) output.pointStacker = pointStacker;
   // Conserver le XML original pour le WMS, notamment ses options propres au serveur.
   return { xml, style: output };
 }

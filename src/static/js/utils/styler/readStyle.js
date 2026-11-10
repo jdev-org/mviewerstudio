@@ -1,8 +1,10 @@
 import { restoreLabels } from "./labels.js";
+import { readPointStackerTransformation, restoreClusterRuleFilter } from "./cluster.js";
 import {
   DEFAULT_FILL,
   DEFAULT_STROKE,
   DEFAULT_SYMBOL,
+  POINT_STACKER,
 } from "../../components/StyleEditor/constants.js";
 
 /**
@@ -99,6 +101,16 @@ export const geoStylerToConfiguration = (style, labelScales) => {
   const entries = graphicRules.map((rule) => {
     if (rule.symbolizers.length !== 1) throw new Error("Unsupported SLD rule.");
     const { geometry, ...graphics } = restoreSymbolizer(rule.symbolizers[0]);
+    if (rule.scaleDenominator) {
+      graphics.scaleDenominator = { ...rule.scaleDenominator };
+    }
+    if (style.pointStacker) {
+      return {
+        geometry,
+        classifications: [],
+        rule: { name: rule.name, ...graphics, ...restoreClusterRuleFilter(rule.filter) },
+      };
+    }
     return {
       geometry,
       classifications: restoreClassifications(rule.filter),
@@ -122,7 +134,29 @@ export const geoStylerToConfiguration = (style, labelScales) => {
   const labelRule = style.rules.find((rule) =>
     rule.symbolizers.some((symbolizer) => symbolizer.kind === "Text")
   );
-  if (labelRule) configuration.labels = restoreLabels(labelRule, labelScales);
+  if (labelRule) {
+    configuration.labels = restoreLabels(labelRule, labelScales);
+    if (style.pointStacker) {
+      configuration.labels.showClusterCount = style.rules.some(
+        (rule) =>
+          rule.symbolizers.some((symbolizer) => symbolizer.kind === "Text") &&
+          rule.filter &&
+          rule.filter[0] === ">" &&
+          rule.filter[1] === POINT_STACKER.countField &&
+          rule.filter[2] === 1
+      );
+      configuration.labels.onlyClusterCount =
+        configuration.labels.showClusterCount &&
+        !style.rules.some(
+          (rule) =>
+            rule.symbolizers.some((symbolizer) => symbolizer.kind === "Text") &&
+            rule.filter &&
+            rule.filter[0] === "==" &&
+            rule.filter[1] === POINT_STACKER.countField &&
+            rule.filter[2] === 1
+        );
+    }
+  }
   if (first) configuration.field = first.field;
   const combined = entries[0].classifications.length === 2;
   if (combined) {
@@ -174,6 +208,14 @@ export const geoStylerToConfiguration = (style, labelScales) => {
   if (combined)
     configuration.colorClassification.classes =
       configuration.colorClassification.rules.length;
+  if (style.pointStacker) {
+    configuration.type = "cluster";
+    configuration.distance = style.pointStacker.cellSize;
+    configuration.field = POINT_STACKER.countField;
+    configuration.classes = configuration.rules.filter(
+      (rule) => rule.clusterCondition === "range"
+    ).length;
+  }
   return configuration;
 };
 
@@ -193,11 +235,14 @@ export const loadSldStyle = async (sld) => {
   const response = await fetch(target);
   if (!response.ok) throw new Error(`Could not load SLD (HTTP ${response.status}).`);
   const parser = new globalThis.GeoStylerSLDParser.SldStyleParser();
-  const { output, errors } = await parser.readStyle(await response.text());
+  const xml = await response.text();
+  const { output, errors } = await parser.readStyle(xml);
   if (errors && errors.length > 0) {
     throw new Error(errors.map((error) => error.message || error).join("\n"));
   }
   if (!output) throw new Error("SLD conversion produced no output.");
+  const pointStacker = readPointStackerTransformation(xml);
+  if (pointStacker) output.pointStacker = pointStacker;
   return {
     geoStylerStyle: output,
     configuration: geoStylerToConfiguration(output, _conf.labelScales),

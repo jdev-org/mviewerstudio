@@ -2,6 +2,7 @@ import { MAP_DEFAULTS } from "./constants.js";
 import { createPreviewLayer } from "./layers.js";
 import { parseSld } from "./sld.js";
 import { createVectorStyle } from "./vectorStyle.js";
+import { createPointStackerSource } from "../../utils/styler/cluster.js";
 
 /** Reusable single-layer OpenLayers preview. */
 export default class MapPreview {
@@ -48,6 +49,10 @@ export default class MapPreview {
    * @returns {Promise<void>|void} Resolves after loading an optional SLD.
    */
   setLayer(layer) {
+    if (this.clusterSource) {
+      this.clusterSource.setSource(null);
+      this.clusterSource = null;
+    }
     if (this.source && this.sourceListener) this.source.un("change", this.sourceListener);
     // Invalider le SLD encore en chargement avant de remplacer sa couche cible.
     this.sldRequest = (this.sldRequest || 0) + 1;
@@ -134,6 +139,13 @@ export default class MapPreview {
         }
       }
       this.previewLayer.setStyle(style);
+      // Keep the raw source for fitting and release previous cluster listeners.
+      if (this.clusterSource) this.clusterSource.setSource(null);
+      this.clusterSource = null;
+      if (parsed && parsed.style.pointStacker) {
+        this.clusterSource = createPointStackerSource(source, parsed.style.pointStacker);
+      }
+      this.previewLayer.setSource(this.clusterSource || source);
     } else {
       throw new Error("SLD preview requires a WMS or vector layer.");
     }
@@ -161,6 +173,7 @@ export default class MapPreview {
    */
   destroy() {
     this.sldRequest = (this.sldRequest || 0) + 1;
+    if (this.clusterSource) this.clusterSource.setSource(null);
     this.resizeObserver.disconnect();
     if (this.source && this.sourceListener) this.source.un("change", this.sourceListener);
     this.map.dispose();

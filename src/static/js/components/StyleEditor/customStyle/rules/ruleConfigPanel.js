@@ -1,3 +1,4 @@
+import ScalePanel from "./scalePanel.js";
 import Fill from "./fill.js";
 import Stroke from "./stroke.js";
 import SymbolPanel from "./symbol.js";
@@ -9,7 +10,7 @@ export default class RuleConfigPanel {
   constructor({ geometry = "Point", type = "simple", rule = {}, ruleMode = "all" } = {}) {
     this.element = document.createElement("div");
 
-    this.panels = {};
+    this.panels = { scaleDenominator: new ScalePanel(rule.scaleDenominator) };
     if (ruleMode === "size") {
       this.panels.symbol = new FieldsPanel(
         "style_editor.section.symbol",
@@ -32,7 +33,7 @@ export default class RuleConfigPanel {
   render() {
     this.element.replaceChildren();
 
-    for (const name of ["fill", "stroke", "symbol"]) {
+    for (const name of ["scaleDenominator", "fill", "stroke", "symbol"]) {
       if (this.panels[name]) this.element.appendChild(this.panels[name].render());
     }
 

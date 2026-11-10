@@ -6,6 +6,7 @@ import {
   DEFAULT_FILL,
   DEFAULT_CLUSTER_FILL,
   DEFAULT_CLUSTER_DISTANCE,
+  DEFAULT_CLUSTER_CLASS_INTERVAL,
   DEFAULT_SYMBOL,
   STYLE_TYPES,
 } from "../../constants.js";
@@ -40,6 +41,7 @@ export default class MethodsPanel {
       maxSize: DEFAULT_SYMBOL.maxSize,
       color: styleProp.includes("ramps") ? DEFAULT_COLOR_SCALE : fill.color,
       distance: DEFAULT_CLUSTER_DISTANCE,
+      classInterval: DEFAULT_CLUSTER_CLASS_INTERVAL,
       reverseColors: false,
       ...state,
     };
@@ -127,6 +129,20 @@ export default class MethodsPanel {
           )
         );
       }
+      if (property === "classInterval") {
+        fields.appendChild(
+          createField(
+            {
+              name: "classInterval",
+              label: "style_editor.classification.class_interval",
+              type: "number",
+              min: 1,
+              step: 1,
+            },
+            this.state.classInterval
+          )
+        );
+      }
       if (property === "distance") {
         fields.appendChild(
           createField(
@@ -210,7 +226,12 @@ export default class MethodsPanel {
    * @returns {string} Texte traduit avec les nombres recommandés et maximums.
    */
   getClassificationTooltip(kind) {
-    const limits = CLASSIFICATION_LIMITS[kind];
+    const limits = { ...CLASSIFICATION_LIMITS[kind] };
+    if (kind === "classes" && this.type === "cluster") {
+      limits.max = STYLE_TYPES.find(
+        (definition) => definition.value === this.type
+      ).maxClasses;
+    }
 
     return mviewer
       .tr(CLASSIFICATION_TOOLTIPS[kind])
@@ -220,6 +241,9 @@ export default class MethodsPanel {
 
   /** @returns {HTMLElement} Liste de palettes et option d'inversion. */
   renderPalette() {
+    if (!Object.hasOwn(globalThis.chroma.brewer, this.state.color)) {
+      this.state.color = DEFAULT_COLOR_SCALE;
+    }
     this.paletteSelector = new PaletteSelector({
       value: this.state.color,
       classes: this.state.classes,

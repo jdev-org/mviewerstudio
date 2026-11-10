@@ -73,6 +73,8 @@ export const STYLE_GEOMETRIES = {
 };
 
 export const MAX_STYLE_RULES = CLASSIFICATION_LIMITS.categories.max;
+export const MAX_CLUSTER_RULES = 7;
+export const MAX_CLUSTER_CLASSES = MAX_CLUSTER_RULES - 2;
 
 export const STYLE_TYPES = [
   {
@@ -127,7 +129,8 @@ export const STYLE_TYPES = [
     label: "style_editor.type.cluster",
     description: "style_editor.type.cluster.description",
     geom: ["Point"],
-    styleProp: ["field", "distance"],
+    maxClasses: MAX_CLUSTER_CLASSES,
+    styleProp: ["distance", "classInterval", "classes", "ramps"],
     img: "img/styler/style_cluster_regroup.png",
   },
 ];
@@ -136,6 +139,25 @@ export const DEFAULT_FILL = { color: "#9e5698", opacity: 1 };
 export const DEFAULT_COLOR_SCALE = "Purples";
 export const DEFAULT_SIZE_COLOR = "#808080";
 export const DEFAULT_CLUSTER_DISTANCE = 5;
+export const DEFAULT_CLUSTER_CLASS_INTERVAL = 10;
+export const DEFAULT_SINGLE_POINT_RADIUS = 5;
+export const POINT_STACKER = {
+  name: "vec:PointStacker",
+  countField: "count",
+  environment: {
+    outputBBOX: "wms_bbox",
+    outputWidth: "wms_width",
+    outputHeight: "wms_height",
+  },
+};
+export const CLUSTER_RULE_CONDITIONS = [
+  { value: "all", label: "style_editor.cluster_rule.all" },
+  { value: "single", label: "style_editor.cluster_rule.single" },
+  { value: "multiple", label: "style_editor.cluster_rule.multiple" },
+  { value: "range", label: "style_editor.cluster_rule.range" },
+  { value: "atLeast", label: "style_editor.cluster_rule.at_least" },
+];
+export const DEFAULT_CLUSTER_RULE = { clusterCondition: "all", min: 1, max: 10 };
 export const DEFAULT_CLUSTER_FILL = { ...DEFAULT_FILL, color: "#ffa500" };
 export const RULE_PREVIEW = {
   width: 80,
@@ -156,8 +178,8 @@ export const DEFAULT_SYMBOL = {
   shape: "circle",
   externalGraphic: "",
 };
-// Les tailles stockées sont des diamètres : rayons de 5 à 30 px.
-export const DEFAULT_CLUSTER_SYMBOL = { ...DEFAULT_SYMBOL, minSize: 10, maxSize: 60 };
+// Stored sizes are diameters: default cluster radii range from 10 to 40 pixels.
+export const DEFAULT_CLUSTER_SYMBOL = { ...DEFAULT_SYMBOL, minSize: 20, maxSize: 80 };
 export const FILL_FIELDS = [
   { name: "color", label: "style_editor.field.color", type: "color" },
   {
@@ -205,4 +227,9 @@ export const CLASSIFICATION_METHODS = [
   { value: "jenk", label: "style_editor.method.jenk" },
   { value: "equalInterval", label: "style_editor.method.equalInterval" },
   { value: "quantiles", label: "style_editor.method.quantiles" },
+];
+
+export const RULE_SCALE_FIELDS = [
+  { name: "min", label: "style_editor.scale.min", type: "number", min: 0, step: "any" },
+  { name: "max", label: "style_editor.scale.max", type: "number", min: 0, step: "any" },
 ];
