@@ -634,3 +634,21 @@ Les niveaux Région, Département, Commune et Rue limitent uniquement l’affich
 Dans les étiquettes des clusters, « Uniquement le nombre d’entités : Oui » affiche seulement le ``count`` des groupes, indépendamment de l’échelle, sans étiquette sur les points isolés.
 Le choix « Non » permet de sélectionner un champ pour les points isolés et de choisir séparément si le nombre d’entités des groupes doit être affiché.
 Le champ et le niveau d’affichage sont masqués lorsque seul le nombre d’entités est demandé.
+
+Aperçu de la légende
+~~~~~~~~~~~~~~~~~~~
+
+Sous la prévisualisation des données, le panneau « Aperçu de la légende » affiche le symbole et le nom de chaque règle graphique.
+La légende est actualisée lorsque les règles, leurs noms, leurs couleurs ou leurs tailles changent, ainsi qu’après un calcul ou un changement de représentation.
+Les symboles ponctuels partagent une échelle de prévisualisation commune afin de conserver les différences de taille entre les classes.
+Les règles d’étiquettes ne figurent pas dans cette légende.
+
+Les panneaux repliables de l’éditeur de style partagent les mêmes titres, bordures, espacements et indicateurs d’ouverture.
+La prévisualisation des données et l’aperçu de la légende utilisent un composant d’accordéon commun ; leur ouverture reste indépendante et ne modifie pas l’activation des étiquettes.
+
+Les accordéons de l’éditeur (clé API Grist, étiquettes, classifications et aperçus) reposent sur le composant partagé ``components/accordion/accordion.js``, également accessible via ``mv.components.accordion``.
+Le composant conserve les classes Bootstrap standard ; les thèmes peuvent cibler ``.mv-accordion`` et utiliser les variables CSS ``--bs-accordion-*`` sans modifier les panneaux métier.
+Le paramètre ``classes`` accepte des classes de thème, ``parentId`` active une ouverture exclusive dans un groupe, et ``setExpanded`` pilote l’ouverture via Bootstrap.
+
+Le composant d’accordéon partagé est aussi utilisé dans la personnalisation des règles (échelles, remplissage, contour et symbole) et dans le sélecteur des styles disponibles.
+Les anciens panneaux ``details/summary`` et leurs styles spécifiques ont été remplacés par la structure Bootstrap du composant commun.
