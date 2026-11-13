@@ -429,9 +429,10 @@ def fetch_referential_features(referential, values):
     wfs_url = get_wfs_url(referential)
 
     for chunk in chunk_values(values):
+        wfs_payload=build_wfs_payload(referential, chunk)
         response = requests.post(
             wfs_url,
-            data=build_wfs_payload(referential, chunk),
+            data=wfs_payload,
             headers={"Content-Type": "application/x-www-form-urlencoded"},
             timeout=30,
         )
