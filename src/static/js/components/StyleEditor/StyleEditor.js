@@ -142,6 +142,21 @@ styleEditor.prototype.loadCustomStyle = async function () {
   }
 };
 
+/**
+ * Repart sur un style personnalisé vierge sans modifier la couche avant sauvegarde.
+ * @returns {void} Invalide le chargement SLD et reconstruit les panneaux éditables.
+ */
+styleEditor.prototype.resetCustomStyle = function () {
+  this.reset({
+    customStyle: null,
+    geoStylerStyle: null,
+    sld: null,
+    customsld: false,
+    styleMode: STYLE_MODES.CUSTOM,
+    geometry: this.customStyle.geometry,
+  });
+};
+
 /** Affiche le chargement ou son erreur et protège le formulaire pendant la lecture.
  * @returns {void}
  */
@@ -153,10 +168,23 @@ styleEditor.prototype.updateLoadStatus = function () {
   const status = this.element.querySelector("[data-style-load-status]");
   if (!status) return;
   status.textContent = "";
+  status.hidden = !this.loadingCustomStyle && !failed;
+  status.className = "";
+  status.setAttribute("role", "status");
   if (this.loadingCustomStyle)
     status.textContent = mviewer.tr("style_editor.loading_sld");
-  if (this.styleLoadError) status.textContent = mviewer.tr("style_editor.error.load_sld");
-  status.classList.toggle("text-danger", failed);
+  if (failed) {
+    status.className = "alert alert-danger d-flex flex-wrap align-items-center justify-content-between gap-2";
+    status.setAttribute("role", "alert");
+    const message = document.createElement("span");
+    message.textContent = mviewer.tr("style_editor.error.load_sld");
+    const resetButton = document.createElement("button");
+    resetButton.type = "button";
+    resetButton.className = "btn btn-outline-danger btn-sm";
+    resetButton.textContent = mviewer.tr("style_editor.reset_style");
+    resetButton.addEventListener("click", () => this.resetCustomStyle());
+    status.append(message, resetButton);
+  }
 };
 
 /**
@@ -533,7 +561,7 @@ styleEditor.prototype.render = function () {
       <span class="import-type-buttons__title">${mviewer.tr(choice.label)}</span>
     </button>
   `
-  ).join("")}</div><p role="status" data-style-load-status></p>`;
+  ).join("")}</div><div role="status" data-style-load-status hidden></div>`;
   // Réutiliser les éléments des composants conserve leurs valeurs et leurs écouteurs.
   this.element.append(
     this.styleSelector.render(),
