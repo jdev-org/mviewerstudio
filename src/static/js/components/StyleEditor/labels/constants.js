@@ -33,7 +33,7 @@ export const DEFAULT_LABELS = {
   color: "#000000",
   fillOpacity: 1,
   strokeColor: "#ffffff",
-  radius: 6,
+  radius: 1,
   scale: "regional",
 };
 
