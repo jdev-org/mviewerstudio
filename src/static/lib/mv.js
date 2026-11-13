@@ -907,7 +907,7 @@ var mv = (function () {
           .then(({ wfs_url, typeName }) =>
             ogc.getFeatures(
               wfs_url,
-              { TYPENAME: typeName || layerid, MAXFEATURES: 1 },
+              { TYPENAME: typeName || layerid, MAXFEATURES: mv.constants.dataPreviewLimit },
               (data) => {
                 if (!data || !Array.isArray(data.features)) return;
                 if (!config.temp.layers[layerid]) config.temp.layers[layerid] = {};
