@@ -220,19 +220,49 @@ export const geoStylerToConfiguration = (style, labelScales) => {
 };
 
 /**
- * Charge un SLD, en résolvant son chemin relatif depuis l'instance mviewer.
+ * Résout un SLD Studio vers sa route backend, ou un SLD externe vers mviewer.
+ * @param {string} sld URL absolue ou chemin relatif enregistré sur la couche.
+ * @param {boolean} [useBackend=true] Utilise le backend pour les fichiers du stockage Studio.
+ * @returns {string} URL à charger depuis Studio.
+ */
+const getSldRequestUrl = (sld, useBackend = true) => {
+  const instance = _conf.mviewer_instance.replace(/\/?$/, "/");
+  const base = new URL(instance, window.location.origin);
+  const url = new URL(sld, base);
+  if (useBackend && _conf.conf_path_from_mviewer) {
+    const storePath = _conf.conf_path_from_mviewer.replace(/\/?$/, "/");
+    const store = new URL(storePath, base);
+    if (url.origin === store.origin && url.pathname.startsWith(store.pathname)) {
+      const parts = url.pathname.slice(store.pathname.length).split("/");
+      if (parts.length === 4 && parts[2] === "styles" && parts[3].endsWith(".sld")) {
+        const mapId = decodeURIComponent(parts[1]);
+        const filename = decodeURIComponent(parts[3]);
+        const params = new URLSearchParams({ filename });
+        return `api/styles/${encodeURIComponent(mapId)}?${params}`;
+      }
+    }
+  }
+  const target = url.toString();
+  if (url.origin !== window.location.origin && _conf.proxy) {
+    return _conf.proxy + encodeURIComponent(target);
+  }
+  return target;
+};
+
+/**
+ * Charge les SLD Studio via le backend et les autres depuis leur URL mviewer.
  * @param {string} sld URL absolue ou chemin relatif enregistré sur la couche.
  * @returns {Promise<Object>} Style GeoStyler et configuration du formulaire.
  */
 export const loadSldStyle = async (sld) => {
-  const instance = _conf.mviewer_instance.replace(/\/?$/, "/");
-  const base = new URL(instance, window.location.origin);
-  const url = new URL(sld, base);
-  let target = url.toString();
-  if (url.origin !== window.location.origin && _conf.proxy) {
-    target = _conf.proxy + encodeURIComponent(target);
+  const target = getSldRequestUrl(sld);
+  let response = await fetch(target, { credentials: "same-origin" });
+  if (response.status === 404) {
+    const mviewerUrl = getSldRequestUrl(sld, false);
+    if (mviewerUrl !== target) {
+      response = await fetch(mviewerUrl, { credentials: "same-origin" });
+    }
   }
-  const response = await fetch(target);
   if (!response.ok) throw new Error(`Could not load SLD (HTTP ${response.status}).`);
   const parser = new globalThis.GeoStylerSLDParser.SldStyleParser();
   const xml = await response.text();
