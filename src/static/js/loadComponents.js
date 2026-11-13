@@ -16,6 +16,7 @@ import ButtonCard from "./components/buttonCard/buttonCard.js";
 import UrlCard from "./components/common/url-card/url-card.js";
 import ListCard from "./components/listCard/listCard.js";
 import styleEditor from "./components/StyleEditor/StyleEditor.js";
+import { DATA_PREVIEW_LIMIT } from "./components/StyleEditor/constants.js";
 import LegendSelector from "./components/legendSelector/legendSelector.js";
 import MapPreview from "./components/map/map.js";
 
@@ -44,6 +45,8 @@ import * as gristCoordinates from "./utils/grist/coordinates.js";
 import * as gristRefGeo from "./utils/grist/refGeo.js";
 import * as gristCsv from "./utils/grist/csvSource.js";
 
+mv.constants = mv.constants || {};
+mv.constants.dataPreviewLimit = DATA_PREVIEW_LIMIT;
 mv.components = mv.components || {};
 mv.components.grist = mv.components.grist || {};
 mv.utils = mv.utils || {};

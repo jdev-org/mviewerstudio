@@ -1,5 +1,5 @@
 export const DEFAULT_SLD_VERSION = "1.1.0";
-export const DATA_PREVIEW_LIMIT = 15;
+export const DATA_PREVIEW_LIMIT = 100;
 export const REFERENTIAL_GEOMETRY_FIELDS = {
   Polygon: "geometry",
   Point: "geometry_centroid",
