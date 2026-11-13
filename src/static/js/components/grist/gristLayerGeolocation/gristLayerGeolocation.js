@@ -62,9 +62,6 @@ export const openGristLayerGeolocation = ({
     layer.geolocType = geolocType;
 
     if (geolocType === "referential") {
-      layer.geojsonField = "geometry";
-      delete layer.xfield;
-      delete layer.yfield;
       return;
     }
 
@@ -214,6 +211,9 @@ export const openGristLayerGeolocation = ({
             layer.gristGeometryField = gristSource.geometryField;
             layer.gristCentroidField = gristSource.centroidField;
             layer.geojsonField = gristSource.geometryField;
+            layer.xfield = gristSource.xField;
+            layer.yfield = gristSource.yField;
+            layer.srs = gristSource.referential.srs;
             const editor = document.querySelector("#layer-style-editor .style-editor");
             if (editor) {
               let customStyle = layer.customStyle;

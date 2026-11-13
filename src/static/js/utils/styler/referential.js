@@ -1,9 +1,6 @@
 import { getGristCsvTableInfo } from "../grist/utils.js";
 import { clearGristCsv } from "../grist/csvSource.js";
-import {
-  DATA_PREVIEW_LIMIT,
-  REFERENTIAL_GEOMETRY_FIELDS,
-} from "../../components/StyleEditor/constants.js";
+import { DATA_PREVIEW_LIMIT } from "../../components/StyleEditor/constants.js";
 
 // Les promesses partagées évitent aussi de doubler une requête encore en cours.
 // Un nouveau tableau de données crée un nouveau cache ; les anciens peuvent être libérés avec leur source.
@@ -44,8 +41,8 @@ export function getRepresentationSupports(layer) {
   const referential = getStyleReferential(layer);
   if (!referential || !referential.centroide_layer_name) return [];
   const fields = {
-    Polygon: layer.gristGeometryField || REFERENTIAL_GEOMETRY_FIELDS.Polygon,
-    Point: layer.gristCentroidField || REFERENTIAL_GEOMETRY_FIELDS.Point,
+    Polygon: layer.gristGeometryField || referential.geometry_field_name,
+    Point: layer.gristCentroidField || referential.centroid_field_name,
   };
   if (layer.geojsonField) {
     // Le nom issu du XML prime sur les noms par défaut, pour le support déjà utilisé par la couche.
@@ -136,8 +133,8 @@ export async function loadReferentialPreview(layer, support) {
     delete properties[support.geojsonField];
     delete properties[layer.gristGeometryField];
     delete properties[layer.gristCentroidField];
-    delete properties[REFERENTIAL_GEOMETRY_FIELDS.Polygon];
-    delete properties[REFERENTIAL_GEOMETRY_FIELDS.Point];
+    delete properties[referential.geometry_field_name];
+    delete properties[referential.centroid_field_name];
     features.push({ type: "Feature", geometry: feature.geometry, properties });
   }
   return features;
@@ -187,8 +184,8 @@ async function prepareGristColumns(layer, data, support, source) {
   const supports = getRepresentationSupports(layer);
   const polygonSupport = supports.find((item) => item.geometry === "Polygon");
   const centroidSupport = supports.find((item) => item.geometry === "Point");
-  let polygonField = layer.gristGeometryField || REFERENTIAL_GEOMETRY_FIELDS.Polygon;
-  let centroidField = layer.gristCentroidField || REFERENTIAL_GEOMETRY_FIELDS.Point;
+  let polygonField = layer.gristGeometryField || support.referential.geometry_field_name;
+  let centroidField = layer.gristCentroidField || support.referential.centroid_field_name;
   if (polygonSupport) polygonField = polygonSupport.geojsonField;
   if (centroidSupport) centroidField = centroidSupport.geojsonField;
   if (support.geometry === "Point") centroidField = support.geojsonField;

@@ -431,8 +431,10 @@ const runGristRefGeoJoin = async ({
     );
     importGristArea.referential = referential;
     importGristArea.matchingField = getSelectedMatchingField(options);
-    importGristArea.geometryField = result.geometry_field || "geometry";
-    importGristArea.centroidField = result.centroid_field || "geometry_centroid";
+    importGristArea.geometryField = result.geometry_field;
+    importGristArea.centroidField = result.centroid_field;
+    importGristArea.xField = result.x_field;
+    importGristArea.yField = result.y_field;
     renderGristRefGeoResult(result, importGristArea, setWizardStep, options);
   } catch (error) {
     console.error("Error joining with referential:", error);

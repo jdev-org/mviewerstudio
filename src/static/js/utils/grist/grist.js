@@ -13,11 +13,10 @@ import {
   initGristWizard,
   setGristWizardStep,
 } from "./wizard.js";
-import { runGristRefGeoJoin } from "./refGeo.js";
+import { getSelectedReferentialConfig, runGristRefGeoJoin } from "./refGeo.js";
 import {
   GRIST_AUTH_CONTAINER_ID,
   GRIST_DATA_CONTAINER_ID,
-  GRIST_GEOMETRY_FIELD,
   GRIST_LOCATION_SWITCH_IDS,
   GRIST_LOCATION_TARGET_IDS,
   GRIST_MODAL_ID,
@@ -51,6 +50,8 @@ const getActiveGristTargetTable = () => {
     gristMatchingField: activeImportGristArea.matchingField,
     gristGeometryField: activeImportGristArea.geometryField,
     gristCentroidField: activeImportGristArea.centroidField,
+    xfield: activeImportGristArea.xField,
+    yfield: activeImportGristArea.yField,
     srs: referential.srs,
   };
 };
@@ -94,7 +95,13 @@ const hasGristGeometryField = async () => {
   try {
     const sourceData = await activeImportGristArea.getSourceData();
 
-    return sourceData.fields.includes(GRIST_GEOMETRY_FIELD);
+    const referential = getSelectedReferentialConfig();
+    if (!referential) return false;
+    let outputFields = [referential.geometry_field_name];
+    if (referential.x_field_name || referential.y_field_name) {
+      outputFields = [referential.x_field_name, referential.y_field_name];
+    }
+    return outputFields.some((field) => field && sourceData.fields.includes(field));
   } catch (error) {
     return false;
   }
