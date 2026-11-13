@@ -565,7 +565,9 @@ var mv = (function () {
           gristLayer.gristMatchingField = gristTargetTable.gristMatchingField;
           gristLayer.gristGeometryField = gristTargetTable.gristGeometryField;
           gristLayer.gristCentroidField = gristTargetTable.gristCentroidField;
-          gristLayer.geojsonField = gristTargetTable.gristGeometryField || "geometry";
+          gristLayer.geojsonField = gristTargetTable.gristGeometryField;
+          gristLayer.xfield = gristTargetTable.xfield;
+          gristLayer.yfield = gristTargetTable.yfield;
           if (gristTargetTable.srs) gristLayer.srs = gristTargetTable.srs;
           gristLayer.geolocType = "referential";
         } else if (gristLocationMode === "xySwitch") {
@@ -958,7 +960,8 @@ var mv = (function () {
         layer.isGrist = true;
         // Legacy Grist layers did not persist their localization mode in Studio.
         if (!layer.geolocType) {
-          layer.geolocType = layer.geojsonField ? "referential" : "coordinates";
+          layer.geolocType =
+            layer.gristReferential || layer.geojsonField ? "referential" : "coordinates";
         }
       }
 
