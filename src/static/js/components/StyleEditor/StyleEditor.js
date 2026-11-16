@@ -19,7 +19,7 @@ import {
 import { createClusterClasses } from "../../utils/styler/cluster.js";
 import { calculateCircleSizes } from "../../utils/styler/circleSizes.js";
 import { getStyleGeometry } from "../../utils/styler/style.js";
-import { loadSldStyle } from "../../utils/styler/readStyle.js";
+import { getStoredStyle, loadSldStyle } from "../../utils/styler/readStyle.js";
 import GristStyleSource from "./customStyle/gristStyleSource.js";
 import { prepareGristRepresentation } from "../../utils/styler/referential.js";
 import { clearGristCsv } from "../../utils/grist/csvSource.js";
@@ -111,7 +111,7 @@ const styleEditor = function (options = {}) {
 };
 
 /**
- * Précharge le SLD Studio et ignore les réponses d'une couche quittée entre-temps.
+ * Précharge le JSON Studio et ignore les réponses d'une couche quittée entre-temps.
  * @returns {Promise<void>} Restaure le formulaire ou affiche l'erreur de lecture.
  */
 styleEditor.prototype.loadCustomStyle = async function () {
@@ -248,7 +248,10 @@ styleEditor.prototype.saveToLayer = async function (layer, name, mapId) {
     }
     let layerName = layer.id;
     if (support && layer.type === "wms") layerName = support.layerName;
-    const saved = await customStyle.save(mapId, name, layerName);
+    const stored = getStoredStyle(layer.sld);
+    let styleId;
+    if (stored && stored.mapId === mapId) styleId = stored.styleId;
+    const saved = await customStyle.save(mapId, name, layerName, styleId);
     if (support) {
       layer.gristReferential = support.referential.layer_name;
       if (layer.type === "csv") {

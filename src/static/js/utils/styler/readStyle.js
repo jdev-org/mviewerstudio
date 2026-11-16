@@ -89,7 +89,7 @@ const restoreClassifications = (filter) => {
 
 /**
  * Reconstitue les règles éditables d'un style produit par Studio.
- * @param {Object} style Style GeoStyler lu dans le SLD.
+ * @param {Object} style Style GeoStyler lu dans le JSON ou converti depuis le SLD.
  * @returns {Object} Configuration de CustomStyle.
  */
 export const geoStylerToConfiguration = (style, labelScales) => {
@@ -220,6 +220,31 @@ export const geoStylerToConfiguration = (style, labelScales) => {
 };
 
 /**
+ * Retrouve le fichier d'un style appartenant au stockage Studio configuré.
+ * @param {string} sld URL ou chemin SLD enregistré sur la couche.
+ * @returns {Object|undefined} Identifiants de carte et de style, et nom du SLD.
+ */
+export const getStoredStyle = (sld) => {
+  if (!sld || !_conf.conf_path_from_mviewer) return;
+  const instance = _conf.mviewer_instance.replace(/\/?$/, "/");
+  const base = new URL(instance, window.location.origin);
+  const url = new URL(sld, base);
+  const storePath = _conf.conf_path_from_mviewer.replace(/\/?$/, "/");
+  const store = new URL(storePath, base);
+  if (url.origin !== store.origin || !url.pathname.startsWith(store.pathname))
+    return;
+  const parts = url.pathname.slice(store.pathname.length).split("/");
+  if (parts.length !== 4 || parts[2] !== "styles" || !parts[3].endsWith(".sld"))
+    return;
+  const filename = decodeURIComponent(parts[3]);
+  return {
+    mapId: decodeURIComponent(parts[1]),
+    styleId: filename.slice(0, -4),
+    filename,
+  };
+};
+
+/**
  * Résout un SLD Studio vers sa route backend, ou un SLD externe vers mviewer.
  * @param {string} sld URL absolue ou chemin relatif enregistré sur la couche.
  * @param {boolean} [useBackend=true] Utilise le backend pour les fichiers du stockage Studio.
@@ -229,18 +254,10 @@ const getSldRequestUrl = (sld, useBackend = true) => {
   const instance = _conf.mviewer_instance.replace(/\/?$/, "/");
   const base = new URL(instance, window.location.origin);
   const url = new URL(sld, base);
-  if (useBackend && _conf.conf_path_from_mviewer) {
-    const storePath = _conf.conf_path_from_mviewer.replace(/\/?$/, "/");
-    const store = new URL(storePath, base);
-    if (url.origin === store.origin && url.pathname.startsWith(store.pathname)) {
-      const parts = url.pathname.slice(store.pathname.length).split("/");
-      if (parts.length === 4 && parts[2] === "styles" && parts[3].endsWith(".sld")) {
-        const mapId = decodeURIComponent(parts[1]);
-        const filename = decodeURIComponent(parts[3]);
-        const params = new URLSearchParams({ filename });
-        return `api/styles/${encodeURIComponent(mapId)}?${params}`;
-      }
-    }
+  const stored = getStoredStyle(sld);
+  if (useBackend && stored) {
+    const params = new URLSearchParams({ filename: stored.filename });
+    return `api/styles/${encodeURIComponent(stored.mapId)}?${params}`;
   }
   const target = url.toString();
   if (url.origin !== window.location.origin && _conf.proxy) {
@@ -250,11 +267,32 @@ const getSldRequestUrl = (sld, useBackend = true) => {
 };
 
 /**
- * Charge les SLD Studio via le backend et les autres depuis leur URL mviewer.
+ * Restaure le JSON Studio ; utilise le SLD pour les styles anciens ou externes.
  * @param {string} sld URL absolue ou chemin relatif enregistré sur la couche.
  * @returns {Promise<Object>} Style GeoStyler et configuration du formulaire.
  */
 export const loadSldStyle = async (sld) => {
+  const stored = getStoredStyle(sld);
+  if (stored) {
+    const params = new URLSearchParams({ filename: `${stored.styleId}.json` });
+    const response = await fetch(
+      `api/styles/${encodeURIComponent(stored.mapId)}?${params}`,
+      { credentials: "same-origin" }
+    );
+    if (response.ok) {
+      const style = await response.json();
+      if (!style || typeof style.name !== "string" || !Array.isArray(style.rules)) {
+        throw new Error("Invalid GeoStyler JSON document.");
+      }
+      return {
+        geoStylerStyle: style,
+        configuration: geoStylerToConfiguration(style, _conf.labelScales),
+      };
+    }
+    if (response.status !== 404) {
+      throw new Error(`Could not load style JSON (HTTP ${response.status}).`);
+    }
+  }
   const target = getSldRequestUrl(sld);
   let response = await fetch(target, { credentials: "same-origin" });
   if (response.status === 404) {
