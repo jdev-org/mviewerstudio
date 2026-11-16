@@ -1,6 +1,6 @@
 import { getGristCsvTableInfo } from "../grist/utils.js";
 import { clearGristCsv } from "../grist/csvSource.js";
-import { DATA_PREVIEW_LIMIT } from "../../components/StyleEditor/constants.js";
+import { DATA_PREVIEW_LIMIT } from "./constants.js";
 
 // Les promesses partagées évitent aussi de doubler une requête encore en cours.
 // Un nouveau tableau de données crée un nouveau cache ; les anciens peuvent être libérés avec leur source.

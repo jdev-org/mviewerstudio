@@ -5,7 +5,7 @@ import {
   DEFAULT_STROKE,
   DEFAULT_SYMBOL,
   POINT_STACKER,
-} from "../../components/StyleEditor/constants.js";
+} from "./constants.js";
 
 /**
  * Restaure le trait d'un symbole GeoStyler, y compris les pointillés.
@@ -231,11 +231,9 @@ export const getStoredStyle = (sld) => {
   const url = new URL(sld, base);
   const storePath = _conf.conf_path_from_mviewer.replace(/\/?$/, "/");
   const store = new URL(storePath, base);
-  if (url.origin !== store.origin || !url.pathname.startsWith(store.pathname))
-    return;
+  if (url.origin !== store.origin || !url.pathname.startsWith(store.pathname)) return;
   const parts = url.pathname.slice(store.pathname.length).split("/");
-  if (parts.length !== 4 || parts[2] !== "styles" || !parts[3].endsWith(".sld"))
-    return;
+  if (parts.length !== 4 || parts[2] !== "styles" || !parts[3].endsWith(".sld")) return;
   const filename = decodeURIComponent(parts[3]);
   return {
     mapId: decodeURIComponent(parts[1]),

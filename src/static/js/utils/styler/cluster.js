@@ -5,7 +5,7 @@ import {
   DEFAULT_CLUSTER_SYMBOL,
   DEFAULT_SINGLE_POINT_RADIUS,
   CLASSIFICATION_LIMITS,
-} from "../../components/StyleEditor/constants.js";
+} from "./constants.js";
 import { calculateClusterSizes } from "./circleSizes.js";
 
 /**

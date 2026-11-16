@@ -3,7 +3,8 @@ import Fill from "./fill.js";
 import Stroke from "./stroke.js";
 import SymbolPanel from "./symbol.js";
 import { FieldsPanel } from "./fields.js";
-import { SYMBOL_FIELDS, DEFAULT_SYMBOL } from "../../constants.js";
+import { SYMBOL_FIELDS } from "../../formDefinitions.js";
+import { DEFAULT_SYMBOL } from "../../../../utils/styler/constants.js";
 
 /** Cartes de configuration adaptées à la géométrie. */
 export default class RuleConfigPanel {

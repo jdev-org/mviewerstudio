@@ -8,8 +8,8 @@ import {
   DEFAULT_CLUSTER_SYMBOL,
   DEFAULT_SIZE_COLOR,
   MAX_STYLE_RULES,
-  STYLE_TYPES,
-} from "../../constants.js";
+  STYLE_DEFINITIONS,
+} from "../../../../utils/styler/constants.js";
 import { createField } from "./fields.js";
 
 let rulesPanelId = 0;
@@ -66,7 +66,7 @@ export default class RulesPanel {
   canAddRule() {
     if (this.type === "simple" || this.rules.length >= MAX_STYLE_RULES) return false;
 
-    const definition = STYLE_TYPES.find((item) => item.value === this.type);
+    const definition = STYLE_DEFINITIONS.find((item) => item.value === this.type);
 
     return !definition.maxClasses || this.rules.length < definition.maxClasses;
   }

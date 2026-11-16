@@ -6,12 +6,9 @@ import AccordionClassificationPanel from "./accordionClassificationPanel.js";
 import { suggestClassificationMode } from "../../../utils/styler/classification/fieldValues.js";
 import DataPreview from "./dataPreview.js";
 import LegendPreview from "./legendPreview.js";
-import {
-  STYLE_TYPES,
-  STYLE_EDITOR_EVENTS,
-  STYLE_MODES,
-  CLASSIFICATION_TYPES,
-} from "../constants.js";
+import { STYLE_TYPES } from "../formDefinitions.js";
+import { STYLE_EDITOR_EVENTS } from "../constants.js";
+import { STYLE_MODES, CLASSIFICATION_TYPES } from "../../../utils/styler/constants.js";
 import { createGeoStylerStyle, geoStylerToSld } from "../../../utils/styler/style.js";
 import { sendSldFile, sendJsonStyleStyle } from "../../../utils/styler/requests.js";
 

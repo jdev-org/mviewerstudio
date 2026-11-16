@@ -1,8 +1,6 @@
 import { analyse, categorize } from "../methods.js";
-import {
-  CLASSIFICATION_LIMITS,
-  STYLE_TYPES,
-} from "../../../components/StyleEditor/constants.js";
+import { CLASSIFICATION_LIMITS } from "../constants.js";
+import { STYLE_TYPES } from "../../../components/StyleEditor/formDefinitions.js";
 
 /**
  * Builds category rules or numeric intervals from field values.

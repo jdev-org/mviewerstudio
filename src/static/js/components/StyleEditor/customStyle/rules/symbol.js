@@ -1,10 +1,9 @@
 import { FieldsPanel } from "./fields.js";
+import { SYMBOL_FIELDS, SYMBOL_SHAPES } from "../../formDefinitions.js";
 import {
-  SYMBOL_FIELDS,
   DEFAULT_SYMBOL,
   DEFAULT_CLUSTER_SYMBOL,
-  SYMBOL_SHAPES,
-} from "../../constants.js";
+} from "../../../../utils/styler/constants.js";
 
 /** Paramètres de taille et de forme d'un symbole ponctuel. */
 export default class SymbolPanel extends FieldsPanel {

@@ -1,5 +1,6 @@
 import { FieldsPanel } from "./fields.js";
-import { STROKE_FIELDS, DEFAULT_STROKE, STROKE_TYPES } from "../../constants.js";
+import { STROKE_FIELDS, STROKE_TYPES } from "../../formDefinitions.js";
+import { DEFAULT_STROKE } from "../../../../utils/styler/constants.js";
 
 /** Paramètres de contour d'une règle. */
 export default class Stroke extends FieldsPanel {

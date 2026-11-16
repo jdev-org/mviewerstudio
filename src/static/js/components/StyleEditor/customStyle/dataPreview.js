@@ -2,7 +2,8 @@ import { loadReferentialPreview } from "../../../utils/styler/referential.js";
 import Accordion from "../../accordion/accordion.js";
 import MapPreview from "../../map/map.js";
 import { MAP_DEFAULTS } from "../../map/constants.js";
-import { DATA_PREVIEW_LIMIT, DATA_PREVIEW_GEOMETRY_NAME } from "../constants.js";
+import { DATA_PREVIEW_LIMIT } from "../../../utils/styler/constants.js";
+import { DATA_PREVIEW_GEOMETRY_NAME } from "../constants.js";
 import {
   createGeoStylerStyle,
   geoStylerToSld,

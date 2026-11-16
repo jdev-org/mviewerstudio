@@ -2,7 +2,7 @@ import MethodsPanel from "./rules/methodsPanel.js";
 import RulesPanel from "./rules/rulesPanel.js";
 import ClusterRule from "./rules/clusterRule.js";
 import { createField } from "./rules/fields.js";
-import { STYLE_TYPES, CLASSIFICATION_METHODS } from "../constants.js";
+import { STYLE_TYPES, CLASSIFICATION_METHODS } from "../formDefinitions.js";
 
 let classificationPanelId = 0;
 

@@ -1,4 +1,4 @@
-import { STYLE_TYPES } from "../../../components/StyleEditor/constants.js";
+import { STYLE_TYPES } from "../../../components/StyleEditor/formDefinitions.js";
 
 /**
  * Loads classification records from authenticated CSV data or a WFS field request.

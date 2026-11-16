@@ -1,4 +1,6 @@
-import { STYLE_MODES, STYLE_CHOICES, STYLE_EDITOR_EVENTS } from "./constants.js";
+import { STYLE_MODES } from "../../utils/styler/constants.js";
+import { STYLE_CHOICES } from "./formDefinitions.js";
+import { STYLE_EDITOR_EVENTS } from "./constants.js";
 import CustomStyle from "./customStyle/CustomStyle.js";
 import StyleSelector from "./styleSelector/styleSelector.js";
 import TmsStyle from "./tmsStyle/tmsStyle.js";

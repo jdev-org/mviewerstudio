@@ -1,4 +1,5 @@
-import { STYLE_TYPES, REPRESENTATION_SUPPORT_LABELS } from "../constants.js";
+import { STYLE_TYPES } from "../formDefinitions.js";
+import { REPRESENTATION_SUPPORT_LABELS } from "../constants.js";
 
 /**
  * Liste des modes de représentation disponibles.

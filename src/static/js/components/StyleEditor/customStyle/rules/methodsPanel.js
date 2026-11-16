@@ -1,6 +1,9 @@
 import {
   CLASSIFICATION_METHODS,
   CLASSIFICATION_TOOLTIPS,
+  STYLE_TYPES,
+} from "../../formDefinitions.js";
+import {
   CLASSIFICATION_LIMITS,
   DEFAULT_COLOR_SCALE,
   DEFAULT_FILL,
@@ -8,8 +11,7 @@ import {
   DEFAULT_CLUSTER_DISTANCE,
   DEFAULT_CLUSTER_CLASS_INTERVAL,
   DEFAULT_SYMBOL,
-  STYLE_TYPES,
-} from "../../constants.js";
+} from "../../../../utils/styler/constants.js";
 import { createField } from "./fields.js";
 import PaletteSelector from "./paletteSelector.js";
 import Tooltip from "../../../tooltip/tooltip.js";

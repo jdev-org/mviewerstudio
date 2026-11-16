@@ -16,7 +16,7 @@ import ButtonCard from "./components/buttonCard/buttonCard.js";
 import UrlCard from "./components/common/url-card/url-card.js";
 import ListCard from "./components/listCard/listCard.js";
 import styleEditor from "./components/StyleEditor/StyleEditor.js";
-import { DATA_PREVIEW_LIMIT } from "./components/StyleEditor/constants.js";
+import { DATA_PREVIEW_LIMIT } from "./utils/styler/constants.js";
 import LegendSelector from "./components/legendSelector/legendSelector.js";
 import MapPreview from "./components/map/map.js";
 

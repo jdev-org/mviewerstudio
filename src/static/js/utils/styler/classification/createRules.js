@@ -2,10 +2,8 @@ import { classify } from "./classify.js";
 import { createClusterClasses } from "../cluster.js";
 import { createColorRampScales, crandomColorBClass } from "../rampColor.js";
 import { calculateCircleSizes } from "../circleSizes.js";
-import {
-  DEFAULT_SYMBOL,
-  STYLE_TYPES,
-} from "../../../components/StyleEditor/constants.js";
+import { DEFAULT_SYMBOL } from "../constants.js";
+import { STYLE_TYPES } from "../../../components/StyleEditor/formDefinitions.js";
 
 /**
  * Builds styled rules for numeric, categorical or cluster representations.

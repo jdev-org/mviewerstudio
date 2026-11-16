@@ -1,4 +1,5 @@
-import { DEFAULT_LABELS, LABEL_PREVIEW } from "./constants.js";
+import { DEFAULT_LABELS } from "../../../utils/styler/constants.js";
+import { LABEL_PREVIEW } from "./constants.js";
 import { restoreLabels } from "../../../utils/styler/labels.js";
 
 /** Reusable SVG preview of label settings or a parsed SLD style. */

@@ -1,4 +1,4 @@
-import { REFERENTIAL_GEOMETRY_FIELDS } from "../constants.js";
+import { REFERENTIAL_GEOMETRY_FIELDS } from "../../../utils/styler/constants.js";
 
 /**
  * Extrait un échantillon GeoJSON des données WFS ou des lignes CSV/Grist.
