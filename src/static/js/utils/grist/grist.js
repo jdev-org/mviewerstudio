@@ -46,10 +46,10 @@ const getActiveGristTargetTable = () => {
   if (!referential) return table;
   return {
     ...table,
-    gristReferential: referential.layer_name,
-    gristMatchingField: activeImportGristArea.matchingField,
-    gristGeometryField: activeImportGristArea.geometryField,
-    gristCentroidField: activeImportGristArea.centroidField,
+    joinReferential: referential.layer_name,
+    joinMatchingField: activeImportGristArea.matchingField,
+    joinGeometryField: activeImportGristArea.geometryField,
+    joinCentroidField: activeImportGristArea.centroidField,
     xfield: activeImportGristArea.xField,
     yfield: activeImportGristArea.yField,
     srs: referential.srs,

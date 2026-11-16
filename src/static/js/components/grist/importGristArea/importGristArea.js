@@ -182,7 +182,9 @@ const importGristArea = function (activeType = "file", options = {}) {
     </div>
   `;
   this.filePreviewContent = filePreviewTemplate.content.firstElementChild;
-  this.documentStatus = this.filePreviewContent.querySelector("[data-grist-document-status]");
+  this.documentStatus = this.filePreviewContent.querySelector(
+    "[data-grist-document-status]"
+  );
   this.refreshButton = new RefreshGristListsButton({
     onRefresh: () => this.refreshGristLists(),
   });
@@ -714,25 +716,29 @@ importGristArea.prototype.updateFilePreview = function () {
   previewContainer.appendChild(this.filePreviewContent);
   this.setFileSending(this.fileSending);
 
-  this.filePreviewContent.querySelector("[data-file-document-select]").replaceChildren(
-    this.documentNameSelect.render()
+  this.filePreviewContent
+    .querySelector("[data-file-document-select]")
+    .replaceChildren(this.documentNameSelect.render());
+  const documentNameContainer = this.filePreviewContent.querySelector(
+    "[data-file-document-name]"
   );
-  const documentNameContainer = this.filePreviewContent.querySelector("[data-file-document-name]");
   documentNameContainer.replaceChildren();
   if (this.documentNameSelect.getValue() === "create") {
     documentNameContainer.appendChild(this.documentNameInput.render());
   }
-  this.filePreviewContent.querySelector("[data-file-table-name]").replaceChildren(
-    this.tableNameInput.render()
-  );
+  this.filePreviewContent
+    .querySelector("[data-file-table-name]")
+    .replaceChildren(this.tableNameInput.render());
 
   this.filePreviewTable.title =
     this.fileTableName || mviewer.tr("grist.import.file_title");
   this.filePreviewTable.subtitle = mviewer.tr("grist.preview.subtitle");
-  this.filePreviewContent.querySelector("[data-file-preview-table]").replaceChildren(
-    this.filePreviewTable.setData(parsedData)
-  );
-  this.filePreviewContent.querySelector("[data-open-created-grist-table]").replaceChildren();
+  this.filePreviewContent
+    .querySelector("[data-file-preview-table]")
+    .replaceChildren(this.filePreviewTable.setData(parsedData));
+  this.filePreviewContent
+    .querySelector("[data-open-created-grist-table]")
+    .replaceChildren();
 };
 
 /**

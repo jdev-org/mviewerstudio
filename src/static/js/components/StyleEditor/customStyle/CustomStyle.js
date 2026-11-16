@@ -3,10 +3,12 @@ import ListStyleTypeSelector from "./listStyleTypeSelector.js";
 import ListCard from "../../listCard/listCard.js";
 import ClassificationPanel from "./ClassificationPanel.js";
 import AccordionClassificationPanel from "./accordionClassificationPanel.js";
-import CircleColorClassificationPanel from "./circleColorClassificationPanel.js";
+import { suggestClassificationMode } from "../../../utils/styler/classification/fieldValues.js";
 import DataPreview from "./dataPreview.js";
 import LegendPreview from "./legendPreview.js";
-import { STYLE_TYPES, STYLE_EDITOR_EVENTS, STYLE_MODES } from "../constants.js";
+import { STYLE_TYPES } from "../formDefinitions.js";
+import { STYLE_EDITOR_EVENTS } from "../constants.js";
+import { STYLE_MODES, CLASSIFICATION_TYPES } from "../../../utils/styler/constants.js";
 import { createGeoStylerStyle, geoStylerToSld } from "../../../utils/styler/style.js";
 import { sendSldFile, sendJsonStyleStyle } from "../../../utils/styler/requests.js";
 
@@ -23,7 +25,7 @@ const CustomStyle = function (options = {}) {
   this.geometry = geometry;
   if (this.supports.length && !state) {
     const currentLayerName =
-      options.gristRepresentationLayer ||
+      options.representationLayer ||
       options.layer_name ||
       options.layername ||
       options.id;
@@ -108,35 +110,37 @@ CustomStyle.prototype.showType = function (type) {
     if (type === "proportionalColoredCircles") {
       const definition = STYLE_TYPES.find((item) => item.value === "proportionalCircles");
       this.panels[panelKey] = new AccordionClassificationPanel({
-        ...options,
+        classification: new ClassificationPanel({
+          ...options,
+          type: "proportionalCircles",
+          styleProp: definition.styleProp.filter(
+            (property) => property !== "color" && property !== "ramps"
+          ),
+          ruleMode: "size",
+        }),
         parentId: this.content.id,
         expanded: true,
-        type: "proportionalCircles",
-        styleProp: definition.styleProp.filter(
-          (property) => property !== "color" && property !== "ramps"
-        ),
-        ruleMode: "size",
         title: "style_editor.classification.circle_sizes",
       });
 
-      this.panels[panelKey].colorClassification = new CircleColorClassificationPanel({
-        ...options,
-        layerOptions: this.options,
+      this.panels[panelKey].colorClassification = new AccordionClassificationPanel({
+        classification: new ClassificationPanel({
+          ...options,
+          classificationModes: CLASSIFICATION_TYPES,
+          suggestMode: (field) => this.getClassificationMode(field),
+          type: "analyse",
+          ruleMode: "color",
+        }),
         parentId: this.content.id,
-        type: "analyse",
-        ruleMode: "color",
         title: "style_editor.classification.circle_colors",
       });
     } else {
       this.panels[panelKey] = new ClassificationPanel(options);
     }
     if (this.state && this.state.type === type && this.state.geometry === this.geometry) {
-      this.restoreClassification(this.panels[panelKey], this.state);
+      this.panels[panelKey].restore(this.state);
       if (this.state.colorClassification) {
-        this.restoreClassification(
-          this.panels[panelKey].colorClassification,
-          this.state.colorClassification
-        );
+        this.panels[panelKey].colorClassification.restore(this.state.colorClassification);
       }
     }
   }
@@ -163,25 +167,16 @@ CustomStyle.prototype.showType = function (type) {
 };
 
 /**
- * Restores settings and rules from a saved classification.
- * @param {ClassificationPanel} panel Panel to restore.
- * @param {Object} value Saved settings and rules.
- * @returns {void}
+ * Suggests a classification mode using the latest data for the active layer.
+ * @param {string} field Selected field name.
+ * @returns {string} Numeric or categorical classification type.
  */
-CustomStyle.prototype.restoreClassification = function (panel, value) {
-  if (panel instanceof CircleColorClassificationPanel) {
-    panel.setType(value.type || "analyse");
+CustomStyle.prototype.getClassificationMode = function (field) {
+  let layer = this.options;
+  if (layer.layerId && typeof config !== "undefined") {
+    layer = { ...layer, ...config.temp.layers[layer.layerId] };
   }
-  const { rules, ...state } = value;
-  delete state.type;
-  delete state.geometry;
-  delete state.colorClassification;
-  delete state.referentialLayer;
-  panel.methods.state = { ...panel.methods.state, ...structuredClone(state) };
-  const fields = [...this.fields];
-  if (value.field && !fields.includes(value.field)) fields.push(value.field);
-  panel.methods.fields = fields;
-  panel.rules.rules = rules.map((rule) => panel.rules.prepareRule(rule));
+  return suggestClassificationMode(layer, field);
 };
 
 /**
@@ -257,9 +252,9 @@ CustomStyle.prototype.render = function () {
 CustomStyle.prototype.setFields = function (fields) {
   this.fields = fields;
   Object.values(this.panels).forEach((panel) => {
-    panel.methods.setFields(fields);
+    panel.setFields(fields);
     if (panel.colorClassification) {
-      panel.colorClassification.methods.setFields(fields);
+      panel.colorClassification.setFields(fields);
     }
   });
 };

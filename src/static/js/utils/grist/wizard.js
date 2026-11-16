@@ -54,7 +54,9 @@ const setGristWizardStep = (step) => {
   const gristWizardContainer = document.getElementById(GRIST_WIZARD_CONTAINER_ID);
   const backButton = document.getElementById(GRIST_WIZARD_BACK_BUTTON_ID);
   const nextButton = document.getElementById(GRIST_WIZARD_NEXT_BUTTON_ID);
-  const refreshButton = document.querySelector(`#${GRIST_FOOTER_ID} [data-refresh-grist-lists]`);
+  const refreshButton = document.querySelector(
+    `#${GRIST_FOOTER_ID} [data-refresh-grist-lists]`
+  );
   const maxStep = steps.length || 1;
   const activeStep = Math.min(Math.max(step || 1, 1), maxStep);
 

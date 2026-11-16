@@ -5,13 +5,13 @@ import {
   DEFAULT_STROKE,
   DEFAULT_SYMBOL,
   STYLE_GEOMETRIES,
-  STYLE_TYPES,
+  STYLE_DEFINITIONS,
   DEFAULT_SLD_VERSION,
   SLD_SCHEMA_LOCATIONS,
   DEFAULT_CLUSTER_DISTANCE,
   MAX_CLUSTER_RULES,
   POINT_STACKER,
-} from "../../components/StyleEditor/constants.js";
+} from "./constants.js";
 
 /**
  * Associe une géométrie GeoJSON ou un type GML à la géométrie de l'éditeur.
@@ -167,7 +167,7 @@ const createClassificationFilter = (classification, rule) => {
  */
 export const createGeoStylerStyle = (configuration, name = "") => {
   const geometry = getStyleGeometry(configuration.geometry);
-  const definition = STYLE_TYPES.find((type) => type.value === configuration.type);
+  const definition = STYLE_DEFINITIONS.find((type) => type.value === configuration.type);
   if (!definition || !definition.geom.includes(geometry)) {
     throw new Error(
       `Style ${configuration.type} is incompatible with geometry ${configuration.geometry}.`

@@ -81,7 +81,9 @@ const readExcelData = async (file) => {
   });
 
   const data = rows
-    .filter((row) => row.some((value) => value !== null && value !== undefined && value !== ""))
+    .filter((row) =>
+      row.some((value) => value !== null && value !== undefined && value !== "")
+    )
     .map((row) => Object.fromEntries(fields.map((field, index) => [field, row[index]])));
 
   return { data, meta: { fields } };

@@ -1,4 +1,7 @@
-import { getColorRampScales, createColorRampScales } from "../../../../utils/styler/rampColor.js";
+import {
+  getColorRampScales,
+  createColorRampScales,
+} from "../../../../utils/styler/rampColor.js";
 
 let paletteSelectorId = 0;
 
@@ -69,7 +72,7 @@ export default class PaletteSelector {
       button.innerHTML = `
         <span class="style-palette__name">${name}</span>
         <span class="style-palette__preview" aria-hidden="true">
-          ${colors.map(color => `<span style="background-color: ${color}"></span>`).join("")}
+          ${colors.map((color) => `<span style="background-color: ${color}"></span>`).join("")}
         </span>
       `;
       const selected = name === this.value;

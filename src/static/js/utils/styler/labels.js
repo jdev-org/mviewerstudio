@@ -1,8 +1,8 @@
 import {
   DEFAULT_LABELS,
-  LABEL_SCALES,
+  LABEL_SCALE_PRESETS,
   LABEL_SCALE_DENOMINATOR,
-} from "../../components/StyleEditor/labels/constants.js";
+} from "./constants.js";
 
 /**
  * Build an independent text rule so label scales do not hide layer symbols.
@@ -16,7 +16,7 @@ export const createLabelRule = (labels) => {
     settings.radius = labels.strokeWidth;
   }
   if (!settings.field) throw new Error("A label field is required.");
-  const preset = LABEL_SCALES.find((scale) => scale.value === settings.scale);
+  const preset = LABEL_SCALE_PRESETS.find((scale) => scale.value === settings.scale);
   let minZoom = settings.minZoom;
   let maxZoom = settings.maxZoom;
   if (minZoom === undefined && preset) minZoom = preset.minZoom;
@@ -48,10 +48,10 @@ export const createLabelRule = (labels) => {
 /**
  * Restore the label settings represented by a Studio text rule.
  * @param {Object} rule GeoStyler rule containing a Text symbolizer.
- * @param {Object[]} [scales=LABEL_SCALES] Configured scale presets.
+ * @param {Object[]} [scales=LABEL_SCALE_PRESETS] Configured scale presets.
  * @returns {Object} Editable label settings.
  */
-export const restoreLabels = (rule, scales = LABEL_SCALES) => {
+export const restoreLabels = (rule, scales = LABEL_SCALE_PRESETS) => {
   const text = rule.symbolizers.find((symbolizer) => symbolizer.kind === "Text");
   let field;
   if (typeof text.label === "string") {

@@ -1,9 +1,5 @@
-import {
-  DEFAULT_LABELS,
-  LABEL_FIELDS,
-  LABEL_SCALES,
-  CLUSTER_COUNT_OPTIONS,
-} from "./constants.js";
+import { DEFAULT_LABELS } from "../../../utils/styler/constants.js";
+import { LABEL_FIELDS, LABEL_SCALES, CLUSTER_COUNT_OPTIONS } from "./constants.js";
 import { createField } from "../customStyle/rules/fields.js";
 import Select from "../../select/select.js";
 import Accordion from "../../accordion/accordion.js";

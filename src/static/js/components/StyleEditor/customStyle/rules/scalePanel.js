@@ -1,6 +1,6 @@
 import { FieldsPanel } from "./fields.js";
 import Tooltip from "../../../tooltip/tooltip.js";
-import { RULE_SCALE_FIELDS } from "../../constants.js";
+import { RULE_SCALE_FIELDS } from "../../formDefinitions.js";
 
 /** Optional scale denominators controlling the visibility of a graphic rule. */
 export default class ScalePanel extends FieldsPanel {

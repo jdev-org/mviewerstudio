@@ -12,7 +12,10 @@ import {
   getGristTableUrl,
   getOrCreateWorkspace,
 } from "../../../utils/grist/utils.js";
-import { getGristColumnType, getGristCellValue } from "../../../utils/grist/importTypes.js";
+import {
+  getGristColumnType,
+  getGristCellValue,
+} from "../../../utils/grist/importTypes.js";
 
 /**
  * Parse a successful Grist API response as JSON.
@@ -431,7 +434,8 @@ export const sendParsedFileToGrist = async (
       records: rows.map((row) => ({
         fields: actualColumnIds.reduce((record, columnId, index) => {
           record[columnId] = getGristCellValue(
-            getCellValue(row, headers[index], index), columnTypes[index]
+            getCellValue(row, headers[index], index),
+            columnTypes[index]
           );
           return record;
         }, {}),

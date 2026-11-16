@@ -1,11 +1,11 @@
 import RulesPanel from "./rulesPanel.js";
 import Tooltip from "../../../tooltip/tooltip.js";
 import { createField } from "./fields.js";
+import { CLUSTER_RULE_CONDITIONS } from "../../formDefinitions.js";
 import {
-  CLUSTER_RULE_CONDITIONS,
   DEFAULT_CLUSTER_RULE,
   MAX_CLUSTER_RULES,
-} from "../../constants.js";
+} from "../../../../utils/styler/constants.js";
 
 /** Cluster rules use PointStacker counts instead of source attribute classes. */
 export default class ClusterRule extends RulesPanel {
