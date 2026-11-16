@@ -231,7 +231,7 @@ export const createGeoStylerStyle = (configuration, name = "") => {
 
   configuration.rules.forEach((rule) => {
     if (configuration.colorClassification) {
-      const colors = { ...configuration.colorClassification, type: "analyse" };
+      const colors = { type: "analyse", ...configuration.colorClassification };
       colors.rules.forEach((colorRule) => addRule(rule, colorRule, colors));
     } else {
       addRule(rule);
