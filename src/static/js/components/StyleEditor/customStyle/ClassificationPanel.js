@@ -1,20 +1,36 @@
 import MethodsPanel from "./rules/methodsPanel.js";
 import RulesPanel from "./rules/rulesPanel.js";
 import ClusterRule from "./rules/clusterRule.js";
+import { createField } from "./rules/fields.js";
 import { STYLE_TYPES, CLASSIFICATION_METHODS } from "../constants.js";
 
 let classificationPanelId = 0;
 
 /** Independent classification with settings, calculation and a rule table. */
 export default class ClassificationPanel {
-  /** @param {Object} options Type, geometry, fields, properties and rule mode. */
-  constructor({ type, geometry, fields, styleProp, ruleMode = "all", title }) {
+  /**
+   * @param {Object} options Type, geometry, fields, properties and rule mode.
+   * @param {string[]} [options.classificationModes=[]] Allowed modes; multiple modes enable a selector.
+   * @param {Function} [options.suggestMode] Suggests an allowed mode when the selected field changes.
+   */
+  constructor({
+    type,
+    geometry,
+    fields,
+    styleProp,
+    ruleMode = "all",
+    title,
+    classificationModes = [],
+    suggestMode,
+  }) {
     const definition = STYLE_TYPES.find((item) => item.value === type);
     let methods = CLASSIFICATION_METHODS;
     if (definition.methods) {
       methods = methods.filter((method) => definition.methods.includes(method.value));
     }
     this.type = type;
+    this.defaultType = type;
+    this.classificationModes = [...classificationModes];
     this.methods = new MethodsPanel({ fields, type, methods, styleProp });
     let RulesComponent = RulesPanel;
     if (type === "cluster") RulesComponent = ClusterRule;
@@ -24,6 +40,12 @@ export default class ClassificationPanel {
     classificationPanelId += 1;
     this.element.id = `style-classification-${classificationPanelId}`;
     this.element.className = "style-classification";
+    if (suggestMode && this.classificationModes.length) {
+      this.element.addEventListener("change", (event) => {
+        if (event.target.name !== "field") return;
+        this.setClassificationMode(suggestMode(event.target.value));
+      });
+    }
     this.methods.element.addEventListener("calculate", (event) => {
       event.stopPropagation();
       this.element.dispatchEvent(
@@ -50,6 +72,8 @@ export default class ClassificationPanel {
    */
   setClassificationMode(type, { render = true } = {}) {
     if (this.type === type) return;
+    if (this.classificationModes.length && !this.classificationModes.includes(type))
+      return;
     this.methods.readState();
     const definition = STYLE_TYPES.find((item) => item.value === type);
     const methods = CLASSIFICATION_METHODS.filter(
@@ -87,6 +111,9 @@ export default class ClassificationPanel {
    * @returns {void}
    */
   restore(value) {
+    if (this.classificationModes.length) {
+      this.setClassificationMode(value.type || this.defaultType, { render: false });
+    }
     const { rules, ...state } = structuredClone(value);
     delete state.type;
     delete state.geometry;
@@ -111,12 +138,35 @@ export default class ClassificationPanel {
       this.element.setAttribute("aria-labelledby", heading.id);
       this.element.appendChild(heading);
     }
+    if (this.classificationModes.length > 1) {
+      this.element.appendChild(this.renderModeSelector());
+    }
     this.element.append(this.methods.render(), this.rules.render());
     return this.element;
   }
 
+  /** @returns {HTMLElement} Selector containing the configured classification modes. */
+  renderModeSelector() {
+    const field = createField(
+      {
+        name: "classificationType",
+        label: "style_editor.classification.method",
+        options: STYLE_TYPES.filter((type) =>
+          this.classificationModes.includes(type.value)
+        ),
+      },
+      this.type
+    );
+    field.querySelector("select").addEventListener("change", (event) => {
+      this.setClassificationMode(event.target.value);
+    });
+    return field;
+  }
+
   /** @returns {Object} Copy of the settings and rules for this classification. */
   getValue() {
-    return { ...this.methods.state, rules: structuredClone(this.rules.rules) };
+    const value = { ...this.methods.state, rules: structuredClone(this.rules.rules) };
+    if (this.classificationModes.length) value.type = this.type;
+    return value;
   }
 }

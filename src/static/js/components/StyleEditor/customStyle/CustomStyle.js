@@ -3,11 +3,15 @@ import ListStyleTypeSelector from "./listStyleTypeSelector.js";
 import ListCard from "../../listCard/listCard.js";
 import ClassificationPanel from "./ClassificationPanel.js";
 import AccordionClassificationPanel from "./accordionClassificationPanel.js";
-import CircleColorClassificationPanel from "./circleColorClassificationPanel.js";
 import { suggestClassificationMode } from "../../../utils/styler/classification/fieldValues.js";
 import DataPreview from "./dataPreview.js";
 import LegendPreview from "./legendPreview.js";
-import { STYLE_TYPES, STYLE_EDITOR_EVENTS, STYLE_MODES } from "../constants.js";
+import {
+  STYLE_TYPES,
+  STYLE_EDITOR_EVENTS,
+  STYLE_MODES,
+  CLASSIFICATION_TYPES,
+} from "../constants.js";
 import { createGeoStylerStyle, geoStylerToSld } from "../../../utils/styler/style.js";
 import { sendSldFile, sendJsonStyleStyle } from "../../../utils/styler/requests.js";
 
@@ -109,23 +113,28 @@ CustomStyle.prototype.showType = function (type) {
     if (type === "proportionalColoredCircles") {
       const definition = STYLE_TYPES.find((item) => item.value === "proportionalCircles");
       this.panels[panelKey] = new AccordionClassificationPanel({
-        ...options,
+        classification: new ClassificationPanel({
+          ...options,
+          type: "proportionalCircles",
+          styleProp: definition.styleProp.filter(
+            (property) => property !== "color" && property !== "ramps"
+          ),
+          ruleMode: "size",
+        }),
         parentId: this.content.id,
         expanded: true,
-        type: "proportionalCircles",
-        styleProp: definition.styleProp.filter(
-          (property) => property !== "color" && property !== "ramps"
-        ),
-        ruleMode: "size",
         title: "style_editor.classification.circle_sizes",
       });
 
-      this.panels[panelKey].colorClassification = new CircleColorClassificationPanel({
-        ...options,
-        getFieldType: (field) => this.getClassificationMode(field),
+      this.panels[panelKey].colorClassification = new AccordionClassificationPanel({
+        classification: new ClassificationPanel({
+          ...options,
+          classificationModes: CLASSIFICATION_TYPES,
+          suggestMode: (field) => this.getClassificationMode(field),
+          type: "analyse",
+          ruleMode: "color",
+        }),
         parentId: this.content.id,
-        type: "analyse",
-        ruleMode: "color",
         title: "style_editor.classification.circle_colors",
       });
     } else {

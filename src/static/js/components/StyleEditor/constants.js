@@ -36,6 +36,8 @@ export const STYLE_SELECTOR_IDS = {
   titleInput: "frm-layer-styletitle",
 };
 
+export const CLASSIFICATION_TYPES = ["analyse", "categorized"];
+
 export const CLASSIFICATION_TOOLTIPS = {
   categories: "style_editor.tooltip.categories",
   classes: "style_editor.tooltip.classes",
