@@ -14,6 +14,7 @@ export default class ClassificationPanel {
     if (definition.methods) {
       methods = methods.filter((method) => definition.methods.includes(method.value));
     }
+    this.type = type;
     this.methods = new MethodsPanel({ fields, type, methods, styleProp });
     let RulesComponent = RulesPanel;
     if (type === "cluster") RulesComponent = ClusterRule;
@@ -30,7 +31,7 @@ export default class ClassificationPanel {
           bubbles: true,
           detail: {
             ...event.detail,
-            type: this.methods.type,
+            type: this.type,
             geometry,
             ruleMode,
             setRules: (rules) => this.rules.setRules(rules),
@@ -38,6 +39,66 @@ export default class ClassificationPanel {
         })
       );
     });
+  }
+
+  /**
+   * Changes classification settings and clears rules incompatible with the new mode.
+   * Preserves compatible field, method and visual settings.
+   * @param {string} type Numeric or categorical classification type.
+   * @param {Object} [options={}] Whether to render and emit an update immediately.
+   * @returns {void}
+   */
+  setClassificationMode(type, { render = true } = {}) {
+    if (this.type === type) return;
+    this.methods.readState();
+    const definition = STYLE_TYPES.find((item) => item.value === type);
+    const methods = CLASSIFICATION_METHODS.filter(
+      (method) => !definition.methods || definition.methods.includes(method.value)
+    );
+    this.type = type;
+    this.methods.type = type;
+    this.methods.styleProp = definition.styleProp;
+    this.methods.methods = methods;
+    if (!methods.some((method) => method.value === this.methods.state.method)) {
+      this.methods.state.method = methods[0].value;
+    }
+    this.rules.type = type;
+    this.rules.rules = [];
+    this.rules.selected.clear();
+    if (render) {
+      if (this.element.hasChildNodes()) this.render();
+      this.element.dispatchEvent(new CustomEvent("update", { bubbles: true }));
+    }
+  }
+
+  /**
+   * Updates available fields while retaining a valid selection.
+   * @param {string[]} fields Available field names.
+   * @returns {void}
+   */
+  setFields(fields) {
+    this.methods.setFields([...fields]);
+  }
+
+  /**
+   * Restores saved settings and prepares independent editable rules.
+   * Keeps a saved field available even if it is absent from the current schema.
+   * @param {Object} value Saved classification settings and rules.
+   * @returns {void}
+   */
+  restore(value) {
+    const { rules, ...state } = structuredClone(value);
+    delete state.type;
+    delete state.geometry;
+    delete state.colorClassification;
+    delete state.referentialLayer;
+    this.methods.state = { ...this.methods.state, ...state };
+    const fields = [...this.methods.fields];
+    if (value.field && !fields.includes(value.field)) fields.push(value.field);
+    this.setFields(fields);
+    this.rules.rules = rules.map((rule) => this.rules.prepareRule(rule));
+    this.rules.selected.clear();
+    if (this.element.hasChildNodes()) this.render();
   }
 
   /** @returns {HTMLElement} Section containing only this classification. */
