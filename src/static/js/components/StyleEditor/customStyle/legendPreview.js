@@ -25,34 +25,29 @@ export default class LegendPreview {
     this.content.replaceChildren();
     try {
       const configuration = this.getConfiguration();
-      // Text settings and text scale limits do not participate in a graphic legend.
-      const style = createGeoStylerStyle({ ...configuration, labels: undefined });
-      const entries = style.rules.map((rule) => ({
-        name: rule.name,
-        ...restoreSymbolizer(rule.symbolizers[0]),
-      }));
-      const maxSymbolSize = Math.max(1, ...entries.map((entry) => entry.symbol.maxSize));
-      const list = document.createElement("ul");
-      list.className = "list-unstyled mb-0";
-      entries.forEach((entry) => {
-        const item = document.createElement("li");
-        item.className = "d-flex align-items-center gap-2";
-        const symbol = new RulePreview({
-          rule: entry,
-          geometry: entry.geometry,
-          symbolSize: entry.symbol.maxSize,
-          maxSymbolSize,
-        });
-        const name = document.createElement("span");
-        name.textContent = entry.name;
-        const preview = symbol.render();
-        preview.setAttribute("width", "40");
-        preview.setAttribute("height", "24");
-        preview.classList.add("flex-shrink-0");
-        item.append(preview, name);
-        list.appendChild(item);
-      });
-      this.content.appendChild(list);
+      if (
+        configuration.type === "proportionalColoredCircles" &&
+        configuration.colorClassification
+      ) {
+        this.appendClassification(
+          {
+            ...configuration,
+            type: "proportionalCircles",
+            colorClassification: undefined,
+          },
+          "style_editor.classification.circle_sizes"
+        );
+        this.appendClassification(
+          {
+            type: "analyse",
+            ...configuration.colorClassification,
+            geometry: configuration.geometry,
+          },
+          "style_editor.classification.circle_colors"
+        );
+      } else {
+        this.appendClassification(configuration);
+      }
     } catch (error) {
       const message = document.createElement("p");
       message.className = "text-muted mb-0";
@@ -60,6 +55,50 @@ export default class LegendPreview {
       message.textContent = error.message;
       this.content.appendChild(message);
     }
+  }
+
+  /**
+   * Displays a classification using the symbols from the exported style.
+   * @param {Object} configuration Settings and rules for a visual variable.
+   * @param {string} [title] Translation key for the group heading.
+   * @returns {void}
+   */
+  appendClassification(configuration, title) {
+    const style = createGeoStylerStyle({ ...configuration, labels: undefined });
+    const entries = style.rules.map((rule) => ({
+      name: rule.name,
+      ...restoreSymbolizer(rule.symbolizers[0]),
+    }));
+    const maxSymbolSize = Math.max(1, ...entries.map((entry) => entry.symbol.maxSize));
+    const group = document.createElement("div");
+    if (title) {
+      group.className = "mb-3";
+      const heading = document.createElement("h6");
+      heading.textContent = mviewer.tr(title);
+      group.appendChild(heading);
+    }
+    const list = document.createElement("ul");
+    list.className = "list-unstyled mb-0";
+    entries.forEach((entry) => {
+      const item = document.createElement("li");
+      item.className = "d-flex align-items-center gap-2";
+      const symbol = new RulePreview({
+        rule: entry,
+        geometry: entry.geometry,
+        symbolSize: entry.symbol.maxSize,
+        maxSymbolSize,
+      });
+      const name = document.createElement("span");
+      name.textContent = entry.name;
+      const preview = symbol.render();
+      preview.setAttribute("width", "40");
+      preview.setAttribute("height", "24");
+      preview.classList.add("flex-shrink-0");
+      item.append(preview, name);
+      list.appendChild(item);
+    });
+    group.appendChild(list);
+    this.content.appendChild(group);
   }
 
   /** @returns {HTMLElement} Collapsible legend panel, preserving its open state. */
