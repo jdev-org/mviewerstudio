@@ -3,6 +3,7 @@ import ListStyleTypeSelector from "./listStyleTypeSelector.js";
 import ListCard from "../../listCard/listCard.js";
 import ClassificationPanel from "./ClassificationPanel.js";
 import AccordionClassificationPanel from "./accordionClassificationPanel.js";
+import CircleColorClassificationPanel from "./circleColorClassificationPanel.js";
 import DataPreview from "./dataPreview.js";
 import LegendPreview from "./legendPreview.js";
 import { STYLE_TYPES, STYLE_EDITOR_EVENTS, STYLE_MODES } from "../constants.js";
@@ -117,8 +118,10 @@ CustomStyle.prototype.showType = function (type) {
         ruleMode: "size",
         title: "style_editor.classification.circle_sizes",
       });
-      this.panels[panelKey].colorClassification = new AccordionClassificationPanel({
+
+      this.panels[panelKey].colorClassification = new CircleColorClassificationPanel({
         ...options,
+        layerOptions: this.options,
         parentId: this.content.id,
         type: "analyse",
         ruleMode: "color",
@@ -166,6 +169,9 @@ CustomStyle.prototype.showType = function (type) {
  * @returns {void}
  */
 CustomStyle.prototype.restoreClassification = function (panel, value) {
+  if (panel instanceof CircleColorClassificationPanel) {
+    panel.setType(value.type || "analyse");
+  }
   const { rules, ...state } = value;
   delete state.type;
   delete state.geometry;

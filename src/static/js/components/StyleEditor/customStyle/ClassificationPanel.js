@@ -30,7 +30,7 @@ export default class ClassificationPanel {
           bubbles: true,
           detail: {
             ...event.detail,
-            type,
+            type: this.methods.type,
             geometry,
             ruleMode,
             setRules: (rules) => this.rules.setRules(rules),
