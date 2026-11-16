@@ -65,9 +65,9 @@ Résultat et export
      - Colonne géométrique écrite dans Grist pour une sortie GeoJSON.
    * - ``xfield``, ``yfield``
      - Colonnes de coordonnées réellement écrites.
-   * - ``gristReferential``, ``gristMatchingField``
+   * - ``joinReferential``, ``joinMatchingField``
      - Référentiel et champ de correspondance conservés.
-   * - ``gristCentroidField``
+   * - ``joinCentroidField``
      - Colonne de centroïdes renseignée après son écriture dans Grist.
 
 Accès au CSV, URL et CORS : :doc:`../doc_tech/proxy`.

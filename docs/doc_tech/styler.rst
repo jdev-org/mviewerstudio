@@ -76,6 +76,9 @@ Règles de configuration
 Colonnes et XML
 ---------------
 
+Les attributs ``joinReferential``, ``joinMatchingField``, ``joinGeometryField`` et
+``joinCentroidField`` décrivent la jointure indépendamment de la source de données.
+
 Les identifiants réels attribués par Grist priment sur les noms demandés ; un champ déjà enregistré dans la couche ou son XML reste prioritaire lors de la préparation du style.
 
 .. list-table:: Correspondance backend / XML
@@ -85,9 +88,9 @@ Les identifiants réels attribués par Grist priment sur les noms demandés ; un
    * - Réponse de jointure
      - Attribut XML
    * - ``geometry_field``
-     - ``geojsonField`` et ``gristGeometryField`` pour GeoJSON.
+     - ``geojsonField`` et ``joinGeometryField`` pour GeoJSON.
    * - ``centroid_field``
-     - ``gristCentroidField`` après écriture du support.
+     - ``joinCentroidField`` après écriture du support.
    * - ``x_field``, ``y_field``
      - ``xfield``, ``yfield``.
 
@@ -95,13 +98,13 @@ Extraits de localisation, à compléter avec l’identifiant, le nom et l’URL 
 
 .. code-block:: xml
 
-   <layer type="csv" geojsonField="GEOMETRY2" gristGeometryField="GEOMETRY2"
-          gristReferential="GCS:CONTOURS_COMMUNE_IDF"
-          gristMatchingField="code_commune" srs="EPSG:2154" />
+   <layer type="csv" geojsonField="GEOMETRY2" joinGeometryField="GEOMETRY2"
+          joinReferential="GCS:CONTOURS_COMMUNE_IDF"
+          joinMatchingField="code_commune" srs="EPSG:2154" />
 
    <layer type="csv" xfield="abscisse" yfield="ordonnee"
-          gristReferential="GCS:STRUCTURES"
-          gristMatchingField="code_structure" srs="EPSG:2154" />
+          joinReferential="GCS:STRUCTURES"
+          joinMatchingField="code_structure" srs="EPSG:2154" />
 
 WKT : proposé pour l’écriture dans Grist ; les exemples XML et aperçus ci-dessus concernent GeoJSON ou X/Y.
 
