@@ -27,7 +27,10 @@ export const createGristApiError = async (response) => {
         // Plain-text error responses are also supported.
       }
       const contentType = response.headers.get("Content-Type") || "";
-      if (contentType.includes("text/html") || /^<(?:!doctype\s+html|html|head|body)\b/i.test(content)) {
+      if (
+        contentType.includes("text/html") ||
+        /^<(?:!doctype\s+html|html|head|body)\b/i.test(content)
+      ) {
         apiMessage = `HTTP ${response.status}`;
         const incident = content.match(/Incapsula incident ID:\s*([\d-]+)/i);
         if (incident) {

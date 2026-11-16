@@ -111,7 +111,10 @@ GristApiKey.prototype.loadApiKey = function () {
       this.onInvalidApiKey();
       input.readOnly = false;
       input.focus();
-      this.showAlert("warning", error.message || mviewer.tr("grist.api_key.auto_fetch_failed"));
+      this.showAlert(
+        "warning",
+        error.message || mviewer.tr("grist.api_key.auto_fetch_failed")
+      );
       console.warn("Error fetching Grist API key:", error);
     });
 };

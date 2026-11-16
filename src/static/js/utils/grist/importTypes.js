@@ -5,7 +5,9 @@
  * @returns {string} Grist column type.
  */
 export const getGristColumnType = (values) => {
-  const cells = values.filter((value) => value !== null && value !== undefined && value !== "");
+  const cells = values.filter(
+    (value) => value !== null && value !== undefined && value !== ""
+  );
   if (!cells.length) {
     return "Text";
   }
@@ -16,7 +18,15 @@ export const getGristColumnType = (values) => {
     return "Numeric";
   }
   if (cells.every((value) => value instanceof Date && !Number.isNaN(value.getTime()))) {
-    if (cells.every((value) => value.getUTCHours() === 0 && value.getUTCMinutes() === 0 && value.getUTCSeconds() === 0 && value.getUTCMilliseconds() === 0)) {
+    if (
+      cells.every(
+        (value) =>
+          value.getUTCHours() === 0 &&
+          value.getUTCMinutes() === 0 &&
+          value.getUTCSeconds() === 0 &&
+          value.getUTCMilliseconds() === 0
+      )
+    ) {
       return "Date";
     }
     return "DateTime:UTC";

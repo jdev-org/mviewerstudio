@@ -10,22 +10,25 @@
  * @returns {string[]} Hex colors, or an empty array for an invalid class count.
  */
 export const crandomColorBClass = (color, classes) => {
-    if (!Number.isInteger(classes) || classes < 1) return [];
+  if (!Number.isInteger(classes) || classes < 1) return [];
 
-    const colors = [globalThis.chroma(color).hex()];
-    for (let index = 1; index < classes; index++) {
-        colors.push(globalThis.chroma.random().hex());
-    }
-    return colors;
-}
+  const colors = [globalThis.chroma(color).hex()];
+  for (let index = 1; index < classes; index++) {
+    colors.push(globalThis.chroma.random().hex());
+  }
+  return colors;
+};
 
 /**
  * Return the built-in color scales available in the style editor.
  * @returns {Array<{label: string, value: string}>} Named palette options.
  */
 export const getColorRampScales = () => {
-    return Object.keys(globalThis.chroma.brewer).map(name => ({ label: name, value: name }));
-}
+  return Object.keys(globalThis.chroma.brewer).map((name) => ({
+    label: name,
+    value: name,
+  }));
+};
 
 /**
  * Sample a named palette or a sequential ramp from white to a base color.
@@ -35,15 +38,15 @@ export const getColorRampScales = () => {
  * @returns {string[]} Hex colors, or an empty array for an invalid class count.
  */
 export const createColorRampScales = (color, classes, reverseColors = false) => {
-    if (!Number.isInteger(classes) || classes < 1) return [];
-    let colors;
-    if (Object.hasOwn(globalThis.chroma.brewer, color)) {
-        colors = globalThis.chroma.scale(color).mode("lab").colors(classes);
-    } else if (classes === 1) {
-        colors = [globalThis.chroma(color).hex()];
-    } else {
-        colors = globalThis.chroma.scale(["#ffffff", color]).mode("lab").colors(classes);
-    }
-    if (reverseColors) colors.reverse();
-    return colors;
-}
+  if (!Number.isInteger(classes) || classes < 1) return [];
+  let colors;
+  if (Object.hasOwn(globalThis.chroma.brewer, color)) {
+    colors = globalThis.chroma.scale(color).mode("lab").colors(classes);
+  } else if (classes === 1) {
+    colors = [globalThis.chroma(color).hex()];
+  } else {
+    colors = globalThis.chroma.scale(["#ffffff", color]).mode("lab").colors(classes);
+  }
+  if (reverseColors) colors.reverse();
+  return colors;
+};
