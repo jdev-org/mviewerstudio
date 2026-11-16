@@ -1,23 +1,11 @@
-import {
-  STYLE_MODES,
-  STYLE_CHOICES,
-  STYLE_EDITOR_EVENTS,
-  STYLE_TYPES,
-  DEFAULT_SYMBOL,
-  CLASSIFICATION_LIMITS,
-} from "./constants.js";
+import { STYLE_MODES, STYLE_CHOICES, STYLE_EDITOR_EVENTS } from "./constants.js";
 import CustomStyle from "./customStyle/CustomStyle.js";
 import StyleSelector from "./styleSelector/styleSelector.js";
 import TmsStyle from "./tmsStyle/tmsStyle.js";
 import LegendSelector from "../legendSelector/legendSelector.js";
 import stylerLabels from "./labels/stylerLabels.js";
-import { analyse, categorize } from "../../utils/styler/methods.js";
-import {
-  createColorRampScales,
-  crandomColorBClass,
-} from "../../utils/styler/rampColor.js";
-import { createClusterClasses } from "../../utils/styler/cluster.js";
-import { calculateCircleSizes } from "../../utils/styler/circleSizes.js";
+import { loadFieldValues } from "../../utils/styler/data/loadFieldValues.js";
+import { createClassificationRules } from "../../utils/styler/classification/createRules.js";
 import { getStyleGeometry } from "../../utils/styler/style.js";
 import { getStoredStyle, loadSldStyle } from "../../utils/styler/readStyle.js";
 import GristStyleSource from "./customStyle/gristStyleSource.js";
@@ -174,7 +162,8 @@ styleEditor.prototype.updateLoadStatus = function () {
   if (this.loadingCustomStyle)
     status.textContent = mviewer.tr("style_editor.loading_sld");
   if (failed) {
-    status.className = "alert alert-danger d-flex flex-wrap align-items-center justify-content-between gap-2";
+    status.className =
+      "alert alert-danger d-flex flex-wrap align-items-center justify-content-between gap-2";
     status.setAttribute("role", "alert");
     const message = document.createElement("span");
     message.textContent = mviewer.tr("style_editor.error.load_sld");
@@ -297,24 +286,12 @@ styleEditor.prototype.saveToLayer = async function (layer, name, mapId) {
 };
 
 /**
- * Classifie le champ choisi à partir des données CSV authentifiées ou des entités WFS.
- * @param {CustomEvent} event Paramètres de classification et fonction de mise à jour des règles.
- * @returns {Promise<void>} Actualise les règles ou affiche l'erreur dans le panneau.
+ * Loads field values and applies calculated rules to the active classification panel.
+ * @param {CustomEvent} event Classification settings and rule update callback.
+ * @returns {Promise<void>} Updates rules and preview, or displays the calculation error.
  */
 styleEditor.prototype.calculate = async function (event) {
-  const {
-    field,
-    method,
-    classes,
-    color,
-    reverseColors,
-    maxSize = DEFAULT_SYMBOL.maxSize,
-    type,
-    geometry,
-    ruleMode,
-    setRules,
-  } = event.detail;
-  const { styleProp } = STYLE_TYPES.find((definition) => definition.value === type);
+  const { setRules, ...parameters } = event.detail;
   const button = event.target.querySelector(".style-methods__actions button");
   const message = event.target.querySelector("[data-classification-error]");
   const layerId = this.layerId;
@@ -325,114 +302,13 @@ styleEditor.prototype.calculate = async function (event) {
   message.classList.add("d-none");
 
   try {
-    if (type === "cluster") {
-      // Count belongs to generated clusters, so these classes need no CSV or WFS field.
-      const rules = createClusterClasses(event.detail);
-      const colors = createColorRampScales(color, rules.length, reverseColors);
-      rules.forEach((rule, index) => {
-        rule.fill = { color: colors[index] };
-      });
-      setRules(rules);
-      if (customStyle.preview) customStyle.preview.refreshStyle();
-      return;
+    let data = [];
+    if (parameters.type !== "cluster") {
+      const layer = config.temp.layers[layerId];
+      data = await loadFieldValues(layer, layerId, parameters);
     }
-    const layer = config.temp.layers[layerId];
-    let data;
-    if (layer && layer.type === "csv") {
-      if (!Array.isArray(layer.csvData)) {
-        throw new Error(mviewer.tr("style_editor.error.csv_not_loaded"));
-      }
-      data = layer.csvData;
-      // Les catégories conservent leur texte ; les analyses numériques acceptent la virgule décimale.
-      if (!styleProp.includes("randomColor")) {
-        data = data.map((record) => {
-          let value = record[field];
-          if (typeof value === "string") {
-            value = value.trim();
-            if (value === "") value = null;
-            else value = +value.replace(",", ".");
-          }
-          return { [field]: value };
-        });
-      }
-    } else {
-      if (!layer || !layer.wfs_url) {
-        throw new Error(mviewer.tr("style_editor.error.no_wfs"));
-      }
-      // La classification utilise toutes les valeurs du champ, au-delà de l'entité de preview.
-      const url = ogc.urlToObject(layer.wfs_url, {
-        SERVICE: "WFS",
-        VERSION: "1.0.0",
-        REQUEST: "GETFEATURE",
-        OUTPUTFORMAT: "application/json",
-        TYPENAME: layerId,
-        PROPERTYNAME: field,
-      });
-      const response = await fetch(url.toString());
-      if (!response.ok) {
-        throw new Error(mviewer.tr("style_editor.error.load_values"));
-      }
-      const collection = await response.json();
-      if (!Array.isArray(collection.features)) {
-        throw new Error(mviewer.tr("style_editor.error.invalid_data"));
-      }
-      data = collection.features.map((feature) => feature.properties);
-    }
-    let rules;
-
-    if (styleProp.includes("randomColor")) {
-      const values = categorize(data, field);
-      if (values.length > CLASSIFICATION_LIMITS.categories.max) {
-        throw new Error(
-          mviewer
-            .tr("style_editor.error.too_many_categories")
-            .replace("{max}", CLASSIFICATION_LIMITS.categories.max)
-        );
-      }
-      rules = values.map((value) => ({ name: `${value}`, value }));
-    } else {
-      const boundaries = analyse(data, field, method, classes);
-      // Une série constante produit une seule borne : la dupliquer crée une classe min = max.
-      if (boundaries.length === 1) boundaries.push(boundaries[0]);
-      rules = boundaries.slice(1).map((max, index) => ({
-        name: `${boundaries[index]} – ${max}`,
-        min: boundaries[index],
-        max,
-      }));
-    }
-
-    if (rules.length === 0) {
-      throw new Error(mviewer.tr("style_editor.error.no_classes"));
-    }
-    let colors;
-    if (styleProp.includes("randomColor")) {
-      colors = crandomColorBClass(globalThis.chroma.random().hex(), rules.length);
-    } else if (styleProp.includes("ramps")) {
-      colors = createColorRampScales(color, rules.length, reverseColors);
-    } else {
-      colors = Array(rules.length).fill(color);
-    }
-    const proportional = type === "proportionalCircles" || ruleMode === "size";
-    let sizes;
-    if (proportional) sizes = calculateCircleSizes(rules, maxSize);
-    rules.forEach((rule, index) => {
-      if (proportional) {
-        rule.symbol = {
-          ...DEFAULT_SYMBOL,
-          shape: "circle",
-          minSize: sizes[index],
-          maxSize: sizes[index],
-        };
-      }
-      // Dans le style combiné, les règles de taille laissent la couleur à l'autre classification.
-      if (ruleMode === "size") return;
-      if (geometry === "LineString") {
-        rule.stroke = { color: colors[index] };
-      } else {
-        rule.fill = { color: colors[index] };
-      }
-    });
-    // Un résultat tardif ne doit pas remplacer les règles d'un panneau reconstruit entre-temps.
+    const rules = createClassificationRules(data, parameters);
+    // Late results must not replace rules in a rebuilt panel or another layer.
     if (this.layerId === layerId && this.customStyle === customStyle) {
       setRules(rules);
       if (customStyle.preview) customStyle.preview.refreshStyle();
