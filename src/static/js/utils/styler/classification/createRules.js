@@ -2,8 +2,7 @@ import { classify } from "./classify.js";
 import { createClusterClasses } from "../cluster.js";
 import { createColorRampScales, crandomColorBClass } from "../rampColor.js";
 import { calculateCircleSizes } from "../circleSizes.js";
-import { DEFAULT_SYMBOL } from "../constants.js";
-import { STYLE_TYPES } from "../../../components/StyleEditor/formDefinitions.js";
+import { DEFAULT_SYMBOL, STYLE_DEFINITIONS, COLOR_MODES } from "../constants.js";
 
 /**
  * Builds styled rules for numeric, categorical or cluster representations.
@@ -21,7 +20,7 @@ export function createClassificationRules(data, parameters) {
     reverseColors,
     maxSize = DEFAULT_SYMBOL.maxSize,
   } = parameters;
-  const { styleProp } = STYLE_TYPES.find((definition) => definition.value === type);
+  const { colorMode } = STYLE_DEFINITIONS.find((definition) => definition.value === type);
   if (type === "cluster") {
     const rules = createClusterClasses(parameters);
     const colors = createColorRampScales(color, rules.length, reverseColors);
@@ -32,9 +31,9 @@ export function createClassificationRules(data, parameters) {
   }
   const rules = classify(data, parameters);
   let colors;
-  if (styleProp.includes("randomColor")) {
+  if (colorMode === COLOR_MODES.RANDOM) {
     colors = crandomColorBClass(globalThis.chroma.random().hex(), rules.length);
-  } else if (styleProp.includes("ramps")) {
+  } else if (colorMode === COLOR_MODES.RAMP) {
     colors = createColorRampScales(color, rules.length, reverseColors);
   } else {
     colors = Array(rules.length).fill(color);

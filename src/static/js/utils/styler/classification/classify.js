@@ -1,6 +1,9 @@
 import { analyse, categorize } from "../methods.js";
-import { CLASSIFICATION_LIMITS } from "../constants.js";
-import { STYLE_TYPES } from "../../../components/StyleEditor/formDefinitions.js";
+import {
+  CLASSIFICATION_LIMITS,
+  CLASSIFICATION_KINDS,
+  STYLE_DEFINITIONS,
+} from "../constants.js";
 
 /**
  * Builds category rules or numeric intervals from field values.
@@ -10,10 +13,12 @@ import { STYLE_TYPES } from "../../../components/StyleEditor/formDefinitions.js"
  * @throws {Error} If no classes are produced or the category limit is exceeded.
  */
 export function classify(data, { field, type, method, classes }) {
-  const { styleProp } = STYLE_TYPES.find((definition) => definition.value === type);
+  const { classification } = STYLE_DEFINITIONS.find(
+    (definition) => definition.value === type
+  );
   let rules;
 
-  if (styleProp.includes("randomColor")) {
+  if (classification === CLASSIFICATION_KINDS.CATEGORICAL) {
     const values = categorize(data, field);
     if (values.length > CLASSIFICATION_LIMITS.categories.max) {
       throw new Error(

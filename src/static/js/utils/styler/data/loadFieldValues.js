@@ -1,4 +1,4 @@
-import { STYLE_TYPES } from "../../../components/StyleEditor/formDefinitions.js";
+import { CLASSIFICATION_KINDS, STYLE_DEFINITIONS } from "../constants.js";
 
 /**
  * Loads classification records from authenticated CSV data or a WFS field request.
@@ -10,7 +10,9 @@ import { STYLE_TYPES } from "../../../components/StyleEditor/formDefinitions.js"
  * @throws {Error} If the source is unavailable or the WFS response is invalid.
  */
 export async function loadFieldValues(layer, layerId, { field, type }) {
-  const { styleProp } = STYLE_TYPES.find((definition) => definition.value === type);
+  const { classification } = STYLE_DEFINITIONS.find(
+    (definition) => definition.value === type
+  );
   let data;
   if (layer && layer.type === "csv") {
     if (!Array.isArray(layer.csvData)) {
@@ -18,7 +20,7 @@ export async function loadFieldValues(layer, layerId, { field, type }) {
     }
     data = layer.csvData;
     // Preserve category text; numeric CSV values accept a decimal comma.
-    if (!styleProp.includes("randomColor")) {
+    if (classification !== CLASSIFICATION_KINDS.CATEGORICAL) {
       data = data.map((record) => {
         let value = record[field];
         if (typeof value === "string") {
