@@ -1,16 +1,16 @@
 import ClassificationPanel from "./ClassificationPanel.js";
 import Accordion from "../../accordion/accordion.js";
 
-/** Classification repliable, partageant les calculs et les règles du panneau standard. */
+/** Collapsible classification sharing the calculations and rules of the standard panel. */
 export default class AccordionClassificationPanel extends ClassificationPanel {
-  /** @param {Object} options Configuration de classification, parentId et état expanded. */
+  /** @param {Object} options Classification settings, parentId and expanded state. */
   constructor({ parentId, expanded = false, ...options }) {
     super(options);
     this.parentId = parentId;
     this.expanded = expanded;
   }
 
-  /** @returns {HTMLElement} Volet Bootstrap avec identifiants propres à l'instance. */
+  /** @returns {HTMLElement} Bootstrap panel with unique identifiers for each instance. */
   render() {
     const panel = new Accordion({
       title: mviewer.tr(this.title),

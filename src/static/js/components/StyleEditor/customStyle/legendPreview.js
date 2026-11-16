@@ -3,7 +3,7 @@ import RulePreview from "./rules/rulePreview.js";
 import { createGeoStylerStyle } from "../../../utils/styler/style.js";
 import { restoreSymbolizer } from "../../../utils/styler/readStyle.js";
 
-/** Live legend using the same graphic rules as the exported SLD. */
+/** Legend for the visual variables of a custom style. */
 export default class LegendPreview {
   /** @param {Function} getConfiguration Returns the current custom style configuration. */
   constructor(getConfiguration) {
@@ -18,7 +18,7 @@ export default class LegendPreview {
     this.content.classList.add("small");
   }
 
-  /** Redraw names and symbols, including crossed size/color classifications.
+  /** Redraws the legend with separate size and color variables.
    * @returns {void}
    */
   update() {

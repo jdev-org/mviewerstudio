@@ -5,9 +5,9 @@ import { STYLE_TYPES, CLASSIFICATION_METHODS } from "../constants.js";
 
 let classificationPanelId = 0;
 
-/** Classification indépendante : paramètres, calcul et tableau de règles. */
+/** Independent classification with settings, calculation and a rule table. */
 export default class ClassificationPanel {
-  /** @param {Object} options Type, géométrie, champs, propriétés et rôle des règles. */
+  /** @param {Object} options Type, geometry, fields, properties and rule mode. */
   constructor({ type, geometry, fields, styleProp, ruleMode = "all", title }) {
     const definition = STYLE_TYPES.find((item) => item.value === type);
     let methods = CLASSIFICATION_METHODS;
@@ -40,7 +40,7 @@ export default class ClassificationPanel {
     });
   }
 
-  /** @returns {HTMLElement} Section contenant uniquement cette classification. */
+  /** @returns {HTMLElement} Section containing only this classification. */
   render() {
     this.element.replaceChildren();
     if (this.title) {
@@ -54,7 +54,7 @@ export default class ClassificationPanel {
     return this.element;
   }
 
-  /** @returns {Object} Copie des paramètres et règles de cette classification. */
+  /** @returns {Object} Copy of the settings and rules for this classification. */
   getValue() {
     return { ...this.methods.state, rules: structuredClone(this.rules.rules) };
   }

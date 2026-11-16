@@ -12,7 +12,7 @@ import { sendSldFile, sendJsonStyleStyle } from "../../../utils/styler/requests.
 let customStyleId = 0;
 
 /**
- * Conteneur de l'éditeur de style personnalisé.
+ * Custom style editor container.
  * @returns {void}
  */
 const CustomStyle = function (options = {}) {
@@ -74,8 +74,8 @@ const CustomStyle = function (options = {}) {
   );
 };
 
-/** Affiche les panneaux du mode sélectionné en conservant leurs saisies.
- * @param {string} type Mode de représentation.
+/** Displays panels for the selected mode while preserving their input.
+ * @param {string} type Representation mode.
  * @returns {void}
  */
 CustomStyle.prototype.showType = function (type) {
@@ -95,7 +95,7 @@ CustomStyle.prototype.showType = function (type) {
     this.options.type === "csv" &&
     this.options.styleMode !== STYLE_MODES.EXISTING;
   if (resetStyle) {
-    // Seul le style personnalisé CSV repart de zéro ; les panneaux WMS restent disponibles.
+    // Only the custom CSV style is reset; WMS panels remain available.
     this.panels = {};
     this.state = null;
     this.geoStylerStyle = null;
@@ -160,9 +160,9 @@ CustomStyle.prototype.showType = function (type) {
 };
 
 /**
- * Recharge les paramètres et règles d'une classification enregistrée.
- * @param {ClassificationPanel} panel Panneau à restaurer.
- * @param {Object} value Paramètres et règles sauvegardés.
+ * Restores settings and rules from a saved classification.
+ * @param {ClassificationPanel} panel Panel to restore.
+ * @param {Object} value Saved settings and rules.
  * @returns {void}
  */
 CustomStyle.prototype.restoreClassification = function (panel, value) {
@@ -179,13 +179,13 @@ CustomStyle.prototype.restoreClassification = function (panel, value) {
 };
 
 /**
- * Convertit puis sauvegarde le duo SLD/JSON avec un identifiant unique commun.
- * L'objet enregistré est actualisé uniquement après les deux envois.
- * @param {string} mapId Identifiant de la carte enregistrée sur le serveur.
- * @param {string} name Nom du style.
- * @param {string} layerName Nom technique de la couche WMS.
- * @param {string} [styleId] Identifiant à réutiliser pour remplacer le style de la couche.
- * @returns {Promise<Object>} Identifiant, configuration, objet GeoStyler et fichiers.
+ * Converts and saves the SLD/JSON pair using a shared unique identifier.
+ * Updates the saved object only after both uploads succeed.
+ * @param {string} mapId Identifier of the map saved on the server.
+ * @param {string} name Style name.
+ * @param {string} layerName Technical WMS layer name.
+ * @param {string} [styleId] Identifier to reuse when replacing the layer style.
+ * @returns {Promise<Object>} Identifier, configuration, GeoStyler style and files.
  */
 CustomStyle.prototype.save = async function (
   mapId,
@@ -202,8 +202,8 @@ CustomStyle.prototype.save = async function (
   return { styleId, configuration, geoStylerStyle, sld, json };
 };
 
-/** Retourne la configuration saisie, sans transformation SLD.
- * @returns {Object} Mode, géométrie, paramètres et règles.
+/** Returns the current configuration before SLD conversion.
+ * @returns {Object} Mode, geometry, settings and rules.
  */
 CustomStyle.prototype.getValue = function () {
   const type = this.styleTypeSelector.value;
@@ -223,14 +223,14 @@ CustomStyle.prototype.getValue = function () {
 };
 
 /**
- * Affiche le titre de l'éditeur et la liste des modes de représentation.
- * @returns {HTMLElement} Élément du composant.
+ * Displays the editor title and the list of representation modes.
+ * @returns {HTMLElement} Component element.
  */
 CustomStyle.prototype.render = function () {
   if (!this.preview) {
-    // Les panneaux doivent exister avant que la carte demande la configuration du style.
+    // Panels must exist before the map requests the style configuration.
     this.showType(this.styleTypeSelector.value);
-    // Lire le formulaire à chaque rafraîchissement pour inclure les étiquettes et les règles modifiées.
+    // Read the form on each refresh to include updated labels and rules.
     this.preview = new DataPreview({
       ...this.options,
       getStyle: () => this.getValue(),
@@ -244,8 +244,8 @@ CustomStyle.prototype.render = function () {
 };
 
 /**
- * Conserve les champs pour les futurs panneaux et actualise les panneaux existants.
- * @param {string[]} fields Champs disponibles.
+ * Keeps fields for future panels and updates existing panels.
+ * @param {string[]} fields Available fields.
  * @returns {void}
  */
 CustomStyle.prototype.setFields = function (fields) {
