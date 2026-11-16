@@ -18,8 +18,8 @@ export default class AccordionClassificationPanel extends ClassificationPanel {
       parentId: this.parentId,
       classes: "style-classification accordion-classification-panel",
     });
-    panel.element.id = this.element.id;
-    this.element = panel.element;
+    this.element.className = panel.element.className;
+    this.element.replaceChildren(...panel.element.childNodes);
     const collapse = panel.collapse;
     collapse.addEventListener("show.bs.collapse", (event) => {
       if (event.target === collapse) this.expanded = true;
