@@ -69,10 +69,10 @@ var mv = (function () {
       yfield: $(layerInfos).attr("yfield"),
       srs: $(layerInfos).attr("srs"),
       geojsonField: $(layerInfos).attr("geojsonField"),
-      gristReferential: $(layerInfos).attr("gristReferential"),
-      gristMatchingField: $(layerInfos).attr("gristMatchingField"),
-      gristGeometryField: $(layerInfos).attr("gristGeometryField"),
-      gristCentroidField: $(layerInfos).attr("gristCentroidField"),
+      joinReferential: $(layerInfos).attr("joinReferential"),
+      joinMatchingField: $(layerInfos).attr("joinMatchingField"),
+      joinGeometryField: $(layerInfos).attr("joinGeometryField"),
+      joinCentroidField: $(layerInfos).attr("joinCentroidField"),
       tooltipcontent: $(layerInfos).attr("tooltipcontent"),
     };
     return layerObject;
@@ -561,11 +561,11 @@ var mv = (function () {
         // Persist the processing output expected by mviewer, and separately
         // preserve the chosen mode so it can be edited again in Studio.
         if (gristLocationMode === "refSwitch") {
-          gristLayer.gristReferential = gristTargetTable.gristReferential;
-          gristLayer.gristMatchingField = gristTargetTable.gristMatchingField;
-          gristLayer.gristGeometryField = gristTargetTable.gristGeometryField;
-          gristLayer.gristCentroidField = gristTargetTable.gristCentroidField;
-          gristLayer.geojsonField = gristTargetTable.gristGeometryField;
+          gristLayer.joinReferential = gristTargetTable.joinReferential;
+          gristLayer.joinMatchingField = gristTargetTable.joinMatchingField;
+          gristLayer.joinGeometryField = gristTargetTable.joinGeometryField;
+          gristLayer.joinCentroidField = gristTargetTable.joinCentroidField;
+          gristLayer.geojsonField = gristTargetTable.joinGeometryField;
           gristLayer.xfield = gristTargetTable.xfield;
           gristLayer.yfield = gristTargetTable.yfield;
           if (gristTargetTable.srs) gristLayer.srs = gristTargetTable.srs;
@@ -860,10 +860,10 @@ var mv = (function () {
               xfield: layer.xfield,
               yfield: layer.yfield,
               geojsonField: layer.geojsonField,
-              gristReferential: layer.gristReferential,
-              gristMatchingField: layer.gristMatchingField,
-              gristGeometryField: layer.gristGeometryField,
-              gristCentroidField: layer.gristCentroidField,
+              joinReferential: layer.joinReferential,
+              joinMatchingField: layer.joinMatchingField,
+              joinGeometryField: layer.joinGeometryField,
+              joinCentroidField: layer.joinCentroidField,
               name: layer.name,
               id: layer.id,
               srs: layer.srs,
@@ -907,7 +907,10 @@ var mv = (function () {
           .then(({ wfs_url, typeName }) =>
             ogc.getFeatures(
               wfs_url,
-              { TYPENAME: typeName || layerid, MAXFEATURES: mv.constants.dataPreviewLimit },
+              {
+                TYPENAME: typeName || layerid,
+                MAXFEATURES: mv.constants.dataPreviewLimit,
+              },
               (data) => {
                 if (!data || !Array.isArray(data.features)) return;
                 if (!config.temp.layers[layerid]) config.temp.layers[layerid] = {};
@@ -961,7 +964,7 @@ var mv = (function () {
         // Legacy Grist layers did not persist their localization mode in Studio.
         if (!layer.geolocType) {
           layer.geolocType =
-            layer.gristReferential || layer.geojsonField ? "referential" : "coordinates";
+            layer.joinReferential || layer.geojsonField ? "referential" : "coordinates";
         }
       }
 
@@ -1012,7 +1015,8 @@ var mv = (function () {
         // Keep the modal responsive while the authenticated CSV request is running.
         previewContainer.innerHTML = `<div class="text-muted">${mviewer.tr("modal.layer.grist.preview.loading")}</div>`;
         // The CSV endpoint is protected by the same API key used by the Grist import flow.
-        mv.utils.grist.csv.loadGristCsv(layer.url, apiKey)
+        mv.utils.grist.csv
+          .loadGristCsv(layer.url, apiKey)
           .then((data) => {
             if (document.getElementById("mod-layerOptions").dataset.layerid !== layerid) {
               return;
@@ -1412,8 +1416,8 @@ var mv = (function () {
       var require_parameters = ["id", "name", "type", "url"];
       require_parameters.forEach(function (p, i) {
         var value = l[p];
-        if (p === "id" && l.type === "wms" && l.customsld && l.gristRepresentationLayer) {
-          value = l.gristRepresentationLayer;
+        if (p === "id" && l.type === "wms" && l.customsld && l.representationLayer) {
+          value = l.representationLayer;
         }
         if (p == "url") {
           value = mv.escapeXml(value);
@@ -1463,17 +1467,28 @@ var mv = (function () {
         "yfield",
         "srs",
         "geojsonField",
-        "gristReferential",
-        "gristMatchingField",
-        "gristGeometryField",
-        "gristCentroidField",
+        "joinReferential",
+        "joinMatchingField",
+        "joinGeometryField",
+        "joinCentroidField",
         "tooltipcontent",
       ];
       optional_parameters.forEach((param) => {
         if (l[param] == undefined) return;
         let value = l[param];
 
-        if (["metadata", "metadata-csw", "legendurl", "sld", "gristReferential", "gristMatchingField", "gristGeometryField", "gristCentroidField"].includes(param)) {
+        if (
+          [
+            "metadata",
+            "metadata-csw",
+            "legendurl",
+            "sld",
+            "joinReferential",
+            "joinMatchingField",
+            "joinGeometryField",
+            "joinCentroidField",
+          ].includes(param)
+        ) {
           value = mv.escapeXml(value);
         }
         layer_parameters[param] = `${param}="${value}"`;

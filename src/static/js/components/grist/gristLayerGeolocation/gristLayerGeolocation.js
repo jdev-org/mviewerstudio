@@ -118,8 +118,8 @@ export const openGristLayerGeolocation = ({
             new mvInstance.components.grist.gristRefGeoArea({
               idPrefix: "layer-grist-geolocation-ref",
               fields: gristFields,
-              matchingField: layer.gristMatchingField,
-              referential: layer.gristReferential,
+              matchingField: layer.joinMatchingField,
+              referential: layer.joinReferential,
               onReferentialChange: (label) => {
                 const referentials = gristConfig.grist_referentials || [];
                 const referential = referentials.find((item) => item.label === label);
@@ -196,7 +196,7 @@ export const openGristLayerGeolocation = ({
             // Le flux affiche lui-même les erreurs : une promesse résolue ne garantit pas la réussite.
             if (!gristSource.referential) return;
             const referentialChanged =
-              layer.gristReferential !== gristSource.referential.layer_name;
+              layer.joinReferential !== gristSource.referential.layer_name;
             const geometryChanged =
               previousGeometryField !== gristSource.geometryField ||
               (layer.customStyle && layer.customStyle.geometry !== "Polygon");
@@ -205,11 +205,11 @@ export const openGristLayerGeolocation = ({
               layer.type === "csv" &&
               isCustomStyle &&
               (referentialChanged || geometryChanged);
-            layer.gristReferential = gristSource.referential.layer_name;
-            layer.gristMatchingField = gristSource.matchingField;
+            layer.joinReferential = gristSource.referential.layer_name;
+            layer.joinMatchingField = gristSource.matchingField;
             // Grist peut avoir renommé les colonnes ; conserver leurs identifiants réels pour l'export XML.
-            layer.gristGeometryField = gristSource.geometryField;
-            layer.gristCentroidField = gristSource.centroidField;
+            layer.joinGeometryField = gristSource.geometryField;
+            layer.joinCentroidField = gristSource.centroidField;
             layer.geojsonField = gristSource.geometryField;
             layer.xfield = gristSource.xField;
             layer.yfield = gristSource.yField;

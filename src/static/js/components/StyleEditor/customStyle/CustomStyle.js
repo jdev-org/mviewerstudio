@@ -25,7 +25,7 @@ const CustomStyle = function (options = {}) {
   this.geometry = geometry;
   if (this.supports.length && !state) {
     const currentLayerName =
-      options.gristRepresentationLayer ||
+      options.representationLayer ||
       options.layer_name ||
       options.layername ||
       options.id;

@@ -244,11 +244,11 @@ styleEditor.prototype.saveToLayer = async function (layer, name, mapId) {
     if (stored && stored.mapId === mapId) styleId = stored.styleId;
     const saved = await customStyle.save(mapId, name, layerName, styleId);
     if (support) {
-      layer.gristReferential = support.referential.layer_name;
+      layer.joinReferential = support.referential.layer_name;
       if (layer.type === "csv") {
         layer.geojsonField = representationFields.geometryField;
-        layer.gristGeometryField = representationFields.polygonField;
-        layer.gristCentroidField = representationFields.centroidField;
+        layer.joinGeometryField = representationFields.polygonField;
+        layer.joinCentroidField = representationFields.centroidField;
         for (const item of customStyle.supports) {
           item.geojsonField = representationFields.polygonField;
           if (item.geometry === "Point")
@@ -258,7 +258,7 @@ styleEditor.prototype.saveToLayer = async function (layer, name, mapId) {
         delete layer.xfield;
         delete layer.yfield;
       } else {
-        layer.gristRepresentationLayer = support.layerName;
+        layer.representationLayer = support.layerName;
       }
     }
     layer.customStyle = saved.configuration;
@@ -274,10 +274,10 @@ styleEditor.prototype.saveToLayer = async function (layer, name, mapId) {
       this.options.sld = layer.sld;
       this.options.customsld = true;
       this.options.geojsonField = layer.geojsonField;
-      this.options.gristGeometryField = layer.gristGeometryField;
-      this.options.gristCentroidField = layer.gristCentroidField;
-      this.options.gristReferential = layer.gristReferential;
-      this.options.gristRepresentationLayer = layer.gristRepresentationLayer;
+      this.options.joinGeometryField = layer.joinGeometryField;
+      this.options.joinCentroidField = layer.joinCentroidField;
+      this.options.joinReferential = layer.joinReferential;
+      this.options.representationLayer = layer.representationLayer;
     }
   } else {
     layer.customsld = false;
@@ -359,10 +359,10 @@ styleEditor.prototype.reset = function (options = {}) {
   this.options = { ...this.options, ...options };
   if (options.layerId && options.layerId !== this.layerId) {
     for (const field of [
-      "gristReferential",
-      "gristMatchingField",
-      "gristGeometryField",
-      "gristCentroidField",
+      "joinReferential",
+      "joinMatchingField",
+      "joinGeometryField",
+      "joinCentroidField",
       "id",
       "name",
       "geojsonField",
@@ -497,8 +497,8 @@ styleEditor.prototype.renderGristSource = function () {
         const geometryFields = [
           this.options.geojsonField,
           "geometry_centroid",
-          this.options.gristGeometryField,
-          this.options.gristCentroidField,
+          this.options.joinGeometryField,
+          this.options.joinCentroidField,
         ];
         this.setFields(fields.filter((field) => !geometryFields.includes(field)));
         this.labels.preview.setFeature(feature);

@@ -15,7 +15,7 @@ const preparationRequests = new WeakMap();
 export function getStyleReferential(layer) {
   if (typeof _conf === "undefined" || !_conf.grist) return;
   let names = [
-    layer.gristRepresentationLayer,
+    layer.representationLayer,
     layer.layer_name,
     layer.layername,
     layer.id,
@@ -23,7 +23,7 @@ export function getStyleReferential(layer) {
     layer.layerId,
   ];
   if (layer.customStyle) names.push(layer.customStyle.referentialLayer);
-  if (layer.gristReferential) names = [layer.gristReferential];
+  if (layer.joinReferential) names = [layer.joinReferential];
   return (_conf.grist.grist_referentials || []).find((referential) =>
     names.some(
       (name) =>
@@ -41,15 +41,15 @@ export function getRepresentationSupports(layer) {
   const referential = getStyleReferential(layer);
   if (!referential || !referential.centroide_layer_name) return [];
   const fields = {
-    Polygon: layer.gristGeometryField || referential.geometry_field_name,
-    Point: layer.gristCentroidField || referential.centroid_field_name,
+    Polygon: layer.joinGeometryField || referential.geometry_field_name,
+    Point: layer.joinCentroidField || referential.centroid_field_name,
   };
   if (layer.geojsonField) {
     // Le nom issu du XML prime sur les noms par défaut, pour le support déjà utilisé par la couche.
     let geometry = "Polygon";
     if (
       layer.geojsonField === fields.Point ||
-      layer.gristRepresentationLayer === referential.centroide_layer_name ||
+      layer.representationLayer === referential.centroide_layer_name ||
       layer.id === referential.centroide_layer_name ||
       (layer.customStyle && layer.customStyle.geometry === "Point")
     )
@@ -73,7 +73,7 @@ export function getRepresentationSupports(layer) {
  */
 export async function loadReferentialPreview(layer, support) {
   const referential = support.referential;
-  const matchingField = layer.gristMatchingField || referential.join_field;
+  const matchingField = layer.joinMatchingField || referential.join_field;
   const sourceRows = layer.type === "csv" ? layer.csvData : layer.features;
   if (!sourceRows || !sourceRows.length) return [];
   let rows = sourceRows.map((feature) => feature.properties);
@@ -131,8 +131,8 @@ export async function loadReferentialPreview(layer, support) {
     const properties = { ...row };
     delete properties[layer.geojsonField];
     delete properties[support.geojsonField];
-    delete properties[layer.gristGeometryField];
-    delete properties[layer.gristCentroidField];
+    delete properties[layer.joinGeometryField];
+    delete properties[layer.joinCentroidField];
     delete properties[referential.geometry_field_name];
     delete properties[referential.centroid_field_name];
     features.push({ type: "Feature", geometry: feature.geometry, properties });
@@ -160,7 +160,7 @@ export function prepareGristRepresentation(layer, data, support, source) {
     support.layerName,
     support.geometry,
     support.geojsonField,
-    layer.gristMatchingField,
+    layer.joinMatchingField,
   ]);
   if (!requests.has(key)) {
     const request = prepareGristColumns(layer, data, support, source).catch((error) => {
@@ -184,8 +184,8 @@ async function prepareGristColumns(layer, data, support, source) {
   const supports = getRepresentationSupports(layer);
   const polygonSupport = supports.find((item) => item.geometry === "Polygon");
   const centroidSupport = supports.find((item) => item.geometry === "Point");
-  let polygonField = layer.gristGeometryField || support.referential.geometry_field_name;
-  let centroidField = layer.gristCentroidField || support.referential.centroid_field_name;
+  let polygonField = layer.joinGeometryField || support.referential.geometry_field_name;
+  let centroidField = layer.joinCentroidField || support.referential.centroid_field_name;
   if (polygonSupport) polygonField = polygonSupport.geojsonField;
   if (centroidSupport) centroidField = centroidSupport.geojsonField;
   if (support.geometry === "Point") centroidField = support.geojsonField;
@@ -207,7 +207,7 @@ async function prepareGristColumns(layer, data, support, source) {
       body: JSON.stringify({
         doc_id: table.docId,
         table_id: table.tableId,
-        matching_field: layer.gristMatchingField || support.referential.join_field,
+        matching_field: layer.joinMatchingField || support.referential.join_field,
         referential_label: support.referential.label,
         output_format: "geojson",
         geometry_support: support.geometry,
@@ -226,7 +226,7 @@ async function prepareGristColumns(layer, data, support, source) {
     clearGristCsv(layer.url);
     if (result.rows) {
       // Réutiliser les géométries de la jointure évite de télécharger de nouveau le CSV pour l'aperçu.
-      const matchingField = layer.gristMatchingField || support.referential.join_field;
+      const matchingField = layer.joinMatchingField || support.referential.join_field;
       const geometries = new Map(
         result.rows.map((row) => [
           normalizeJoinValue(row[matchingField]),

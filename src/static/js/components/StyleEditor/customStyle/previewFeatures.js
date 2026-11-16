@@ -50,8 +50,8 @@ export function getPreviewFeatures(layer, limit) {
     const properties = { ...row };
     if (layer.geojsonField) {
       delete properties[layer.geojsonField];
-      delete properties[layer.gristGeometryField];
-      delete properties[layer.gristCentroidField];
+      delete properties[layer.joinGeometryField];
+      delete properties[layer.joinCentroidField];
       delete properties[REFERENTIAL_GEOMETRY_FIELDS.Point];
     }
     for (const geometry of geometries) {
