@@ -9,11 +9,16 @@ import Table from "./components/table/table.js";
 import Input from "./components/input/input.js";
 import Select from "./components/select/select.js";
 import Switch from "./components/switch/switch.js";
+import Accordion from "./components/accordion/accordion.js";
 import Multiselect from "./components/multiselect/multiselect.js";
 import Tooltip from "./components/tooltip/tooltip.js";
 import ButtonCard from "./components/buttonCard/buttonCard.js";
 import UrlCard from "./components/common/url-card/url-card.js";
 import ListCard from "./components/listCard/listCard.js";
+import styleEditor from "./components/StyleEditor/StyleEditor.js";
+import { DATA_PREVIEW_LIMIT } from "./utils/styler/constants.js";
+import LegendSelector from "./components/legendSelector/legendSelector.js";
+import MapPreview from "./components/map/map.js";
 
 // Grist components
 import GristApiKey from "./components/grist/gristApiKey/gristApiKey.js";
@@ -40,6 +45,8 @@ import * as gristCoordinates from "./utils/grist/coordinates.js";
 import * as gristRefGeo from "./utils/grist/refGeo.js";
 import * as gristCsv from "./utils/grist/csvSource.js";
 
+mv.constants = mv.constants || {};
+mv.constants.dataPreviewLimit = DATA_PREVIEW_LIMIT;
 mv.components = mv.components || {};
 mv.components.grist = mv.components.grist || {};
 mv.utils = mv.utils || {};
@@ -52,11 +59,15 @@ mv.components.table = Table;
 mv.components.input = Input;
 mv.components.select = Select;
 mv.components.switch = Switch;
+mv.components.accordion = Accordion;
 mv.components.multiselect = Multiselect;
 mv.components.tooltip = Tooltip;
 mv.components.buttonCard = ButtonCard;
 mv.components.urlCard = UrlCard;
 mv.components.listCard = ListCard;
+mv.components.styleEditor = styleEditor;
+mv.components.legendSelector = LegendSelector;
+mv.components.map = MapPreview;
 
 // Grist components
 mv.components.grist.gristApiKey = GristApiKey;
@@ -81,7 +92,23 @@ mv.utils.grist.validation = gristValidation;
 mv.utils.grist.geocoding = gristGeocoding;
 mv.utils.grist.coordinates = gristCoordinates;
 mv.utils.grist.refGeo = gristRefGeo;
+// Le code historique de mv.js et le Styler utilisent ainsi le même cache de téléchargement CSV.
 mv.utils.grist.csv = gristCsv;
+
+const styleEditorTarget = document.getElementById("layer-style-editor");
+if (styleEditorTarget) {
+  const renderStyleEditor = () => {
+    new styleEditor().appendTo(styleEditorTarget);
+  };
+
+  if (mviewer.translationsReady) {
+    renderStyleEditor();
+  } else {
+    document.addEventListener("mviewerstudio:translations-ready", renderStyleEditor, {
+      once: true,
+    });
+  }
+}
 
 const gristContentTarget = document.getElementById("newlayer-grist-content");
 if (gristContentTarget) {

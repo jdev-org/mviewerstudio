@@ -67,3 +67,11 @@ Le paramètre ``app_conf.proxy`` configure le proxy général des services dista
 Dans ``app_conf.grist``, ``api_url`` définit la base des appels de Studio, ``proxy`` l'URL absolue de l'API du proxy utilisée dans les couches exportées et ``instance_url`` l'adresse publique de Grist.
 
 Consultez :doc:`proxy` pour les valeurs à renseigner, les exemples de déploiement et la configuration CORS côté backend.
+
+
+Configuration Grist et Styler
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Les référentiels de jointure, les colonnes géométriques ou X/Y, les supports de centroïdes,
+les limites de prévisualisation et le stockage des styles sont décrits dans :doc:`styler`.
+Les paramètres des référentiels se trouvent dans ``app_conf.grist.grist_referentials``.

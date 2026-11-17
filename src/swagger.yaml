@@ -379,6 +379,105 @@ paths:
                   filepath:
                     type: string
 
+  /api/styles/{id}:
+    parameters:
+      - in: path
+        name: id
+        required: true
+        description: Map identifier. Access requires membership in the owning organization.
+        schema:
+          type: string
+      - in: query
+        name: filename
+        description: SLD or JSON basename without directories. Use one unique identifier for a pair (12542.sld and 12542.json). Required for JSON; a new SLD defaults to a UUID plus .sld.
+        schema:
+          type: string
+          example: 12542.sld
+    get:
+      tags: [Files]
+      summary: List application SLD/JSON pairs or read one style file
+      description: Without filename, returns SLD files and their associated JSON file when present. With filename, returns the requested SLD or GeoStyler JSON document.
+      responses:
+        '200':
+          description: Style list or SLD document
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  styles:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        filename:
+                          type: string
+                        filepath:
+                          type: string
+                        json:
+                          type: object
+                          description: Present when a JSON file with the same stem exists.
+                          properties:
+                            filename:
+                              type: string
+                            filepath:
+                              type: string
+            application/vnd.ogc.sld+xml:
+              schema:
+                type: string
+        '400':
+          description: Unknown application or invalid filename
+        '403':
+          description: Access denied
+        '404':
+          description: SLD file not found
+    post:
+      tags: [Files]
+      summary: Save an application SLD or GeoStyler JSON style
+      description: Requires an authenticated user from the map owner's organization, identified by the trusted proxy. Stores a UTF-8 SLD or GeoStyler JSON file under <organization>/<map id>/styles. An existing filename is replaced. Send both files as <style id>.sld and <style id>.json. The readable style name is stored inside the SLD and JSON documents.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, rules]
+              properties:
+                name:
+                  type: string
+                rules:
+                  type: array
+                  items:
+                    type: object
+          application/vnd.ogc.sld+xml:
+            schema:
+              type: string
+          application/xml:
+            schema:
+              type: string
+      responses:
+        '200':
+          description: Saved style filename and public URL
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  filename:
+                    type: string
+                  filepath:
+                    type: string
+        '400':
+          description: Unknown application, invalid filename, invalid SLD or GeoStyler JSON document
+        '401':
+          description: Authentication required
+        '403':
+          description: Access denied
+
   /api/app/{id}/template/{file_name}:
     post:
       tags: [Templates]

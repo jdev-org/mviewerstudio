@@ -55,6 +55,7 @@ var mv = (function () {
       filterstyle: $(layerInfos).attr("filterstyle"),
       stylesalias: $(layerInfos).attr("stylesalias"),
       sld: $(layerInfos).attr("sld"),
+      customsld: $(layerInfos).attr("customsld") === "true",
       legendurl: $(layerInfos).attr("legendurl"),
       attributefilter: $(layerInfos).attr("attributefilter") === "true",
       showintoc: $(layerInfos).attr("showintoc") != "false",
@@ -354,77 +355,6 @@ var mv = (function () {
       });
     },
 
-    showStyles: function (styles, layerId) {
-      $("#frm-lis-styles .layer-style").remove();
-      $("#frm-sld").val("");
-      var layer = mv.getLayerById(layerId);
-      if (layer.sld) {
-        $("#frm-sld").val(layer.sld);
-      }
-      var html = [];
-      $(styles).each(function (id, style) {
-        var div = [
-          '<div class="layer-style col-sm-6 col-md-4" name="' +
-            style.name +
-            '" data-legendurl="' +
-            style.src +
-            '" data-stylename="' +
-            style.name +
-            '" data-layerid="' +
-            layerId +
-            '" >',
-          '<div class="layer-style-block">',
-          '<div class="custom-control custom-checkbox">',
-          '<input type="checkbox" onchange="mv.changeLayerLegendInput(this)" class="custom-control-input" id="' +
-            style.name +
-            '-style-selection">',
-          '<label class="custom-control-label" for="' +
-            style.name +
-            '-style-selection">' +
-            style.name +
-            "</label>",
-          "</div>",
-          '<img class="my-3" src="' + style.src + '">',
-          '<div class="input-group input-group-sm">',
-          '<div class="input-group-prepend">',
-          '<span class="input-group-text"><i class="bi bi-pencil"></i></span>',
-          "</div>",
-          '<input id="' +
-            style.name +
-            '-style-alias" class="form-control" type="text" value="' +
-            style.name +
-            '" ></input>',
-          "</div>",
-          "</div>",
-        ].join("");
-        html.push(div);
-      });
-      $("#frm-lis-styles").append(html);
-      if (layer.style && layer.style != "") {
-        var styles = layer.style.split(",");
-        var aliases;
-        switch (styles.length) {
-          case 1:
-            $(".layer-style[name='" + layer.style + "'] input[type='checkbox']").prop(
-              "checked",
-              "checked"
-            );
-            break;
-          default:
-            aliases = layer.stylesalias.split(",");
-            for (var i = 0; i <= styles.length; i++) {
-              $(".layer-style[name='" + styles[i] + "'] input[type='checkbox']").prop(
-                "checked",
-                "checked"
-              );
-              $(".layer-style[name='" + styles[i] + "'] input[type='text']").val(
-                aliases[i]
-              );
-            }
-        }
-      }
-    },
-
     showDistinctValues: function (values, option) {
       console.log("showDistinctValues option: %s", option);
       var html = [];
@@ -644,7 +574,6 @@ var mv = (function () {
             "/download/csv?tableId=" +
             encodeURIComponent(gristTargetTable.tableId),
           srs: $("#newlayer-grist-coordinate-projection").val() || "EPSG:4326",
-          sld: "demo/sld/default_point.sld",
           tooltipcontent: "{{adresse}}",
           attribution: "Dans cet exemple, le fichier csv provient de Grist",
           visible: true,
@@ -870,6 +799,10 @@ var mv = (function () {
         return l.id === layerid;
       }
       const groupid = el.attr("data-groupid") || "undefined";
+      const layerOptions = document.getElementById("mod-layerOptions");
+      layerOptions.dataset.themeid = themeid;
+      layerOptions.dataset.layerid = layerid;
+      layerOptions.dataset.groupid = groupid;
       var layer =
         groupid === "undefined"
           ? config.themes[themeid].layers.find(getLayerbyId)
@@ -893,9 +826,12 @@ var mv = (function () {
       // set legendurl theme
       $("#frm-legendurl").val(layer.legendurl);
       // set legend type selector
-      document.querySelector("#frm-legend").value = layer?.legendurl
-        ? "custom"
-        : "default";
+      let legendType = "default";
+      if (layer.legendurl) {
+        legendType = "custom";
+      }
+      $("#frm-legend").val(legendType);
+      mv.changeLayerLegend(legendType);
       $("#frm-layerid").val(layer.id);
       $("#frm-url").val(layer.url);
       $("#frm-queryable").prop("checked", layer.queryable);
@@ -936,6 +872,43 @@ var mv = (function () {
       }
       $("#mod-layerOptions .checkedurl").trigger("change");
 
+      if (["wms", "csv"].includes(layer.type)) {
+        let defaultStyleMode = "existing";
+        if (layer.type === "csv" || layer.customsld) defaultStyleMode = "custom";
+        const layerData = config.temp.layers[layerid];
+        let fields = [];
+        if (layerData) fields = Object.keys(layerData.fields || {});
+        document.querySelector("#layer-style-editor .style-editor").dispatchEvent(
+          new CustomEvent("loadOptions", {
+            detail: {
+              layerId: layerid,
+              type: layer.type,
+              url: layer.url,
+              xfield: layer.xfield,
+              yfield: layer.yfield,
+              geojsonField: layer.geojsonField,
+              joinReferential: layer.joinReferential,
+              joinMatchingField: layer.joinMatchingField,
+              joinGeometryField: layer.joinGeometryField,
+              joinCentroidField: layer.joinCentroidField,
+              name: layer.name,
+              id: layer.id,
+              srs: layer.srs,
+              isGrist: layer.isGrist,
+              fields,
+              geometry: layer.customStyle ? layer.customStyle.geometry : "Point",
+              styles: [],
+              stylesLoading: layer.type === "wms",
+              customStyle: layer.customStyle,
+              geoStylerStyle: layer.geoStylerStyle,
+              sld: layer.sld,
+              customsld: layer.customsld,
+              styleMode: layer.styleMode || defaultStyleMode,
+            },
+          })
+        );
+      }
+
       if (layer.type === "wms") {
         [...document.querySelectorAll("#mod-layerOptions .layerOption-wms")].forEach(
           (e) => e.classList.remove("d-none")
@@ -947,6 +920,7 @@ var mv = (function () {
         mv.updateFilterPlaceholder($("#frm-servertype").val());
         $("#frm-layer-styletitle").val(layer.styletitle || "");
         $("#frm-layer-dynamiclegend").prop("checked", layer.dynamiclegend);
+        ogc.getStylesFromWMS(layer.url, layerid);
         if (layer.attributefilter) {
           $("#frm-attributelabel").val(layer.attributelabel);
           layer.attributevalues.split(",").forEach(function (value, id) {
@@ -959,17 +933,45 @@ var mv = (function () {
             ogc.getFieldsFromWMS(describeLayer, layerid, themeid);
             return describeLayer;
           })
-          .then(({ wfs_url }) =>
-            ogc.getFeatures(wfs_url, { TYPENAME: layerid, MAXFEATURES: 1 }, (data) => {
-              if (config.temp.layers[layerid]) {
-                config.temp.layers[layerid].features = data?.features || [];
+          .then(({ wfs_url, typeName }) =>
+            ogc.getFeatures(
+              wfs_url,
+              {
+                TYPENAME: typeName || layerid,
+                MAXFEATURES: mv.constants.dataPreviewLimit,
+              },
+              (data) => {
+                if (!data || !Array.isArray(data.features)) return;
+                if (!config.temp.layers[layerid]) config.temp.layers[layerid] = {};
+                const layerData = config.temp.layers[layerid];
+                layerData.features = data.features;
+                layerData.featuresProjection = new ol.format.GeoJSON()
+                  .readProjection(data)
+                  .getCode();
+                const feature = data.features.find((item) => item.geometry);
+                if (feature) {
+                  layerData.geometryType = feature.geometry.type;
+                }
+                if (data.features.length) {
+                  document
+                    .querySelector("#layer-style-editor .style-editor")
+                    .dispatchEvent(
+                      new CustomEvent("showFields", {
+                        detail: {
+                          layerId: layerid,
+                          fields: Object.keys(layerData.fields || {}),
+                          geometry: layerData.geometryType,
+                          feature: data.features[0],
+                        },
+                      })
+                    );
+                }
                 mv.createDispatchEvent("wfsFeaturesReady", {
-                  features: config.temp.layers[layerid].features,
+                  features: layerData.features,
                 });
               }
-            })
-          )
-          .then(() => ogc.getStylesFromWMS(layer.url, layerid));
+            )
+          );
       }
 
       if (layer.type === "vector-tms") {
@@ -997,6 +999,9 @@ var mv = (function () {
 
       if (isGristCsvLayer) {
         // Grist layers are stored as authenticated CSV endpoints.
+        if (!config.temp.layers[layerid]) config.temp.layers[layerid] = {};
+        config.temp.layers[layerid].type = "csv";
+        delete config.temp.layers[layerid].csvData;
         [...document.querySelectorAll("#mod-layerOptions .layerOption-csv")].forEach(
           (e) => e.classList.remove("d-none")
         );
@@ -1042,7 +1047,31 @@ var mv = (function () {
         mv.utils.grist.csv
           .loadGristCsv(layer.url, apiKey)
           .then((data) => {
+            if (document.getElementById("mod-layerOptions").dataset.layerid !== layerid) {
+              return;
+            }
             previewContainer._gristLayerData = data;
+            const fields = data.meta.fields || [];
+            if (!config.temp.layers[layerid]) config.temp.layers[layerid] = {};
+            config.temp.layers[layerid].csvData = data.data;
+            config.temp.layers[layerid].fields = Object.fromEntries(
+              fields.map((field) => [field, {}])
+            );
+            const styleEditor = document.querySelector(
+              "#layer-style-editor .style-editor"
+            );
+            if (styleEditor) {
+              // La preview des étiquettes attend les propriétés d'une entité GeoJSON.
+              let feature = null;
+              if (data.data.length) {
+                feature = { type: "Feature", geometry: null, properties: data.data[0] };
+              }
+              styleEditor.dispatchEvent(
+                new CustomEvent("showFields", {
+                  detail: { layerId: layerid, fields, feature },
+                })
+              );
+            }
             const Table = mv.components.table;
             const preview = new Table({
               data,
@@ -1210,20 +1239,61 @@ var mv = (function () {
       console.groupEnd("writeFieldsOptions");
     },
 
-    saveLayerOptions: function (layerid = null) {
-      var layerid = mv.getCurrentLayerId();
-      const themeid = mv.getCurrentThemeId();
-      const groupid = mv.getCurrentGroupId();
+    saveLayerOptions: async function (button = null) {
+      if (button && button.disabled) return;
+      const layerOptions = document.getElementById("mod-layerOptions");
+      const layerid = layerOptions.dataset.layerid || mv.getCurrentLayerId();
+      const themeid = layerOptions.dataset.themeid || mv.getCurrentThemeId();
+      const groupid = layerOptions.dataset.groupid || mv.getCurrentGroupId();
+      const theme = config.themes[themeid];
+      if (!theme) {
+        alertCustom(mviewer.tr("msg.save_failure"), "danger");
+        return;
+      }
 
       function getLayerbyId(l) {
         return l.id === layerid;
       }
-      var layer =
-        !groupid || groupid === "undefined"
-          ? config.themes[themeid].layers.find(getLayerbyId)
-          : config.themes[themeid].groups
-              .find((group) => group.id === groupid)
-              .layers.find(getLayerbyId);
+      let layer;
+      if (!groupid || groupid === "undefined") {
+        layer = theme.layers.find(getLayerbyId);
+      } else {
+        const group = theme.groups.find((item) => item.id === groupid);
+        if (group) layer = group.layers.find(getLayerbyId);
+      }
+      if (!layer) {
+        alertCustom(mviewer.tr("msg.save_failure"), "danger");
+        return;
+      }
+
+      if (["wms", "csv"].includes(layer.type)) {
+        const detail = {
+          layer,
+          name: $("#frm-layer-title").val(),
+          mapId: config.id,
+          promise: Promise.resolve(),
+        };
+        const saved = document
+          .querySelector("#layer-style-editor .style-editor")
+          .dispatchEvent(
+            new CustomEvent("saveStyle", {
+              detail,
+              cancelable: true,
+            })
+          );
+        if (!saved) return;
+        if (button) button.disabled = true;
+        try {
+          await detail.promise;
+        } catch (error) {
+          alertCustom(error.message, "danger");
+          return;
+        } finally {
+          if (button) button.disabled = false;
+        }
+        const currentLayerId = layerOptions.dataset.layerid || mv.getCurrentLayerId();
+        if (currentLayerId !== layerid) return;
+      }
 
       // Commons params
       if (layer.isGrist || layer.url.includes("/download/csv")) {
@@ -1274,7 +1344,12 @@ var mv = (function () {
       //WMS params
       if (layer.type == "wms") {
         layer["styletitle"] = $("#frm-layer-styletitle").val();
-        layer.sld = $("#frm-sld").val();
+        var selected_styles = $("#frm-lis-styles input[type='checkbox']:checked");
+        if (layer.styleMode !== "custom") {
+          layer.customsld = false;
+          layer.sld = $("#frm-sld").val();
+          if (selected_styles.length > 0) layer.sld = "";
+        }
         if ($("#frm-scalemin").val() >= 0 && $("#frm-scalemax").val() > 0) {
           layer.scalemin = $("#frm-scalemin").val();
           layer.scalemax = $("#frm-scalemax").val();
@@ -1295,7 +1370,6 @@ var mv = (function () {
           layer.attributelabel = label;
         }
         //Styles
-        var selected_styles = $("#frm-lis-styles input[type='checkbox']:checked");
         var style_names = [];
         var style_alias = [];
         switch (selected_styles.length) {
@@ -1337,6 +1411,9 @@ var mv = (function () {
       $(`div[data-layerid="${layerid}"] .layer-name`).text(layer.name);
       mv.writeFieldsOptions(layer);
       mv.saveAllThemes();
+      $("#mod-layerOptions").modal("hide");
+      mv.setCurrentThemeId("");
+      mv.setCurrentGroupId("");
     },
 
     form2xml: function () {
@@ -1369,6 +1446,9 @@ var mv = (function () {
       var require_parameters = ["id", "name", "type", "url"];
       require_parameters.forEach(function (p, i) {
         var value = l[p];
+        if (p === "id" && l.type === "wms" && l.customsld && l.representationLayer) {
+          value = l.representationLayer;
+        }
         if (["url", "name"].includes(p)) {
           value = mv.escapeXml(value);
         }
@@ -1398,6 +1478,7 @@ var mv = (function () {
         "filter",
         "servertype",
         "sld",
+        "customsld",
         "legendurl",
         "scalemin",
         "scalemax",
@@ -1434,6 +1515,7 @@ var mv = (function () {
             "metadata-csw",
             "legendurl",
             "filter",
+            "sld",
             "joinReferential",
             "joinMatchingField",
             "joinGeometryField",

@@ -546,3 +546,141 @@ Si vous modifiez la position de la fiche d’information après avoir configuré
 .. |suppression| image:: ../_images/user/mviewerstudio_2_suppression.png
               :alt: Supprimer 
 	      :width: 20 pt
+
+.. _styler_utilisation:
+
+Créer et modifier un style personnalisé
+---------------------------------------
+
+1. Dans les paramètres de la donnée, ouvrir le panneau de style et choisir le mode personnalisé.
+2. Choisir une représentation compatible avec la géométrie, puis le champ et les classes si nécessaire.
+3. Personnaliser les règles : noms, couleurs, contours et tailles.
+
+Pour Grist, valider l’accès à la table avant de charger les champs et l’aperçu. Voir :doc:`grist`.
+
+Prévisualiser les données
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* Échantillon : **100 entités maximum**, cadrées à l’ouverture du panneau.
+* WMS : lecture du service WFS associé via ``GetFeature``.
+* CSV/Grist : utilisation des lignes chargées et des colonnes géométriques ou X/Y.
+* Reprojection pour l’affichage ; données sources conservées.
+* Rendu et légende actualisés après modification des règles.
+* Les regroupements de l’échantillon peuvent différer du rendu sur les données complètes.
+
+Configurer les étiquettes
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* Activer les étiquettes et sélectionner leur champ.
+* Régler taille, couleur et contour ; épaisseur du contour : **1 par défaut** pour un nouveau style.
+* Choisir les niveaux d’affichage selon l’échelle.
+* Les valeurs sauvegardées sont conservées ; options des clusters dans la section suivante.
+
+Rouvrir un style et traiter une erreur de chargement
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* Réouverture : lecture du SLD Studio pour restaurer le formulaire.
+* Échec : bandeau persistant « Impossible de charger le style personnalisé » ; formulaire bloqué.
+* « Réinitialiser le style » : style vierge, donnée, champs et localisation conservés.
+* Remplacement du style enregistré uniquement à la sauvegarde.
+* Pour conserver le style précédent : restaurer le fichier SLD avant de rouvrir les paramètres.
+
+URL, backend et repli mviewer : :doc:`../doc_tech/styler`.
+
+Représentation cluster dans l’éditeur de style
+----------------------------------------------
+
+Le mode ``cluster`` regroupe les points proches et applique les règles à leur effectif ``count``.
+
+.. list-table:: Paramètres et export
+   :header-rows: 1
+   :widths: 25 75
+
+   * - Élément
+     - Comportement
+   * - Support
+     - Géométrie ponctuelle native ou couche de centroïdes configurée.
+   * - Distance
+     - Pixels dans l’éditeur ; paramètre ``cellSize`` de ``vec:PointStacker`` dans le SLD.
+   * - Calcul
+     - Classes sur ``count``, sans lecture d’un attribut ni requête WFS supplémentaire.
+   * - Limites
+     - 5 classes calculées au maximum ; 7 règles graphiques, points isolés et règle finale compris.
+   * - Export
+     - Transformation dans ``FeatureTypeStyle`` ; SLD 1.0.0 ou 1.1.0, paramètres conservés dans le JSON associé.
+   * - Rendu
+     - Cluster OpenLayers pour le vectoriel ; prise en charge PointStacker requise côté serveur pour le WMS.
+
+Le regroupement OpenLayers par distance peut différer de la grille GeoServer.
+
+Règles et tailles
+~~~~~~~~~~~~~~~~~
+
+* Conditions : tous, point isolé (``count = 1``), groupe (``count > 1``), intervalle inclusif ou seuil ``count >= N``.
+* « Calculer » régénère les règles : point isolé, classes de groupes à partir de ``2``, puis règle finale sans borne supérieure.
+* Exemple avec un intervalle de ``10`` et 2 classes : ``1``, ``2–10``, ``11–20``, ``21 ou plus``.
+* Pour « 50 ou plus », saisir ``50`` comme minimum ; arrêter la classe précédente à ``49``.
+* Rayons initiaux : 5 pixels pour un point isolé ; tailles des groupes dérivées de ``DEFAULT_CLUSTER_SYMBOL`` ; 40 pixels pour la règle finale.
+* Progression des classes : ``rayon = r_min + sqrt(ratio) × (r_max − r_min)``, avec les milieux des intervalles normalisés entre 0 et 1.
+  Une classe de groupes unique utilise le rayon minimal.
+* Couleurs, tailles, conditions et bornes restent modifiables ; ajout et duplication bloqués à 7 règles.
+
+Étiquettes des clusters
+~~~~~~~~~~~~~~~~~~~~~~~
+
+.. list-table:: Choix d’affichage
+   :header-rows: 1
+   :widths: 40 30 30
+
+   * - Option
+     - Points isolés
+     - Groupes
+   * - Uniquement le nombre d’entités : Oui
+     - Sans étiquette
+     - ``count``, indépendant de l’échelle
+   * - Uniquement le nombre d’entités : Non
+     - Champ choisi, selon l’échelle
+     - ``count`` si « Afficher l’effectif des groupes » est activé
+
+Les règles d’étiquettes ne comptent pas dans la limite de 7 règles graphiques.
+
+Supports du référentiel
+~~~~~~~~~~~~~~~~~~~~~~~
+
+Dans ``app_conf.grist.grist_referentials`` :
+
+* ``layer_name`` : support principal ; ``centroide_layer_name`` : support ponctuel optionnel.
+* ``geometry_field_name`` et ``centroid_field_name`` : colonnes géométriques de sortie dans Grist.
+* ``x_field_name`` et ``y_field_name`` : sortie X/Y lorsqu’ils sont renseignés ensemble.
+* Les identifiants réels attribués par Grist sont conservés dans le XML.
+* Sans couche de centroïdes configurée, aucun centroïde n’est calculé automatiquement.
+
+Le support sélectionné pilote l’aperçu, la préparation CSV/Grist et le nom de couche WMS dans le SLD.
+Configuration et exemples : :doc:`../doc_tech/styler`.
+
+Échelles de visibilité par règle
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Dans « Personnalisation du style » → « Échelles de visibilité » :
+
+* Saisir le dénominateur N de l’échelle 1:N ; laisser vide pour une borne sans limite.
+* Minimum inclus, maximum exclu et strictement supérieur au minimum.
+* Export : ``MinScaleDenominator`` / ``MaxScaleDenominator`` ; valeurs restaurées à la réouverture.
+* Réglage indépendant des échelles des étiquettes.
+* Cercles proportionnels colorés : intersection des plages de taille et de couleur.
+
+Sauvegarde et légende
+~~~~~~~~~~~~~~~~~~~~~
+
+* Sauvegarde : SLD puis JSON avec le même identifiant.
+* Après succès du JSON et présence du SLD, seule cette paire est conservée dans le dossier ``styles`` de la carte,
+  **toutes couches confondues**. Les anciens SLD/JSON sont supprimés ; un échec du JSON préserve les anciens fichiers.
+* « Aperçu de la légende » : symbole et nom de chaque règle graphique, actualisés après modification ou calcul.
+  Les étiquettes en sont exclues ; les symboles ponctuels utilisent une échelle de taille commune.
+
+Composant des panneaux
+~~~~~~~~~~~~~~~~~~~~~~
+
+Les panneaux utilisent ``components/accordion/accordion.js``, exposé par ``mv.components.accordion``.
+Personnalisation : classe ``.mv-accordion``, variables Bootstrap ``--bs-accordion-*``, option ``classes``.
+Comportement : ``parentId`` pour une ouverture exclusive, ``setExpanded`` pour piloter l’ouverture.

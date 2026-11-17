@@ -72,8 +72,14 @@ Résultat et export
 
 Accès au CSV, URL et CORS : :doc:`../doc_tech/proxy`.
 
-Modifier la localisation
--------------------------
+Modifier la localisation et le style
+------------------------------------
 
-Rouvrir les paramètres de la donnée pour modifier sa localisation.
-Une nouvelle jointure actualise les colonnes et la projection conservées dans la couche.
+* Rouvrir les paramètres de la donnée pour modifier la localisation ou le style.
+* Nouvelle jointure : colonnes et projection actualisées ; un changement de référentiel ou de support peut réinitialiser le style personnalisé CSV.
+* Styler : valider l’accès Grist pour charger champs et aperçu.
+* Support de centroïdes configuré : choix entre représentations polygonales et ponctuelles.
+* Aperçu des centroïdes : lecture seule du référentiel ; colonne Grist complétée à la sauvegarde si nécessaire.
+* Aucun centroïde calculé automatiquement : utilisation de la couche configurée.
+
+Guide Styler : :ref:`styler_utilisation`. Configuration : :doc:`../doc_tech/styler`.

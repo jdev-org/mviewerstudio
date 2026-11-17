@@ -4,6 +4,33 @@ var API = {};
 var mviewer = {};
 
 $(document).ready(function () {
+  mapPreview = new mv.components.map({
+    height: "100%",
+    title: document.querySelector('[i18n="tabs.app.map_title"]').textContent,
+    layer: new ol.layer.Tile({ source: new ol.source.OSM() }),
+    controls: [
+      new ol.control.Zoom(),
+      new ol.control.Rotate(),
+      new ol.control.Attribution(),
+    ],
+  });
+  mapPreview.appendTo(document.getElementById("map"));
+  map = mapPreview.map;
+
+  mapFilterPreview = new mv.components.map({
+    height: "100%",
+    title: "Filtre géographique",
+    layer: new ol.layer.Tile({ source: new ol.source.OSM() }),
+    controls: [
+      new ol.control.Zoom(),
+      new ol.control.Rotate(),
+      new ol.control.Attribution(),
+    ],
+  });
+  mapFilterPreview.appendTo(document.getElementById("map_filter"));
+  map2 = mapFilterPreview.map;
+  map2.addLayer(vector);
+
   //Get URL Parameters
   if (window.location.search) {
     $.extend(
@@ -164,15 +191,9 @@ proj4.defs(
 
 ol.proj.proj4.register(proj4);
 
-//Map
-var map = new ol.Map({
-  layers: [
-    new ol.layer.Tile({
-      source: new ol.source.OSM(),
-    }),
-  ],
-  target: "map",
-});
+// Shared preview; keep the OpenLayers map available to existing extent controls.
+var mapPreview;
+var map;
 
 var savedParameters;
 
@@ -182,15 +203,8 @@ var source = new ol.source.Vector({ wrapX: false });
 var vector = new ol.layer.Vector({
   source: source,
 });
-var map2 = new ol.Map({
-  layers: [
-    new ol.layer.Tile({
-      source: new ol.source.OSM(),
-    }),
-    vector,
-  ],
-  target: "map_filter",
-});
+var mapFilterPreview;
+var map2;
 var config;
 
 const getUser = () => {

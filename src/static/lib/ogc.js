@@ -12,7 +12,10 @@ var ogc = (function () {
   };
 
   var _showRequestAlert = function (message, url) {
-    alertCustom(`${message}<br><small class="text-break">${_escapeHtml(url)}</small>`, "danger");
+    alertCustom(
+      `${message}<br><small class="text-break">${_escapeHtml(url)}</small>`,
+      "danger"
+    );
   };
 
   $.findNS = function (o, nodeName) {
@@ -292,6 +295,9 @@ var ogc = (function () {
   };
 
   var _wmsCapabilitiesParse = function (data, layerid) {
+    if (document.getElementById("frm-layerid").value !== layerid) {
+      return;
+    }
     var layer = $(data)
       .find("Layer Layer Name")
       .filter(function (index, name) {
@@ -308,7 +314,15 @@ var ogc = (function () {
         src: $(style).find("OnlineResource").attr("xlink:href"),
       });
     });
-    mv.showStyles(lst, layerid);
+    document.querySelector("#layer-style-editor .style-editor").dispatchEvent(
+      new CustomEvent("loadOptions", {
+        detail: {
+          styles: lst,
+          layerId: layerid,
+          stylesLoading: false,
+        },
+      })
+    );
   };
 
   var _wmsParse = function (xml, keyword) {
@@ -451,7 +465,10 @@ var ogc = (function () {
           url: getCapabilitiesUrl,
           error: error,
         });
-        _showRequestAlert("Echec de la requête WMS GetCapabilities :", getCapabilitiesUrl);
+        _showRequestAlert(
+          "Echec de la requête WMS GetCapabilities :",
+          getCapabilitiesUrl
+        );
       });
   };
 
@@ -467,6 +484,7 @@ var ogc = (function () {
         if (xml_type.search("gml") != -1) {
           _type = "geometry";
           layer.geometry = $(fld).attr("name");
+          layer.geometryType = xml_type;
         } else if (xml_type.search("string") != -1) {
           _type = "string";
           fields.push($(fld).attr("name"));
@@ -476,12 +494,8 @@ var ogc = (function () {
           fields.push($(fld).attr("name"));
           layer.fields[$(fld).attr("name")] = { type: _type };
         }
-        if (!config.temp.layers[layerid]) {
-          config.temp.layers[layerid] = layer;
-        } else {
-          config.temp.layers[layerid] = { ...layer, ...config.temp.layers[layerid] };
-        }
       });
+    config.temp.layers[layerid] = { ...config.temp.layers[layerid], ...layer };
     return fields;
   };
 
@@ -501,6 +515,18 @@ var ogc = (function () {
       })
       .then((fields) => {
         mv.showFields(fields, layerid);
+        var styleEditor = document.querySelector("#layer-style-editor .style-editor");
+        if (styleEditor) {
+          styleEditor.dispatchEvent(
+            new CustomEvent("showFields", {
+              detail: {
+                layerId: layerid,
+                fields: fields,
+                geometry: config.temp.layers[layerid].geometryType,
+              },
+            })
+          );
+        }
       });
   };
 
@@ -528,11 +554,22 @@ var ogc = (function () {
         _wmsCapabilitiesParse(_parseXml(data), layerid);
       })
       .catch((error) => {
+        if (document.getElementById("frm-layerid").value !== layerid) {
+          return;
+        }
+        document.querySelector("#layer-style-editor .style-editor").dispatchEvent(
+          new CustomEvent("loadOptions", {
+            detail: { layerId: layerid, styles: [], stylesLoading: false },
+          })
+        );
         console.error("WMS GetCapabilities request failed", {
           url: getCapabilitiesUrl,
           error: error,
         });
-        _showRequestAlert("Echec de la requête WMS GetCapabilities :", getCapabilitiesUrl);
+        _showRequestAlert(
+          "Echec de la requête WMS GetCapabilities :",
+          getCapabilitiesUrl
+        );
       });
   };
 

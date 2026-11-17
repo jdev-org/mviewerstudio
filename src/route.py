@@ -24,6 +24,9 @@ from .utils.route_utils import (
     get_existing_config_or_404,
     authorize_config_mutation,
     fetch_remote_xml,
+    get_xml_root,
+    get_layer_styles_directory,
+    get_layer_style_file,
 )
 import hashlib, uuid
 from .utils.register_utils import from_xml_path
@@ -33,10 +36,10 @@ from flask.blueprints import BlueprintSetupState
 from urllib.parse import urlparse
 import requests
 from .utils.git_utils import Git_manager
-from .utils.grist_join import join_rows_with_referential
+from .utils.grist_join import join_rows_with_referential, get_referential_preview
 from datetime import datetime
 
-from werkzeug.exceptions import BadRequest, MethodNotAllowed, Conflict, Unauthorized
+from werkzeug.exceptions import BadRequest, MethodNotAllowed, Conflict, Unauthorized, NotFound
 
 import logging
 
@@ -136,6 +139,18 @@ def grist_refgeo_join() -> Response:
         current_app.logger.warning("Grist referential join request failed")
         raise BadRequest("Erreur pendant la jointure référentiel.")
 
+    return jsonify(result)
+
+
+@basic_store.route("/api/grist/refgeo/preview", methods=["POST"])
+def grist_refgeo_preview() -> Response:
+    """Return a read-only sample from a configured geographic referential."""
+    try:
+        result = get_referential_preview(request.get_json() or {})
+    except ValueError as error:
+        raise BadRequest(str(error))
+    except requests.RequestException:
+        raise BadRequest("Erreur pendant le chargement du référentiel.")
     return jsonify(result)
 
 
@@ -795,4 +810,116 @@ def proxy() -> Response:
         response.content,
         status=response.status_code,
         content_type=response.headers.get("Content-Type", "application/octet-stream"),
+    )
+
+
+@basic_store.route("/api/styles/<id>", methods=["GET"])
+def readLayerStyle(id) -> Response:
+    """
+    List application SLD/JSON pairs, or read one file using filename.
+
+    :param id: application UUID
+    :returns: JSON style list or the requested SLD document (404 if missing)
+    """
+    directory, relative_directory = get_layer_styles_directory(id)
+    filename = request.args.get("filename")
+    if filename:
+        get_layer_style_file(directory, filename)
+        mimetype = "application/vnd.ogc.sld+xml"
+        if filename.endswith(".json"):
+            mimetype = "application/json"
+        try:
+            return send_from_directory(directory, filename, mimetype=mimetype)
+        except NotFound as error:
+            description = (
+                f"Style file not found: {directory / filename}. "
+                f"Requested URL: {request.url}"
+            )
+            logger.warning(description)
+            raise NotFound(description=description) from error
+
+    styles = []
+    if directory.is_dir():
+        for file in sorted(directory.iterdir()):
+            if file.suffix == ".sld" and file.is_file() and not file.is_symlink():
+                style = {
+                    "filename": file.name,
+                    "filepath": path.join(
+                        current_app.config["CONF_PATH_FROM_MVIEWER"],
+                        relative_directory,
+                        file.name,
+                    ),
+                }
+                json_file = file.with_suffix(".json")
+                if json_file.is_file() and not json_file.is_symlink():
+                    style["json"] = {
+                        "filename": json_file.name,
+                        "filepath": path.join(
+                            current_app.config["CONF_PATH_FROM_MVIEWER"],
+                            relative_directory,
+                            json_file.name,
+                        ),
+                    }
+                styles.append(style)
+    return jsonify({"success": True, "styles": styles})
+
+
+@basic_store.route("/api/styles/<id>", methods=["POST"])
+def saveLayerStyle(id) -> Response:
+    """
+    Store an application's UTF-8 SLD or associated GeoStyler JSON document.
+    Each layer reuses its own SLD/JSON basename when updating its style.
+
+    :param id: application UUID
+    :returns: JSON filename and public filepath; a new SLD defaults to a unique UUID
+    :raises BadRequest: for invalid SLD, GeoStyler JSON, encoding or filename
+    :raises Unauthorized: when no authenticated user is provided by the proxy
+    """
+    username = current_user.username.strip()
+    if not username or username == "anonymous":
+        raise Unauthorized("Authentication required to save a layer style !")
+
+    directory, relative_directory = get_layer_styles_directory(id)
+    try:
+        raw_style = request.data.decode("utf-8")
+    except UnicodeDecodeError:
+        raise BadRequest("Style content must use UTF-8 !")
+    if not raw_style.strip():
+        raise BadRequest("Missing style document !")
+
+    filename = request.args.get("filename")
+    if request.is_json:
+        style = request.get_json()
+        if (
+            not isinstance(style, dict)
+            or not isinstance(style.get("name"), str)
+            or not isinstance(style.get("rules"), list)
+        ):
+            raise BadRequest("Expected a GeoStyler object with name and rules !")
+        if not filename or not filename.endswith(".json"):
+            raise BadRequest("A JSON filename matching the SLD basename is required !")
+    else:
+        root = get_xml_root(raw_style)
+        if root.tag not in (
+            "StyledLayerDescriptor",
+            "{http://www.opengis.net/sld}StyledLayerDescriptor",
+        ):
+            raise BadRequest("Expected a StyledLayerDescriptor document !")
+        if not filename:
+            filename = f"{uuid.uuid4()}.sld"
+        if not filename.endswith(".sld"):
+            raise BadRequest("An SLD document requires an .sld filename !")
+    file = get_layer_style_file(directory, filename)
+    directory.mkdir(parents=True, exist_ok=True)
+    file.write_text(raw_style, encoding="utf-8")
+    return jsonify(
+        {
+            "success": True,
+            "filename": filename,
+            "filepath": path.join(
+                current_app.config["CONF_PATH_FROM_MVIEWER"],
+                relative_directory,
+                filename,
+            ),
+        }
     )

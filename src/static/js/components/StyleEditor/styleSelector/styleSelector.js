@@ -1,0 +1,125 @@
+import Accordion from "../../accordion/accordion.js";
+import { STYLE_SELECTOR_IDS } from "../constants.js";
+import escapeHtml from "../../../utils/escapeHtml.js";
+import Tooltip from "../../tooltip/tooltip.js";
+import SpinnerGrow from "../../spinnergrow/spinnergrow.js";
+
+/**
+ * Sélecteur des styles WMS existants de la couche.
+ * @param {Object} [options={}] Options du sélecteur.
+ * @param {Object[]} [options.styles=[]] Styles disponibles : name et src.
+ * @param {string} [options.layerId] Identifiant de la couche configurée.
+ * @param {boolean} [options.stylesLoading=false] Chargement des styles en cours.
+ * @returns {void}
+ */
+const StyleSelector = function (options = {}) {
+  this.options = { ...options };
+  this.element = document.createElement("div");
+  this.element.className = "style-selector";
+  this.panel = new Accordion({
+    title: mviewer.tr("modal.layer.styles"),
+    expanded: true,
+    classes: "mt-4 layerOption-wms d-none",
+    ids: STYLE_SELECTOR_IDS,
+  });
+  this.panel.content.innerHTML = `
+    <div id="${STYLE_SELECTOR_IDS.loading}"></div>
+    <p><small><span i18n="modal.layer.styles.note">Si plusieurs styles sont sélectionnés, indiquer les libéllés des styles qui apparaîtront dans la liste déroulante.</span></small></p>
+    <div class="row mt-3" id="${STYLE_SELECTOR_IDS.list}"></div>
+    <div class="form-group d-none" id="${STYLE_SELECTOR_IDS.titleContainer}">
+      <label for="${STYLE_SELECTOR_IDS.titleInput}"><span i18n="modal.layer.style.title">Libellé de la liste déroulante des styles</span> <span data-style-title-tooltip></span></label>
+      <input type="text" class="form-control" id="${STYLE_SELECTOR_IDS.titleInput}" placeholder="Libellé de la liste des styles" i18n="modal.layer.style.placeholder">
+    </div>
+  `;
+  const title = document.createElement("span");
+  title.className = "title-accordion";
+  title.setAttribute("i18n", "modal.layer.styles");
+  title.textContent = mviewer.tr("modal.layer.styles");
+  this.panel.button.replaceChildren(title);
+  this.panel.appendTo(this.element);
+  this.spinner = new SpinnerGrow({
+    label: mviewer.tr("modal.layer.styles.loading"),
+    classes: "d-flex justify-content-center py-3",
+    visible: this.options.stylesLoading === true,
+  });
+  this.spinner.appendTo(this.element.querySelector(`#${STYLE_SELECTOR_IDS.loading}`));
+  this.element
+    .querySelector(`#${STYLE_SELECTOR_IDS.container}`)
+    .setAttribute("aria-busy", this.options.stylesLoading === true);
+  new Tooltip({
+    message: mviewer.tr("tooltip.analyse"),
+    icon: "ri-information-line",
+    color: "info",
+  }).appendTo(this.element.querySelector("[data-style-title-tooltip]"));
+  this.loadStyles();
+};
+
+/**
+ * Initialise les styles, leurs sélections et leurs libellés depuis les options.
+ * @returns {void} Remplit les champs du composant sans dépendre de son montage.
+ */
+StyleSelector.prototype.loadStyles = function () {
+  const styles = this.options.styles || [];
+  let layer = {};
+  if (this.options.layerId) {
+    layer = mv.getLayerById(this.options.layerId);
+  }
+  const selectedStyles = (layer.style || "").split(",");
+  // L'ordre des alias correspond aux styles sélectionnés, pas à celui des GetCapabilities.
+  const aliases = (layer.stylesalias || "").split(",");
+  const list = this.element.querySelector(`#${STYLE_SELECTOR_IDS.list}`);
+
+  list.innerHTML = styles
+    .map((style) => {
+      const name = escapeHtml(style.name);
+      const src = escapeHtml(style.src || "");
+      const layerId = escapeHtml(this.options.layerId || "");
+      const selectedIndex = selectedStyles.indexOf(style.name);
+      let alias = style.name;
+      if (selectedStyles.length > 1 && selectedIndex >= 0) {
+        alias = aliases[selectedIndex] || style.name;
+      }
+
+      return `
+    <div class="layer-style col-sm-6 col-md-4" name="${name}" data-legendurl="${src}" data-stylename="${name}" data-layerid="${layerId}">
+      <div class="layer-style-block">
+        <div class="custom-control custom-checkbox">
+          <input type="checkbox" class="custom-control-input" id="${name}-style-selection" ${selectedIndex >= 0 ? "checked" : ""}>
+          <label class="custom-control-label" for="${name}-style-selection">${name}</label>
+        </div>
+        <img class="my-3" src="${src}">
+        <div class="input-group input-group-sm">
+          <div class="input-group-prepend">
+            <span class="input-group-text"><i class="bi bi-pencil"></i></span>
+          </div>
+          <input class="form-control" type="text" id="${name}-style-alias" value="${escapeHtml(alias)}">
+        </div>
+      </div>
+    </div>
+    `;
+    })
+    .join("");
+
+  list.querySelectorAll('input[type="checkbox"]').forEach((checkbox) => {
+    checkbox.addEventListener("change", () => mv.changeLayerLegendInput());
+  });
+
+  this.element.querySelector(`#${STYLE_SELECTOR_IDS.titleInput}`).value =
+    layer.styletitle || "";
+  this.element
+    .querySelector(`#${STYLE_SELECTOR_IDS.container}`)
+    .classList.toggle("d-none", !this.options.styles && !this.options.stylesLoading);
+  this.element
+    .querySelector(`#${STYLE_SELECTOR_IDS.titleContainer}`)
+    .classList.toggle("d-none", selectedStyles.filter((style) => style).length <= 1);
+};
+
+/**
+ * Retourne le conteneur en conservant les styles et les sélections déjà chargés.
+ * @returns {HTMLElement} Élément du composant.
+ */
+StyleSelector.prototype.render = function () {
+  return this.element;
+};
+
+export default StyleSelector;

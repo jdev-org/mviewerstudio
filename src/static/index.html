@@ -11,6 +11,7 @@
     <link rel="stylesheet" href="css/bootstrap.css">
     <link rel="stylesheet" href="css/mviewerstudio.css" type="text/css">
     <link rel="stylesheet" href="css/grist.css" type="text/css">
+    <link rel="stylesheet" href="css/styler.css" type="text/css">
     <link rel="stylesheet" href="css/xmleditor.css" type="text/css">
     <!-- Icons -->
     <link rel="stylesheet" href="lib/bootstrap-icons/bootstrap-icons.css">
@@ -1144,6 +1145,11 @@
                             Recherche
                           </a>
                         </li>
+                        <li class="nav-item" role="presentation">
+                          <a class="nav-link" id="layer-style-tab" data-bs-toggle="pill" data-bs-target="#layer_conf8" type="button" role="tab" aria-controls="layer_conf8" aria-selected="false">
+                            Style
+                          </a>
+                        </li>
                         <li class="nav-item layerOption-csv d-none" role="presentation">
                           <a class="nav-link" data-bs-toggle="pill" data-bs-target="#layer_conf7" type="button" role="tab" aria-controls="layer_conf7" aria-selected="false">
                             <span i18n="modal.layer.grist.data">Données</span>
@@ -1183,15 +1189,6 @@
                                             <label class="custom-control-label" for="frm-layer-expanded" i18n="modal.layer.expanded">Panneau de couché déplié au démarrage</label><span class="tooltip-info" data-bs-toggle="tooltip" data-bs-placement="right" data-bs-title="tooltip.expanded"><i class="ri-information-line"></i>
                                         </div>
                                     </div>
-                                    <div class="mt-4 layerOption-wms d-none">                                        
-                                        <h6 i18n="modal.layer.styles">Style(s) de la donnée disponible(s)</h6>
-                                        <p><small><span i18n="modal.layer.styles.note">Si plusieurs styles sont sélectionnés, indiquer les libéllés des styles qui apparaîtront dans la liste déroulante.</span></small></p>
-                                        <div class="row mt-3" id="frm-lis-styles"></div>                                        
-                                    </div>                                    
-                                    <div class="form-group layerOption-wms d-none" id="formLayerStyleTitle">
-                                        <label for="frm-layer-styletitle" ><span i18n="modal.layer.style.title">Libellé de la liste déroulante des styles</span><span class="tooltip-info" data-bs-toggle="tooltip" data-bs-placement="right" data-bs-title="tooltip.analyse"><i class="ri-information-line"></i></label>
-                                        <input type="text" class="form-control" id="frm-layer-styletitle" placeholder="Libellé de la liste des styles" i18n="modal.layer.style.placeholder">
-                                    </div>  
                                     <div class="form-group mt-4 layerOption-wms advanced d-none" style="display: none;">
                                         <label class="control-label" for="frm-servertype" i18n="modal.layer.servertype">Type de serveur</label>
                                         <select id="frm-servertype" class="form-control" onchange="mv.updateFilterPlaceholder(this.value);">
@@ -1200,21 +1197,6 @@
                                             <option value="qgis" i18n="modal.layer.servertype.qgis">QGIS Server</option>
                                         </select>
                                     </div>
-                                    <div class="mt-4 layerOption-tms d-none">                                        
-                                        <h6>Style de la donnée</h6>  
-                                        <div class="form-group">
-                                            <label for="frm-layertms-styleurl" i18n="modal.layer.new.param.tms.styleurl">Lien vers le fichier de style (JSON)</label>
-                                            <input type="text" class="form-control checkedurl" id="frm-layertms-styleurl" placeholder="Url vers le fichier de style">
-                                        </div>
-                                        <div class="form-group">
-                                            <label for="frm-layertms-stylename"><span i18n="modal.layer.new.param.tms.style">Nom du style</span><span class="tooltip-info" data-bs-toggle="tooltip" data-bs-placement="right" data-bs-title="tooltip.style"><i class="ri-information-line"></i></label>
-                                            <input type="text" class="form-control" id="frm-layertms-stylename" placeholder="BD Topo">
-                                        </div>    
-                                        <div class="form-group">
-                                            <label for="frm-layertms-filterstyle"><span i18n="modal.layertms.filterstyle">Indiquer le nom des couches à masquer dans le style</span><span class="tooltip-info" data-bs-toggle="tooltip" data-bs-placement="right" data-bs-title="tooltip.separator"><i class="ri-information-line"></i></label>
-                                            <input type="text" class="form-control" id="frm-layertms-filterstyle" placeholder="BD Topo">
-                                        </div>                                    
-                                    </div>                              
                                 </div>
                             </form>                            
                         </div>
@@ -1381,43 +1363,6 @@
                                     </div>                                
                                 </div>  
                                 <!--./Affichage-->
-                                <!--Type de légende-->
-                                <div class="accordion mt-2 layerOption-wms d-none" id="accordionOptionsLegend">
-                                    <div class="accordion-item">
-                                    <h2 class="accordion-header" >
-                                        <a class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOptionsLegend" aria-expanded="true" aria-controls="collapseOptionsLegend">
-                                        <div>
-                                            <span class="title-accordion" i18n="modal.layer.title">Gestion de la légende</span>
-                                        </div>
-                                        </a>
-                                    </h2>
-                                    <div id="collapseOptionsLegend" class="accordion-collapse collapse" aria-labelledby="accordionOptionsLegend">
-                                        <div class="accordion-body"> 
-                                            <div class="row">
-                                                <div class="col-md-12 form-group">
-                                                    <label class="control-label" for="frm-legend" i18n="modal.layer.legend">Type de la légende</label>
-                                                    <select id="frm-legend" name="type-legend" class="form-control" onchange="mv.changeLayerLegend(this.value);">
-                                                        <option value="default" i18n="modal.layer.legend.default" selected>Par défaut</option>
-                                                        <option value="custom" i18n="modal.layer.legend.custom">Personnalisée</option>
-                                                    </select>
-                                                </div>
-                                            </div>
-                                            <div class="form-group" id="group-legend-default">
-                                                <div class="custom-control custom-switch">
-                                                    <input type="checkbox" class="custom-control-input" id="frm-layer-dynamiclegend">
-                                                    <label class="custom-control-label" for="frm-layer-dynamiclegend" i18n="modal.layer.legend.dynamic">Adapter la légende selon les données visibles dans l'emprise de la carte</label>
-                                                </div>
-                                            </div>
-                                            <div class="form-group mt-2 d-none" id="group-legend-custom">
-                                                <label for="frm-legendurl" i18n="modal.layer.legendurl.text">Lien vers une légende personnalisée (image)</label>
-                                                <input type="text" class="form-control checkedurl" id="frm-legendurl"
-                                                placeholder="URL vers Image légende" i18n="modal.layer.legendurl.placeholder"/>
-                                            </div>                          
-                                        </div>
-                                    </div>
-                                    </div>                                
-                                </div>  
-                                <!--./Type de légende-->
                                 <!--Type de couche-->
                                 <div class="accordion mt-2" id="accordionOptionsType">
                                     <div class="accordion-item">
@@ -1666,12 +1611,15 @@
                         <div role="tabpanel" class="tab-pane fade" id="layer_conf7">
                             <div id="layer-grist-data-preview"></div>
                         </div>
+                        <div role="tabpanel" class="tab-pane fade" id="layer_conf8" aria-labelledby="layer-style-tab">
+                            <div id="layer-style-editor"></div>
+                        </div>
                         <div id="layer-grist-geolocation-content" class="d-none"></div>
                     </div>
                 </div>
                 <div class="modal-footer">                    
                     <button type="button" onclick="mv.form2xml()" data-bs-target="#mod-codeview" data-bs-toggle="modal" class="btn btn-outline-info advanced" i18n="view" style="display: none;">Voir</button>
-                    <button type="button" onclick="mv.saveLayerOptions(), mv.setCurrentThemeId(''), mv.setCurrentGroupId('')" data-bs-toggle="modal" class="btn btn-primary" i18n="save">Enregistrer</button>
+                    <button type="button" onclick="mv.saveLayerOptions(this)" class="btn btn-primary" i18n="save">Enregistrer</button>
                     <button type="button" onclick="mv.setCurrentThemeId(''), mv.setCurrentGroupId('')" class="btn btn-outline-primary" data-bs-toggle="modal" i18n="close">Fermer</button>
                 </div>
             </div>
@@ -2078,6 +2026,9 @@
 <script src="js/wizard.js"></script>
 <script src="js/manageDisplayContainer.js"></script>
 <script src="lib/icon-picker/iconPickerComponent.js"></script>
+<script src="lib/simple-statistics.min.js"></script>
+<script src="lib/chroma.js/index.min.js"></script>
+<script src="lib/geostyler-sld-parser/9.1.0/sldStyleParser.iife.js"></script>
 <script type="module" src="js/loadComponents.js"></script>
 <script src="js/mviewerstudio.js"></script>
 <script type="module" src="lib/icon-picker/icon-picker.js"></script>

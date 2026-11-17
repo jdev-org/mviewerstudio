@@ -13,6 +13,7 @@ from flask import current_app
 from urllib.parse import quote
 from .commons import geojson_to_wkt
 
+REFERENTIAL_PREVIEW_LIMIT = 100
 WFS_VALUE_CHUNK_SIZE = 300
 GRIST_UPDATE_BATCH_SIZE = 200
 SUPPORTED_OUTPUT_FORMATS = ("geojson", "wkt")
@@ -565,6 +566,34 @@ def get_point_coordinates(geometry):
         raise ValueError("Coordonnées du point invalides.")
 
     return coordinates[0], coordinates[1]
+
+
+def get_referential_preview(payload):
+    """Read configured WFS geometries for a preview without writing to Grist.
+
+    :param dict payload: Referential label, support and up to 100 join values.
+    :return: GeoJSON features with the configured referential join attribute.
+    :raises ValueError: If the support or source values are invalid.
+    """
+    if not isinstance(payload, dict):
+        raise ValueError("Payload invalide.")
+    referential = get_configured_referential(payload.get("referential_label"))
+    support = payload.get("geometry", "Polygon")
+    if support not in ("Point", "Polygon"):
+        raise ValueError("Support géographique invalide.")
+    if support == "Point":
+        if not referential.get("centroide_layer_name"):
+            raise ValueError("Aucune couche de centroïdes configurée.")
+        referential = {**referential, "layer_name": referential["centroide_layer_name"]}
+    values = payload.get("values", [])
+    if not isinstance(values, list) or len(values) > REFERENTIAL_PREVIEW_LIMIT:
+        raise ValueError(f"L’aperçu est limité à {REFERENTIAL_PREVIEW_LIMIT} valeurs.")
+    if any(not isinstance(value, (str, int, float)) for value in values):
+        raise ValueError("Valeur de jointure invalide.")
+    return {
+        "type": "FeatureCollection",
+        "features": fetch_referential_features(referential, values),
+    }
 
 
 def join_rows_with_referential(payload, authorization_header):
