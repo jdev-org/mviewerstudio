@@ -8,7 +8,7 @@ export const LABEL_SCALES = LABEL_SCALE_PRESETS.map((preset) => ({
 export const LABEL_PREVIEW = {
   svgNamespace: "http://www.w3.org/2000/svg",
   height: 64,
-  text: "Aa",
+  text: "Lorem Ipsum",
 };
 
 export const LABEL_FONTS = [

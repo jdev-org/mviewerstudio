@@ -45,10 +45,7 @@ const stylerLabels = function ({
  */
 stylerLabels.prototype.createContent = function () {
   this.content = document.createElement("fieldset");
-  this.content.className = "style-fields mt-3";
-  this.content.innerHTML = `
-    <legend class="visually-hidden">${mviewer.tr("style_editor.labels.settings")}</legend>
-  `;
+  this.content.className = "style-fields mt-";
   this.content.appendChild(this.createFieldSelect());
   this.clusterCountSelect = new Select({
     id: `${this.id}-show-cluster-count`,
@@ -165,7 +162,7 @@ stylerLabels.prototype.createAccordion = function () {
     id: `${this.id}-enabled`,
     label: mviewer.tr("style_editor.labels.enabled"),
     checked: this.state.enabled,
-    classes: "mb-3",
+    classes: "custom-switch-accordion",
   });
   const toggle = this.enabledSwitch.render();
   this.enabledSwitch.getInput().dataset.label = "enabled";

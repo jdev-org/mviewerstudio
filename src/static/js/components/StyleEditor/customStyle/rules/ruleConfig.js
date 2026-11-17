@@ -25,7 +25,7 @@ export default class RuleConfig {
       <form>
         <header>
           <h5>${mviewer.tr("style_editor.rule.customize")}</h5>
-          <button type="button" data-close aria-label="${mviewer.tr("close")}">×</button>
+          <button type="button" class="btn-close" data-close aria-label="${mviewer.tr("close")}">×</button>
         </header>
         <div class="style-rule-dialog__body"></div>
         <footer>

@@ -26,13 +26,13 @@ export default class GristStyleSource {
     });
     this.validKeyIndicator = document.createElement("span");
     this.validKeyIndicator.className = "text-success ms-2";
-    this.validKeyIndicator.textContent = "✓";
+    this.validKeyIndicator.innerHTML = '<i class="bi bi-check-circle-fill"></i>';
     this.validKeyIndicator.setAttribute("role", "img");
     this.validKeyIndicator.setAttribute("aria-label", mviewer.tr("grist.api_key.valid"));
     this.validKeyIndicator.hidden = true;
     this.keyPanel.element
       .querySelector(".accordion-button")
-      .appendChild(this.validKeyIndicator);
+      .prepend(this.validKeyIndicator);
     this.status = document.createElement("p");
     this.status.setAttribute("role", "status");
     this.spinner = new SpinnerGrow({

@@ -1059,3 +1059,8 @@ STYLE FOR GRIST IMPORT
 button.switch-card-info {
     color: inherit;
 }
+
+.grist-style-source .accordion-button > span[role="img"] {
+  margin-right: 8px !important;
+  flex-shrink: 0;
+}

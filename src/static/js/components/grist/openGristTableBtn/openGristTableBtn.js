@@ -30,7 +30,7 @@ export function OpenGristTableBtn(options = {}) {
   this.element = document.createElement("button");
 
   this.element.type = "button";
-  this.element.className = "btn";
+  this.element.className = "btn btn-info mt-2";
   this.element.classList.add(...this.classes);
 
   this.element.textContent = this.label;

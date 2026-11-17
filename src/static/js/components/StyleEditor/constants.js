@@ -25,8 +25,8 @@ export const STYLE_SELECTOR_IDS = {
 };
 
 export const RULE_PREVIEW = {
-  width: 80,
-  height: 48,
+  width: 70,
+  height: 40,
   padding: 4,
   symbolSize: 24,
   svgNamespace: "http://www.w3.org/2000/svg",

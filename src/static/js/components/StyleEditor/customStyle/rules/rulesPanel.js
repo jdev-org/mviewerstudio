@@ -162,7 +162,7 @@ export default class RulesPanel {
             <tr>
               <th><input type="checkbox" aria-label="${mviewer.tr("style_editor.rule.select_all")}" data-all></th>
               <th><span class="visually-hidden">${mviewer.tr("style_editor.rule.order")}</span></th>
-              <th>${mviewer.tr("style_editor.rule.style")}</th>
+              <th class="text-center"><i class="bi bi-palette-fill"></i></th>
               <th>${mviewer.tr("style_editor.rule.name")}</th>
             </tr>
           </thead>
@@ -189,7 +189,7 @@ export default class RulesPanel {
 
     header.insertAdjacentHTML(
       "beforeend",
-      `<th><span class="visually-hidden">${mviewer.tr("style_editor.rule.duplicate")}</span></th>`
+      `<th class="text-center"><span class="visually-hidden">${mviewer.tr("style_editor.rule.duplicate")}</span></th>`
     );
 
     const body = this.element.querySelector("tbody");
@@ -215,11 +215,13 @@ export default class RulesPanel {
 
     row.innerHTML = `
       <td><input type="checkbox" aria-label="${mviewer.tr("style_editor.rule.select").replace("{index}", index + 1)}"></td>
-      <td class="style-rules__order">
-        <button type="button" data-up aria-label="${mviewer.tr("style_editor.rule.up")}">⌃</button>
-        <button type="button" data-down aria-label="${mviewer.tr("style_editor.rule.down")}">⌄</button>
+      <td class="style-rules__order">        
+        <div class="btn-group" role="group">
+          <button type="button" class="btn btn-sm" data-up aria-label="${mviewer.tr("style_editor.rule.up")}"><i class="bi bi-chevron-up"></i></button>
+        <button type="button" class="btn btn-sm" data-down aria-label="${mviewer.tr("style_editor.rule.down")}"><i class="bi bi-chevron-down"></i></button>
+        </div>
       </td>
-      <td>
+      <td class="text-center">
         <button type="button" class="style-rules__preview" aria-label="${mviewer.tr("style_editor.rule.edit").replace("{index}", index + 1)}">
         </button>
       </td>
@@ -290,7 +292,7 @@ export default class RulesPanel {
     row.insertAdjacentHTML(
       "beforeend",
       `
-      <td><button type="button" data-duplicate aria-label="${mviewer.tr("style_editor.rule.duplicate")}">⧉</button></td>
+      <td class="text-center"><button type="button" data-duplicate aria-label="${mviewer.tr("style_editor.rule.duplicate")}">⧉</button></td>
     `
     );
 

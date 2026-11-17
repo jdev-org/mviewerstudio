@@ -178,8 +178,8 @@ export default class MethodsPanel {
     fields.insertAdjacentHTML(
       "beforeend",
       `
-      <div class="style-methods__actions">
-        <button type="button" class="btn btn-primary">${mviewer.tr("style_editor.classification.calculate")}</button>
+      <div class="style-methods__actions my-3">
+        <button type="button" class="btn btn-outline-info"><i class="bi bi-calculator"></i> ${mviewer.tr("style_editor.classification.calculate")}</button>
       </div>
       <p class="text-danger d-none" role="alert" data-classification-error></p>
     `

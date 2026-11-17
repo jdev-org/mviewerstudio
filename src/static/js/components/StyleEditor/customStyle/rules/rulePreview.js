@@ -117,7 +117,15 @@ export default class RulePreview {
       let shape;
       if (this.geometry === "LineString") {
         shape = this.createElement("path", {
-          d: `M ${inset} ${height - inset} L ${width / 2} ${inset} L ${width - inset} ${height - inset}`,
+          d: `
+            M ${inset} ${height * 0.65}
+            L ${width * 0.30} ${height * 0.30}
+            L ${width * 0.52} ${height * 0.62}
+            L ${width * 0.75} ${height * 0.35}
+          `,
+          fill: "none",
+          "stroke-linecap": "round",
+          "stroke-linejoin": "round",
         });
       } else {
         shape = this.createElement("rect", {

@@ -13,6 +13,7 @@ export default class LabelPreview {
     this.element = document.createElementNS(LABEL_PREVIEW.svgNamespace, "svg");
     this.element.setAttribute("width", "100%");
     this.element.setAttribute("role", "img");
+    this.element.setAttribute("class", "styler-labels-preview");    
     this.label = document.createElementNS(LABEL_PREVIEW.svgNamespace, "text");
     this.label.setAttribute("x", "50%");
     this.label.setAttribute("y", "50%");
