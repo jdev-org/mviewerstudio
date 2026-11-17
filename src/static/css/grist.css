@@ -277,8 +277,7 @@ STYLE FOR GRIST IMPORT
 }
 
 .switch-card-text {
-	width: 100%;
-	min-width: 0;
+	flex: 1;
 }
 
 .switch-card-title {
@@ -1048,6 +1047,15 @@ STYLE FOR GRIST IMPORT
     border-color: var(--info);
 }
 
-.btn#newlayer-grist-back {
+#newlayer-grist-back, #layer-grist-geolocation-back {
     color: var(--primary);
+}
+
+#layer-grist-data-preview .btn.grist-geocoding-result-primary-button {
+    background-color: white;
+    color: var(--grist-color-purple-button);
+}
+
+button.switch-card-info {
+    color: inherit;
 }
