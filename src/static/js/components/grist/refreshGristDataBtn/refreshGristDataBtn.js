@@ -58,7 +58,7 @@ RefreshGristDataBtn.prototype.render = function () {
   const button = document.createElement("button");
 
   button.type = "button";
-  button.className = "btn btn-outline-primary btn-sm mb-3";
+  button.className = "btn btn-outline-info btn-sm";
   button.textContent = mviewer.tr("grist.refresh.label");
   button.addEventListener("click", () => this.refresh(button));
 

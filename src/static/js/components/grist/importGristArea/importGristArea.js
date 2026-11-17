@@ -810,8 +810,8 @@ importGristArea.prototype.render = function () {
     </div>
     <div class="import-type-buttons__content" data-import-content="file">
       <div data-upload-file-area></div>
-      <div class="my-2">${mviewer.tr("grist.import.url.alternative")}</div>
-      <div class="mt-3" data-upload-file-url-area>
+      <div class="mt-2">${mviewer.tr("grist.import.url.alternative")}</div>
+      <div class="" data-upload-file-url-area>
         <p class="small mt-2 mb-0" role="status" data-upload-file-url-status></p>
       </div>
       <div class="d-none" data-upload-file-preview></div>

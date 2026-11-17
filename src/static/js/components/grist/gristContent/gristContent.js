@@ -271,11 +271,11 @@ GristContent.prototype.render = function () {
             {
               label: getWorkflowLabel(
                 "modal.layer.grist.workflow.connection",
-                "Connexion à Grist"
+                "Connexion"
               ),
               description: getWorkflowLabel(
                 "modal.layer.grist.workflow.connection.description",
-                "Informations de connexion"
+                "Se connecter à Grist"
               ),
               icon: "bi-file-earmark-spreadsheet",
             },

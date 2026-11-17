@@ -39,7 +39,6 @@ ButtonCard.prototype.render = function () {
     title.appendChild(
       new mv.components.tooltip({
         message: this.tooltip,
-        color: "info",
         classes: "switch-card-info",
       }).render()
     );

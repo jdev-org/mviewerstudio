@@ -22,6 +22,7 @@ STYLE FOR GRIST IMPORT
 	--grist-color-control-hover: #f5f5f5;
 	--grist-color-primary-dark: #2c2c52;
 	--grist-color-primary-dark-hover: #1a1a31;
+	--grist-color-primary-dark: #2c2c52;
 	--grist-color-purple: #934ae4;
 	--grist-color-purple-button: #934ae4;
 	--grist-color-purple-button-hover: #7921da;
@@ -44,7 +45,7 @@ STYLE FOR GRIST IMPORT
 	--grist-color-green-badge-bg: rgba(46, 210, 197, 0.14);
 	--grist-color-success: #186d66;
 	--grist-color-warning: #7f5a2c;
-	--grist-color-danger: #854b45;
+	--grist-color-danger: var(--danger);
 	--grist-color-danger-bg: rgba(255, 144, 133, 0.18);
 	--grist-color-upload-valid: #2ed2c5;
 	--grist-color-upload-button: #934ae4;
@@ -57,6 +58,13 @@ STYLE FOR GRIST IMPORT
 	--grist-color-preview-title: #4e4e4e;
 	--grist-color-preview-subtitle: #929292;
 	--grist-color-switch-knob-shadow: rgba(0, 0, 0, 0.25);
+
+	/* Bouton principal */
+	--grist-button-primary: #2c2c52;
+	--grist-button-primary-active: #20203d;
+
+	/* Disabled */
+	--grist-button-primary-disabled: color-mix(in srgb, var(--grist-button-primary) 85%, white);
 }
 
 /*
@@ -101,23 +109,21 @@ STYLE FOR GRIST IMPORT
 }
 
 .grist-wizard-next-button {
-	border-color: var(--grist-color-purple-button);
-	background-color: var(--grist-color-purple-button);
+	border-color: var(--grist-button-primary);
+	background-color: var(--grist-button-primary);
 	color: var(--grist-color-white);
 }
 
 .grist-wizard-next-button:hover,
 .grist-wizard-next-button:focus {
-	border-color: var(--grist-color-purple-button-hover);
-	background-color: var(--grist-color-purple-button-hover);
+	border-color: var(--grist-button-primary-active);
+	background-color: var(--grist-button-primary-active);
 	color: var(--grist-color-white);
 }
 
 .grist-wizard-next-button:disabled {
-	border-color: var(--grist-color-purple-button-disabled);
-	background-color: var(--grist-color-purple-button-disabled);
-	color: var(--grist-color-white);
-	opacity: 1;
+	background-color: var(--grist-button-primary-disabled);
+	border-color: var(--grist-button-primary-disabled);
 }
 
 /*
@@ -126,7 +132,7 @@ STYLE FOR GRIST IMPORT
 
 #newlayer-grist-wizard {
 	max-width: 520px;
-	margin: 28px auto 36px;
+	margin: 20px auto 25px;
 }
 
 .grist-wizard {
@@ -160,8 +166,8 @@ STYLE FOR GRIST IMPORT
 }
 
 .grist-wizard-step-button:focus-visible {
-	outline: 2px solid var(--grist-color-orange);
-	outline-offset: 4px;
+	outline: 2px solid var(--grist-color-primary-dark);
+	outline-offset: 2px;
 }
 
 .grist-wizard-step:not(:first-child)::before {
@@ -170,13 +176,13 @@ STYLE FOR GRIST IMPORT
 	top: 15px;
 	right: calc(50% + 18px);
 	width: calc(100% - 36px);
-	height: 3px;
+	height: 2px;
 	background: var(--grist-color-step-line);
 }
 
 .grist-wizard-step-done:not(:first-child)::before,
 .grist-wizard-step-active:not(:first-child)::before {
-	background: var(--grist-color-orange);
+	background: var(--grist-color-primary-dark);
 }
 
 .grist-wizard-marker {
@@ -187,7 +193,7 @@ STYLE FOR GRIST IMPORT
 	justify-content: center;
 	width: 32px;
 	height: 32px;
-	border-radius: 50%;
+	border-radius: 30%;
 	background: var(--grist-color-step-line);
 	color: var(--grist-color-text-step-muted);
 	font-size: 14px;
@@ -195,17 +201,17 @@ STYLE FOR GRIST IMPORT
 
 .grist-wizard-step-active .grist-wizard-marker,
 .grist-wizard-step-done .grist-wizard-marker {
-	background: var(--grist-color-orange);
+	background: var(--grist-color-primary-dark);
 	color: var(--grist-color-white);
 }
 
 .grist-wizard-step-active .grist-wizard-marker {
-	outline: 3px solid var(--grist-color-blue-outline);
-	outline-offset: 3px;
+	outline: 2px solid var(--grist-color-primary-dark);
+	outline-offset: 2px;
 }
 
 .grist-wizard-step-done .grist-wizard-marker {
-	background: var(--grist-color-green-bright);
+	background: var(--grist-color-primary-dark);
 }
 
 .grist-wizard-text {
@@ -225,11 +231,11 @@ STYLE FOR GRIST IMPORT
 
 .grist-wizard-step-active .grist-wizard-label,
 .grist-wizard-step-done .grist-wizard-label {
-	color: var(--grist-color-orange-label);
+	color: var(--grist-color-primary-dark);
 }
 
 .grist-wizard-step-done .grist-wizard-label {
-	color: var(--grist-color-green-label);
+	color: var(--grist-color-primary-dark);
 }
 
 .grist-wizard-description {
@@ -266,11 +272,6 @@ STYLE FOR GRIST IMPORT
 	margin-top: 12px;
 }
 
-.switch-card-active {
-	border-color: var(--grist-color-purple-border);
-	box-shadow: 0 0 0 3px var(--grist-color-purple-shadow);
-}
-
 .switch-card-disabled {
 	opacity: 0.65;
 }
@@ -286,9 +287,7 @@ STYLE FOR GRIST IMPORT
 	gap: 6px;
 	margin: 0;
 	color: var(--grist-color-text-strong);
-	font-size: 16px;
-	font-weight: 700;
-	line-height: 1.1;
+	font-weight: 600;
 }
 
 .switch-card-info {
@@ -296,8 +295,6 @@ STYLE FOR GRIST IMPORT
 }
 
 .switch-card-description {
-	margin: 3px 0 0;
-	color: var(--grist-color-text-muted);
 	font-size: 13px;
 	line-height: 1.2;
 }
@@ -387,20 +384,8 @@ STYLE FOR GRIST IMPORT
 	display: none;
 }
 
-.grist-location-panel {
-	margin: 0;
-}
-
 .grist-address-area {
 	margin: 0;
-}
-
-.multiselect-label {
-	display: block;
-	margin-bottom: 12px;
-	color: var(--grist-color-text);
-	font-size: 16px;
-	font-weight: 400;
 }
 
 .multiselect-control {
@@ -450,14 +435,6 @@ STYLE FOR GRIST IMPORT
 	margin-bottom: 0;
 }
 
-.grist-coordinates-label {
-	display: block;
-	margin-bottom: 6px;
-	color: var(--grist-color-text-strong);
-	font-size: 13px;
-	font-weight: 600;
-}
-
 .grist-coordinates-select {
 	width: 100%;
 }
@@ -471,14 +448,6 @@ STYLE FOR GRIST IMPORT
 
 .grist-refgeo-field {
 	margin-bottom: 0;
-}
-
-.grist-refgeo-label {
-	display: block;
-	margin-bottom: 6px;
-	color: var(--grist-color-text-strong);
-	font-size: 13px;
-	font-weight: 600;
 }
 
 .grist-refgeo-select {
@@ -511,38 +480,48 @@ STYLE FOR GRIST IMPORT
 	line-height: 1;
 }
 
+.grist-geocoding-result-counter {
+    text-transform: uppercase;
+    background-color: rgb(245 174 84 / 20%);
+    display: inline-flex;
+    gap: 4px;
+    padding: 6px 12px;
+    line-height: 1;
+    border-radius: 1em;
+    margin-bottom: 1em;
+}
+
 .grist-geocoding-result-success .grist-geocoding-result-icon,
-.grist-geocoding-result-success .grist-geocoding-result-title {
+.grist-geocoding-result-success .grist-geocoding-result-title, 
+.grist-geocoding-result-success .grist-geocoding-result-counter {
 	color: var(--grist-color-green);
 }
 
+.grist-geocoding-result-success .grist-geocoding-result-counter {
+	background-color: color-mix(in srgb,var(--grist-color-green) 10%,transparent);
+}
+
 .grist-geocoding-result-partial .grist-geocoding-result-icon,
-.grist-geocoding-result-partial .grist-geocoding-result-title {
+.grist-geocoding-result-partial .grist-geocoding-result-title, 
+.grist-geocoding-result-partial .grist-geocoding-result-counter {
 	color: var(--grist-color-orange);
 }
 
+.grist-geocoding-result-partial .grist-geocoding-result-counter {
+	background-color: color-mix(in srgb,var(--grist-color-orange) 10%,transparent);
+}
+
 .grist-geocoding-result-failure .grist-geocoding-result-icon,
-.grist-geocoding-result-failure .grist-geocoding-result-title {
+.grist-geocoding-result-failure .grist-geocoding-result-title, 
+.grist-geocoding-result-failure .grist-geocoding-result-counter {
 	color: var(--grist-color-danger);
 }
 
-.grist-geocoding-result-title {
-	margin: 0 0 18px;
-	font-size: 28px;
-	font-weight: 700;
-}
-
-.grist-geocoding-result-counter {
-	margin: 0;
-	color: var(--grist-color-text);
-	font-size: 18px;
+.grist-geocoding-result-failure .grist-geocoding-result-counter {
+	background-color: color-mix(in srgb,var(--grist-color-danger) 10%,transparent);
 }
 
 .grist-geocoding-result-message {
-	margin: 0;
-	margin-top: 6px;
-	color: var(--grist-color-text);
-	font-size: 18px;
 	font-style: italic;
 }
 
@@ -690,22 +669,6 @@ STYLE FOR GRIST IMPORT
 	color: var(--grist-color-primary-dark);
 }
 
-.grist-api-key-validate-btn {
-	min-width: 96px;
-	border-color: var(--grist-color-primary-dark);
-	border-radius: 8px;
-	background: var(--grist-color-primary-dark);
-	color: var(--grist-color-white);
-	font-weight: 500;
-}
-
-.grist-api-key-validate-btn:hover,
-.grist-api-key-validate-btn:focus {
-	border-color: var(--grist-color-primary-dark-hover);
-	background: var(--grist-color-primary-dark-hover);
-	color: var(--grist-color-white);
-}
-
 .grist-api-key-status {
 	margin: 8px 0 0;
 	font-size: 12px;
@@ -743,8 +706,7 @@ STYLE FOR GRIST IMPORT
 	display: flex;
 	flex-direction: column;
 	align-items: flex-start;
-	min-height: 60px;
-	padding: 12px 18px;
+	padding: 16px 18px;
 	border: 1px solid var(--grist-color-border-soft);
 	border-radius: 10px;
 	background: var(--grist-color-white);
@@ -753,11 +715,14 @@ STYLE FOR GRIST IMPORT
 	outline: none;
 }
 
+.import-type-buttons__button:hover {
+	background: var(--grist-color-surface-hover);
+}
+
 .import-type-buttons__button.active {
 	border-color: var(--grist-color-purple-border);
 	background: var(--grist-color-purple-surface);
 	color: var(--grist-color-purple);
-	box-shadow: 0 0 0 3px var(--grist-color-purple-shadow);
 }
 
 .import-type-buttons__button:focus,
@@ -766,21 +731,12 @@ STYLE FOR GRIST IMPORT
 	box-shadow: 0 0 0 3px var(--grist-color-purple-shadow);
 }
 
-.import-type-buttons__title {
-	font-size: 16px;
-	font-weight: 500;
-	line-height: 1.2;
-}
-
 .import-type-buttons__description {
 	margin-top: 2px;
 	font-size: 12px;
 	line-height: 1.2;
 }
 
-.import-type-buttons__content {
-	padding-top: 4px;
-}
 
 /*
 -- Upload file
@@ -788,11 +744,10 @@ STYLE FOR GRIST IMPORT
 
 .upload-files__dropzone {
 	display: flex;
-	min-height: 158px;
 	flex-direction: column;
 	align-items: center;
 	justify-content: center;
-	padding: 28px 24px;
+	padding: 30px 24px;
 	border: 1px dashed var(--grist-color-border-dashed);
 	border-radius: 10px;
 	background: var(--grist-color-white);
@@ -970,7 +925,7 @@ STYLE FOR GRIST IMPORT
 */
 
 .table-preview {
-	padding: 22px 18px 18px;
+	padding: 18px;
 	border: 1px solid var(--grist-color-preview-border);
 	border-radius: 14px;
 	background: var(--grist-color-white);
@@ -989,11 +944,9 @@ STYLE FOR GRIST IMPORT
 }
 
 .table-preview__subtitle {
-	margin: 0;
-	color: var(--grist-color-preview-subtitle);
-	font-size: 16px;
 	font-style: italic;
-	line-height: 1.2;
+    line-height: 1.2;
+    font-size: small;
 }
 
 .table-preview__scroller {
@@ -1014,9 +967,8 @@ STYLE FOR GRIST IMPORT
 	border-top: 0;
 	border-bottom: 1px solid var(--grist-color-table-border);
 	background: var(--grist-color-white);
-	color: var(--grist-color-table-head);
 	font-size: 12px;
-	font-weight: 700;
+	font-weight: 600;
 	white-space: nowrap;
 }
 
@@ -1030,7 +982,6 @@ STYLE FOR GRIST IMPORT
 	border-top: 1px solid var(--grist-color-table-border);
 	color: var(--grist-color-table-cell);
 	font-size: 13px;
-	font-weight: 600;
 	vertical-align: middle;
 	white-space: nowrap;
 }
@@ -1040,6 +991,7 @@ STYLE FOR GRIST IMPORT
 	flex-wrap: wrap;
 	gap: 8px;
 	margin-top: 14px;
+	justify-content: center;
 }
 
 .table-preview__pagination .page-item .page-link {
@@ -1081,4 +1033,21 @@ STYLE FOR GRIST IMPORT
 
 #newlayer-grist-footer [data-refresh-grist-lists] {
 	margin-left: auto;
+}
+
+[data-upload-file-url-area] .switch-card-header {
+    padding: 5px 0px;
+}
+
+[data-upload-file-url-area] > .switch-card {
+    border: none;
+}
+
+[data-upload-file-url-area] .btn-primary {
+    background-color: var(--info);
+    border-color: var(--info);
+}
+
+.btn#newlayer-grist-back {
+    color: var(--primary);
 }

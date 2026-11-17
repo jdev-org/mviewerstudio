@@ -23,17 +23,15 @@ const initBootstrapTooltip = (element) => {
  * @param {Object} [options={}] Component configuration.
  * @param {string} [options.icon="bi-info-circle"] Bootstrap icon class.
  * @param {string} [options.message=""] Message displayed on hover.
- * @param {string} [options.color="primary"] Bootstrap color name.
  * @param {string} [options.classes] Additional classes for the trigger.
  */
 const Tooltip = function (options = {}) {
   this.icon = options.icon || "bi-info-circle";
   this.message = options.message || "";
-  this.color = options.color || "primary";
   this.classes = options.classes || "";
   this.element = document.createElement("button");
   this.element.className =
-    `btn btn-link border-0 p-0 tooltip-icon ${this.classes}`.trim();
+    `btn border-0 p-0 tooltip-icon ${this.classes}`.trim();
   this.element.type = "button";
 };
 
@@ -45,7 +43,7 @@ const Tooltip = function (options = {}) {
 Tooltip.prototype.render = function () {
   const icon = document.createElement("i");
 
-  icon.className = `bi ${this.icon} text-${this.color}`;
+  icon.className = `bi ${this.icon}`;
   icon.setAttribute("aria-hidden", "true");
 
   this.element.replaceChildren(icon);

@@ -260,7 +260,7 @@ GristApiKey.prototype.render = function () {
       <button
         type="button"
         id="${this.idPrefix}-validate"
-        class="btn grist-api-key-validate-btn"
+        class="btn grist-api-key-validate-btn btn-info"
       >
         ${mviewer.tr("grist.api_key.validate")}
       </button>

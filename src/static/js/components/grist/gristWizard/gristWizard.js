@@ -11,7 +11,7 @@ const getDefaultSteps = () => [
   {
     label: mviewer.tr("modal.layer.grist.workflow.connection"),
     description: mviewer.tr("modal.layer.grist.workflow.connection.description"),
-    icon: "bi-file-earmark-spreadsheet",
+    icon: "bi-shield-lock",
   },
   {
     label: mviewer.tr("modal.layer.grist.data"),
