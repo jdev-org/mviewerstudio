@@ -1,4 +1,4 @@
-import { createGristApiError } from "../../../utils/grist/apiError.js";
+import { readGristResponse } from "../../../utils/grist/apiError.js";
 /**
  * Grist tables select field.
  *
@@ -21,11 +21,7 @@ import OpenGristTableBtn from "../openGristTableBtn/openGristTableBtn.js";
 let listGristTablesInstanceId = 0;
 
 const readJson = async (response) => {
-  if (!response.ok) {
-    throw await createGristApiError(response);
-  }
-
-  return response.json();
+  return readGristResponse(response);
 };
 
 const getGristId = (item) => {

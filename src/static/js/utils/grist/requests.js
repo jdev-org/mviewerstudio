@@ -1,4 +1,4 @@
-import { createGristApiError } from "./apiError.js";
+import { createGristApiError, fetchWithApiError, readGristResponse } from "./apiError.js";
 // Preserve the gateway session when calling the same-origin Grist proxy.
 /**
  * Build the authorization headers used by Grist API requests.
@@ -71,7 +71,7 @@ const hasGristId = (id) => {
  * @returns {Promise<Response>} Fetch response from the Grist API.
  */
 export const getUserOrgs = (instanceUrl, apiKey) => {
-  return fetch(`${instanceUrl}/api/orgs`, {
+  return fetchWithApiError(`${instanceUrl}/api/orgs`, {
     method: "GET",
     credentials: "same-origin",
     headers: getAuthHeaders(apiKey),
@@ -88,14 +88,14 @@ export const getUserOrgs = (instanceUrl, apiKey) => {
  * @param {string} apiKey Grist API key.
  * @returns {Promise<Response>} Fetch response from the Grist API.
  */
-export const getDescribeWorkspace = (instanceUrl, workspaceId, apiKey) => {
+export const getDescribeWorkspace = async (instanceUrl, workspaceId, apiKey) => {
   if (!hasGristId(workspaceId)) {
-    return Promise.reject(
+    throw await createGristApiError(
       new Error("Unable to describe Grist workspace without a workspace id")
     );
   }
 
-  return fetch(`${instanceUrl}/api/workspaces/${workspaceId}`, {
+  return fetchWithApiError(`${instanceUrl}/api/workspaces/${workspaceId}`, {
     method: "GET",
     credentials: "same-origin",
     headers: getAuthHeaders(apiKey),
@@ -117,11 +117,7 @@ export const getDescribeWorkspace = (instanceUrl, workspaceId, apiKey) => {
 export const getWorkspaceDocsList = (instanceUrl, workspaceId, apiKey) => {
   return getDescribeWorkspace(instanceUrl, workspaceId, apiKey)
     .then(async (response) => {
-      if (!response.ok) {
-        throw await createGristApiError(response);
-      }
-
-      return response.json();
+      return readGristResponse(response);
     })
     .then((workspaceDescription) => workspaceDescription.docs || []);
 };
@@ -135,7 +131,7 @@ export const getWorkspaceDocsList = (instanceUrl, workspaceId, apiKey) => {
  * @returns {Promise<Response>} Fetch response from the Grist API.
  */
 export const getOrgWorkspaces = (instanceUrl, orgId, apiKey) => {
-  return fetch(`${instanceUrl}/api/orgs/${orgId}/workspaces`, {
+  return fetchWithApiError(`${instanceUrl}/api/orgs/${orgId}/workspaces`, {
     method: "GET",
     credentials: "same-origin",
     headers: getAuthHeaders(apiKey),
@@ -156,7 +152,7 @@ export const createOrgWorkspace = (instanceUrl, orgId, workspaceName, apiKey) =>
     name: workspaceName,
   };
 
-  return fetch(`${instanceUrl}/api/orgs/${orgId}/workspaces`, {
+  return fetchWithApiError(`${instanceUrl}/api/orgs/${orgId}/workspaces`, {
     method: "POST",
     credentials: "same-origin",
     headers: getJsonHeaders(apiKey),
@@ -179,7 +175,7 @@ export const createWorkspaceDoc = (instanceUrl, workspaceId, documentName, apiKe
     isPinned: false,
   };
 
-  return fetch(`${instanceUrl}/api/workspaces/${workspaceId}/docs`, {
+  return fetchWithApiError(`${instanceUrl}/api/workspaces/${workspaceId}/docs`, {
     method: "POST",
     credentials: "same-origin",
     headers: getJsonHeaders(apiKey),
@@ -194,7 +190,7 @@ export const createWorkspaceDoc = (instanceUrl, workspaceId, documentName, apiKe
  * @returns {Promise<Response>} Fetch response from the Grist API.
  */
 export const getApiKey = (instanceUrl) => {
-  return fetch(`${instanceUrl}/api/profile/apikey`);
+  return fetchWithApiError(`${instanceUrl}/api/profile/apikey`);
 };
 
 /**
@@ -204,7 +200,7 @@ export const getApiKey = (instanceUrl) => {
  * @returns {Promise<Response>} Fetch response from the Grist API.
  */
 export const getUserInfo = (instanceUrl) => {
-  return fetch(`${instanceUrl}/api/profile/user`);
+  return fetchWithApiError(`${instanceUrl}/api/profile/user`);
 };
 
 /**
@@ -217,7 +213,7 @@ export const getUserInfo = (instanceUrl) => {
  * @returns {Promise<Response>} Fetch response from the Grist API.
  */
 export const postTablesToDoc = (instanceUrl, docId, tablesData, apiKey) => {
-  return fetch(getTablesUrl(instanceUrl, docId), {
+  return fetchWithApiError(getTablesUrl(instanceUrl, docId), {
     method: "POST",
     credentials: "same-origin",
     headers: getJsonHeaders(apiKey),
@@ -236,7 +232,7 @@ export const postTablesToDoc = (instanceUrl, docId, tablesData, apiKey) => {
  * @returns {Promise<Response>} Fetch response from the Grist API.
  */
 export const postRecordsToTable = (instanceUrl, docId, tableId, recordsData, apiKey) => {
-  return fetch(
+  return fetchWithApiError(
     `${instanceUrl}/api/docs/${docId}/tables/${encodeURIComponent(tableId)}/records`,
     {
       method: "POST",
@@ -258,7 +254,7 @@ export const postRecordsToTable = (instanceUrl, docId, tableId, recordsData, api
  * @returns {Promise<Response>} Unparsed API response containing a columns array.
  */
 export const getTableColumns = (instanceUrl, docId, tableId, apiKey) => {
-  return fetch(
+  return fetchWithApiError(
     `${instanceUrl}/api/docs/${docId}/tables/${encodeURIComponent(tableId)}/columns`,
     { credentials: "same-origin", headers: getJsonHeaders(apiKey) }
   );
@@ -275,7 +271,7 @@ export const getTableColumns = (instanceUrl, docId, tableId, apiKey) => {
  * @returns {Promise<Response>} Fetch response from the Grist API.
  */
 export const postColumnsToTable = (instanceUrl, docId, tableId, columnsData, apiKey) => {
-  return fetch(
+  return fetchWithApiError(
     `${instanceUrl}/api/docs/${docId}/tables/${encodeURIComponent(tableId)}/columns`,
     {
       method: "POST",
@@ -297,7 +293,7 @@ export const postColumnsToTable = (instanceUrl, docId, tableId, columnsData, api
  * @returns {Promise<Response>} Fetch response from the Grist API.
  */
 export const patchRecordsToTable = (instanceUrl, docId, tableId, recordsData, apiKey) => {
-  return fetch(
+  return fetchWithApiError(
     `${instanceUrl}/api/docs/${docId}/tables/${encodeURIComponent(tableId)}/records`,
     {
       method: "PATCH",
@@ -317,7 +313,7 @@ export const patchRecordsToTable = (instanceUrl, docId, tableId, recordsData, ap
  * @returns {Promise<Response>} Fetch response from the Grist API.
  */
 export const getDocTables = (instanceUrl, docId, apiKey) => {
-  return fetch(getTablesUrl(instanceUrl, docId), {
+  return fetchWithApiError(getTablesUrl(instanceUrl, docId), {
     method: "GET",
     credentials: "same-origin",
     headers: getAuthHeaders(apiKey),
@@ -336,11 +332,14 @@ export const getDocTables = (instanceUrl, docId, apiKey) => {
  * @returns {Promise<Response>} Fetch response from the Grist API.
  */
 export const getTableRecords = (instanceUrl, docId, tableId, apiKey, options = {}) => {
-  return fetch(getTableRecordsUrl(instanceUrl, docId, tableId, options.limit), {
-    method: "GET",
-    credentials: "same-origin",
-    headers: getAuthHeaders(apiKey),
-  });
+  return fetchWithApiError(
+    getTableRecordsUrl(instanceUrl, docId, tableId, options.limit),
+    {
+      method: "GET",
+      credentials: "same-origin",
+      headers: getAuthHeaders(apiKey),
+    }
+  );
 };
 
 /**

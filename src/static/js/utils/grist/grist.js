@@ -103,6 +103,7 @@ const hasGristGeometryField = async () => {
     }
     return outputFields.some((field) => field && sourceData.fields.includes(field));
   } catch (error) {
+    alertCustom(error.message, "danger");
     return false;
   }
 };

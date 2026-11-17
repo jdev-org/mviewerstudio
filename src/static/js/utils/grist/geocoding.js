@@ -1,4 +1,4 @@
-import { createGristApiError } from "./apiError.js";
+import { readGristResponse } from "./apiError.js";
 import {
   BAN_GEOCODING_FIELDS,
   GRIST_LOCATION_SWITCH_IDS,
@@ -204,11 +204,7 @@ const getBanGeocodingStatus = (rows, sourceRows = []) => {
  * @throws {Error} When the Grist API response is not successful.
  */
 const readGristJson = async (response) => {
-  if (!response.ok) {
-    throw await createGristApiError(response);
-  }
-
-  return response.json();
+  return readGristResponse(response);
 };
 
 /**
@@ -229,7 +225,7 @@ const ensureGristGeocodingColumns = async (gristConfig, sourceData, apiKey) => {
   }
 
   for (const column of missingColumns) {
-    const response = await postColumnsToTable(
+    await postColumnsToTable(
       gristConfig.apiUrl,
       sourceData.docId,
       sourceData.tableId,
@@ -243,10 +239,6 @@ const ensureGristGeocodingColumns = async (gristConfig, sourceData, apiKey) => {
       },
       apiKey
     );
-
-    if (!response.ok && response.status !== 400) {
-      throw await createGristApiError(response);
-    }
   }
 };
 

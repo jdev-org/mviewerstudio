@@ -1,4 +1,8 @@
-import { createGristApiError } from "../../../utils/grist/apiError.js";
+import {
+  createGristApiError,
+  fetchWithApiError,
+  readGristResponse,
+} from "../../../utils/grist/apiError.js";
 /**
  * Simple Grist API key form block.
  *
@@ -68,17 +72,14 @@ const GristApiKey = function (
  * Only if user is logged in and has a valid session (via ProConnect)
  */
 GristApiKey.prototype.fetchKeyFromGristAPI = function () {
-  return fetch(this.gristApiKeyUrl, {
+  return fetchWithApiError(this.gristApiKeyUrl, {
     method: "GET",
     credentials: "include",
     headers: {
       Accept: "text/plain",
     },
   }).then(async (response) => {
-    if (!response.ok) {
-      throw await createGristApiError(response);
-    }
-    return response.text();
+    return readGristResponse(response, "text");
   });
 };
 
@@ -98,10 +99,10 @@ GristApiKey.prototype.loadApiKey = function () {
   }
 
   this.fetchKeyFromGristAPI()
-    .then((data) => {
+    .then(async (data) => {
       const apiKey = data.trim();
       if (!apiKey) {
-        throw new Error("Empty Grist API key");
+        throw await createGristApiError(new Error("Empty Grist API key"));
       }
       input.value = apiKey;
       input.readOnly = true;
@@ -191,11 +192,7 @@ GristApiKey.prototype.validateApiKey = function () {
   }
 
   getUserOrgs(this.gristInstanceUrl, apiKey)
-    .then(async (response) => {
-      if (!response.ok) {
-        throw await createGristApiError(response);
-      }
-
+    .then(() => {
       this.showAlert("success", mviewer.tr("grist.api_key.valid"));
       storeGristApiKey(apiKey);
       this.onValidApiKey(apiKey);

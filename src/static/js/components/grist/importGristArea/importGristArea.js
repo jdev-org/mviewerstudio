@@ -1,4 +1,4 @@
-import { createGristApiError } from "../../../utils/grist/apiError.js";
+import { readGristResponse } from "../../../utils/grist/apiError.js";
 /**
  * Import type selector for the Grist import step.
  *
@@ -122,11 +122,7 @@ const getHeaders = (rows, data) => {
  * @throws {Error} When the API request fails or its body is invalid JSON.
  */
 const readJson = async (response) => {
-  if (!response.ok) {
-    throw await createGristApiError(response);
-  }
-
-  return response.json();
+  return readGristResponse(response);
 };
 
 /**

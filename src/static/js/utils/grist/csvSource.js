@@ -1,4 +1,4 @@
-import { createGristApiError } from "./apiError.js";
+import { createGristApiError, fetchWithApiError, readGristResponse } from "./apiError.js";
 
 const requests = new Map();
 
@@ -21,15 +21,18 @@ export function loadGristCsv(url, apiKey) {
   const cached = requests.get(url);
   if (cached && cached.apiKey === apiKey) return cached.promise;
   const entry = { apiKey };
-  entry.promise = fetch(url, { headers: { Authorization: `Bearer ${apiKey}` } })
+  entry.promise = fetchWithApiError(url, {
+    headers: { Authorization: `Bearer ${apiKey}` },
+  })
     .then(async (response) => {
-      if (!response.ok) throw await createGristApiError(response);
-      const data = Papa.parse(await response.text(), {
+      const data = Papa.parse(await readGristResponse(response, "text"), {
         header: true,
         skipEmptyLines: true,
       });
       if (data.errors && data.errors.length) {
-        throw new Error(mviewer.tr("modal.layer.grist.preview.error"));
+        throw await createGristApiError(
+          new Error(mviewer.tr("modal.layer.grist.preview.error"))
+        );
       }
       return data;
     })

@@ -1,4 +1,4 @@
-import { createGristApiError } from "../../../utils/grist/apiError.js";
+import { createGristApiError, readGristResponse } from "../../../utils/grist/apiError.js";
 import { getDocTables, getTableRecords } from "../../../utils/grist/requests.js";
 import { getGristTableUrl } from "../../../utils/grist/utils.js";
 
@@ -44,11 +44,7 @@ GristLayerSource.prototype.getSourceData = async function () {
     this.apiKey
   );
 
-  if (!response.ok) {
-    throw await createGristApiError(response);
-  }
-
-  const payload = await response.json();
+  const payload = await readGristResponse(response);
   const records = payload.records || [];
   const rows = records.map((record) => record.fields || {});
   const fields = rows.length
@@ -66,16 +62,13 @@ GristLayerSource.prototype.getSourceData = async function () {
 GristLayerSource.prototype.getTargetTableUrl = async function () {
   const response = await getDocTables(this.apiUrl, this.docId, this.apiKey);
 
-  if (!response.ok) {
-    return "";
-  }
-
-  const payload = await response.json();
+  const payload = await readGristResponse(response);
   const table = (payload.tables || []).find((item) => item.id === this.tableId);
-  const tableRef = table && (table.fields.tableRef || table.tableRef || table.id);
+  const tableRef =
+    table && ((table.fields && table.fields.tableRef) || table.tableRef || table.id);
 
   if (!tableRef) {
-    return "";
+    throw await createGristApiError(new Error("Grist table reference not found"));
   }
 
   return getGristTableUrl(

@@ -1,3 +1,4 @@
+import { fetchWithApiError, readGristResponse } from "../grist/apiError.js";
 import { getGristCsvTableInfo } from "../grist/utils.js";
 import { clearGristCsv } from "../grist/csvSource.js";
 import { DATA_PREVIEW_LIMIT } from "./constants.js";
@@ -104,14 +105,13 @@ export async function loadReferentialPreview(layer, support) {
     previewRequests.set(sourceRows, requests);
   }
   if (!requests.has(key)) {
-    const request = fetch("api/grist/refgeo/preview", {
+    const request = fetchWithApiError("api/grist/refgeo/preview", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     })
       .then(async (response) => {
-        if (!response.ok) throw new Error(mviewer.tr("style_editor.error.referential"));
-        return response.json();
+        return readGristResponse(response);
       })
       .catch((error) => {
         requests.delete(key);
@@ -198,7 +198,7 @@ async function prepareGristColumns(layer, data, support, source) {
     const table = getGristCsvTableInfo(layer.url);
     if (!table || !source || !source.validatedApiKey)
       throw new Error(mviewer.tr("style_editor.error.referential"));
-    const response = await fetch("api/grist/refgeo/join", {
+    const response = await fetchWithApiError("api/grist/refgeo/join", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -215,8 +215,7 @@ async function prepareGristColumns(layer, data, support, source) {
         centroid_field: centroidField,
       }),
     });
-    if (!response.ok) throw new Error(mviewer.tr("style_editor.error.referential"));
-    const result = await response.json();
+    const result = await readGristResponse(response);
     polygonField = result.geometry_field;
     centroidField = result.centroid_field;
     geometryField = polygonField;

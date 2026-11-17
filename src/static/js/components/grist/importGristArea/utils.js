@@ -1,4 +1,4 @@
-import { createGristApiError } from "../../../utils/grist/apiError.js";
+import { readGristResponse } from "../../../utils/grist/apiError.js";
 import {
   createWorkspaceDoc,
   getDocTables,
@@ -25,11 +25,7 @@ import {
  * @throws {Error} When the Grist API response is not successful.
  */
 const readJson = async (response) => {
-  if (!response.ok) {
-    throw await createGristApiError(response);
-  }
-
-  return response.json();
+  return readGristResponse(response);
 };
 
 /**
